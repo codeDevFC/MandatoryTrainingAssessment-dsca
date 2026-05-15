@@ -7,7 +7,7 @@ import {
   Save, Edit2, Home, BarChart3, Clock, Target, Star
 } from 'lucide-react';
 
-const API_URL = 'http://localhost:3002';
+const API_URL = '';
 
 function App() {
   // Login state

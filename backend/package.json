@@ -1,6 +1,8 @@
 {
   "name": "dsca-backend",
   "version": "1.0.0",
+  "description": "DSCA Training Assessment Backend",
+  "main": "api/index.js",
   "scripts": {
     "dev": "node api/index.js",
     "start": "node api/index.js"

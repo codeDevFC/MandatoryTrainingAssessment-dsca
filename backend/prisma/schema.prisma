@@ -20,14 +20,14 @@ enum TrainingRoute {
 }
 
 model User {
-  id           String       @id @default(cuid())
-  email        String       @unique
-  name         String?
-  role         Role         @default(TRAINEE)
-  trainingRoute TrainingRoute @default(FULL_22)
-  selectedModules Json?      
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  id              String          @id @default(cuid())
+  email           String          @unique
+  name            String?
+  role            Role            @default(TRAINEE)
+  trainingRoute   TrainingRoute   @default(FULL_22)
+  selectedModules Json?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
   
   results         QuizResult[]
   progress        ModuleProgress[]
@@ -36,67 +36,64 @@ model User {
 }
 
 model Module {
-  id        Int    @id
-  name      String
-  passMark  Int    @default(15)
-  questions Json
+  id              Int             @id
+  name            String
+  passMark        Int             @default(15)
+  questions       Json
   
-  results      QuizResult[]
-  progress     ModuleProgress[]
-  moduleAttempts ModuleAttempt[]
+  results         QuizResult[]
+  progress        ModuleProgress[]
+  moduleAttempts  ModuleAttempt[]
 }
 
 model ModuleAttempt {
-  id           String   @id @default(cuid())
-  userId       String
-  moduleId     Int
-  score        Int
-  passed       Boolean
-  answers      Json
-  errors       Json
-  timeSpent    Int
-  attemptNumber Int     @default(1)
-  startedAt    DateTime @default(now())
-  completedAt  DateTime
+  id              String      @id @default(cuid())
+  userId          String
+  moduleId        Int
+  score           Int
+  passed          Boolean
+  answers         Json
+  timeSpent       Int
+  completedAt     DateTime
   
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  module Module @relation(fields: [moduleId], references: [id])
-}
-
-model QuizResult {
-  id        String   @id @default(cuid())
-  score     Int
-  passed    Boolean  @default(false)
-  moduleId  Int
-  userId    String
-  createdAt DateTime @default(now())
-  
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  module Module @relation(fields: [moduleId], references: [id])
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module          Module      @relation(fields: [moduleId], references: [id])
 }
 
 model ModuleProgress {
-  id        String   @id @default(cuid())
-  userId    String
-  moduleId  Int
-  status    String   @default("locked")
-  score     Int?
-  attempts  Int      @default(0)
-  passedAt  DateTime?
+  id              String      @id @default(cuid())
+  userId          String
+  moduleId        Int
+  status          String      @default("locked")
+  score           Int?
+  attempts        Int         @default(0)
+  passedAt        DateTime?
   
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  module Module @relation(fields: [moduleId], references: [id])
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module          Module      @relation(fields: [moduleId], references: [id])
   
   @@unique([userId, moduleId])
 }
 
-model LoginCode {
-  id        String   @id @default(cuid())
-  email     String
-  code      String
-  expiresAt DateTime
-  used      Boolean  @default(false)
-  createdAt DateTime @default(now())
+model QuizResult {
+  id              String      @id @default(cuid())
+  score           Int
+  passed          Boolean     @default(false)
+  moduleId        Int
+  userId          String
+  createdAt       DateTime    @default(now())
   
-  user User? @relation(fields: [email], references: [email], onDelete: Cascade)
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module          Module      @relation(fields: [moduleId], references: [id])
+}
+
+model LoginCode {
+  id              String      @id @default(cuid())
+  email           String
+  code            String
+  expiresAt       DateTime
+  used            Boolean     @default(false)
+  createdAt       DateTime    @default(now())
+  
+  user            User?       @relation(fields: [email], references: [email], onDelete: Cascade)
 }

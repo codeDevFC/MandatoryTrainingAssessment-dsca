@@ -1,32 +1,38 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "frontend/**/*",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "frontend/dist",
-        "buildCommand": "cd frontend && npm install && npm run build"
-      }
-    },
-    {
-      "src": "backend/api/index.js",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "backend/api/index.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "frontend/dist/$1"
-    }
-  ],
-  "env": {
-    "DATABASE_URL": "postgresql://neondb_owner:npg_eFVCNZHu13iW@ep-lucky-butterfly-ann71upz-pooler.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require",
-    "JWT_SECRET": "careworks-super-secret-key-2025",
-    "PORT": "3002"
-  }
+"version": 2,
+"builds": [
+{
+"src": "frontend/package.json",
+"use": "@vercel/static-build",
+"config": {
+"distDir": "dist",
+"buildCommand": "npm install && npm run build"
+}
+},
+{
+"src": "backend/api/index.js",
+"use": "@vercel/node"
+}
+],
+"routes": [
+{
+"src": "/api/(.)",
+"dest": "backend/api/index.js"
+},
+{
+"src": "/(.)",
+"dest": "frontend/$1",
+"check": true
+},
+{
+"src": "/(.*)",
+"status": 200,
+"dest": "frontend/index.html"
+}
+],
+"env": {
+"DATABASE_URL": "postgresql://neondb_owner:npg_eFVCNZHu13iW@ep-lucky-butterfly-ann71upz-pooler.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require",
+"JWT_SECRET": "careworks-super-secret-key-2025",
+"PORT": "3002"
+}
 }

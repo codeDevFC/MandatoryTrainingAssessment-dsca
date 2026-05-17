@@ -1,22 +1,9 @@
 {
-"name": "dsca-mandatory-training-assessment",
-"version": "1.0.0",
-"description": "DSCA Mandatory Training Assessment Platform",
-"main": "index.js",
-"scripts": {
-"dev": "concurrently "npm run dev:backend" "npm run dev:frontend"",
-"dev:backend": "cd backend && node api/index.js",
-"dev:frontend": "cd frontend && npm run dev",
-"build": "cd frontend && npm install && npm run build",
-"start": "cd backend && node api/index.js",
-"seed": "cd backend && node prisma/seed-all-questions.js"
-},
-"keywords": [
-"training",
-"assessment",
-"healthcare",
-"dsca"
-],
-"author": "DSCA Training",
-"license": "MIT"
+  "name": "dsca-mandatory-training-assessment",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build",
+    "dev": "cd backend && node api/index.js"
+  }
 }

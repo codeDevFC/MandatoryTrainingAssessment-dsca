@@ -298,12 +298,12 @@ const modulesData = [
     { text: "Which of these statements is correct?", options: ["If you make a mistake with medication you must report it immediately.", "If you make a mistake with medication never report it.", "There is no need to ensure you give the right dose of medication."], correct: 0 },
     { text: "Which of these instructions would you follow?", options: ["No need to take care; there is no danger when handling medicine.", "Be aware that Anaphylaxis can lead to a cardiac arrest.", "It is only a small overdose and it is not life threatening, no need to report it."], correct: 1 },
     { text: "Which of these instructions would you follow?", options: ["It is not on the MAR sheet, but he can have the pill anyway.", "Correctly complete the MAR sheet.", "The pills are mixed up, give them anyway."], correct: 1 },
-    { text: "Which of these statements is correct?", options: ["If in doubt about medication administration get your employer’s advice.", "You can mix aspirin with other medicines; it is quite safe.", "She needs to get rest so we can double her sleeping pills tonight."], correct: 0 },
+    { text: "Which of these statements is correct?", options: ["If in doubt about medication administration get your employer's advice.", "You can mix aspirin with other medicines; it is quite safe.", "She needs to get rest so we can double her sleeping pills tonight."], correct: 0 },
     { text: "Which of these statements is correct?", options: ["There is no need for medication to be taken at the right time.", "You do not need to monitor if the service user takes their medication.", "Always take care; there is always danger when handling medicine."], correct: 2 },
     { text: "Which of these statements is correct?", options: ["Ensure the correct medication is given to the right service user.", "Completing the MAR sheet is not that important.", "There is no need to report any adverse reactions to medication."], correct: 0 },
     { text: "Which of these statements is correct?", options: ["Only my employer is responsible for medication administration.", "There is no need to read the label on medication.", "There is a need to check the expiry date of medication."], correct: 2 },
     { text: "Which of these statements is correct?", options: ["Employees who administer medication should be competent.", "Employees who administer medication do not need to be competent.", "There is no need for medication administration competency checks."], correct: 0 },
-    { text: "Which of these statements is correct?", options: ["I do not need to be aware of my employer’s medication policy.", "I must read and understand my employer’s medication policy.", "Only senior staff need to follow my employer’s medication policy."], correct: 1 },
+    { text: "Which of these statements is correct?", options: ["I do not need to be aware of my employer's medication policy.", "I must read and understand my employer's medication policy.", "Only senior staff need to follow my employer's medication policy."], correct: 1 },
     { text: "Which of these statements is correct?", options: ["I do not need to follow medication procedures of my employer.", "I must follow the medication procedures of my employer.", "I can ignore the medication procedures of my employer."], correct: 1 },
     { text: "Which of these statements is correct?", options: ["Employees should know the 7 Rights of Medication Administration.", "There is no need to follow the 7 Rights of Medication Administration.", "Those administering medication do not need to demonstrate knowledge."], correct: 0 },
     { text: "Which of these statements is correct?", options: ["Never administer medications that are not labelled or unmarked.", "You can administer medications that are not labelled or unmarked.", "If a family member tells you to give a medication to a client, you can."], correct: 0 },
@@ -321,14 +321,14 @@ const modulesData = [
     { text: "Capacity assessments only need to be reviewed annually.", correct: 1 },
     { text: "A decision to deprive someone of their liberty cannot be challenged.", correct: 1 },
     { text: "Every effort should be made to encourage and enable the person who lacks capacity to take part in making the decision.", correct: 0 },
-    { text: "Someone’s best interests can be based simply on age, appearance, condition or behaviour.", correct: 1 },
-    { text: "Under the Mental Capacity Act any decision or act must be in a person’s best interests.", correct: 0 },
-    { text: "Capacity assessments can be recorded in a person’s care plan without a special form.", correct: 0 },
+    { text: "Someone's best interests can be based simply on age, appearance, condition or behaviour.", correct: 1 },
+    { text: "Under the Mental Capacity Act any decision or act must be in a person's best interests.", correct: 0 },
+    { text: "Capacity assessments can be recorded in a person's care plan without a special form.", correct: 0 },
     { text: "If you suspect that a person lacks capacity, but they are in agreement with your decision you will not need to assess their capacity.", correct: 1 },
     { text: "Best Interest Decisions must always be made in a multi-disciplinary group meeting.", correct: 0 },
     { text: "The person who chairs a best interest meeting will always be the decision maker.", correct: 1 },
     { text: "A record of a best interest decision must include consideration of the best interest checklist.", correct: 0 },
-    { text: "It is good practice for professionals to carry out a proper assessment of a person‘s capacity to make particular decisions.", correct: 0 },
+    { text: "It is good practice for professionals to carry out a proper assessment of a person's capacity to make particular decisions.", correct: 0 },
     { text: "A person without mental capacity can be physically restrained under section 5 of the Act.", correct: 0 },
     { text: "Any decision to deprive an individual of their liberty can be challenged.", correct: 0 }
   ]},
@@ -349,7 +349,7 @@ const modulesData = [
     { text: "You can ignore the requests of individuals for fluids if you feel they do not need them.", correct: 1 },
     { text: "If in doubt about nutritional and fluid needs of an individual, I should check with my supervisor.", correct: 0 },
     { text: "There is no need to provide a choice of food for those we care for.", correct: 1 },
-    { text: "On occasions, it may be necessary to record an individual’s food and fluid intake.", correct: 0 },
+    { text: "On occasions, it may be necessary to record an individual's food and fluid intake.", correct: 0 },
     { text: "There is no need to take account of food allergies individuals may have.", correct: 1 },
     { text: "Communicating with the individual over their food and drink needs is not important.", correct: 1 },
     { text: "Those who prepare food for individuals being cared for should understand about the nutritional value of different foods.", correct: 0 }
@@ -357,7 +357,7 @@ const modulesData = [
   { id: 17, name: "People Movers Moving & Handling (Level 1)", passMark: 15, questions: [
     { text: "The main safety legislation is the Health & Safety at Work (etc.) Act 1974.", correct: 0 },
     { text: "I do not need to do a personal risk assessment before moving a person.", correct: 1 },
-    { text: "I should always follow best practice and not use lifts like the ‘Drag Lift’.", correct: 0 },
+    { text: "I should always follow best practice and not use lifts like the 'Drag Lift'.", correct: 0 },
     { text: "The drag lift can be used when requested by the service user.", correct: 1 },
     { text: "I must obey reasonable and lawful instructions.", correct: 0 },
     { text: "I must report moving and handling concerns to the appropriate person.", correct: 0 },
@@ -385,14 +385,14 @@ const modulesData = [
     { text: "Person Centred Care is about promoting dignity and supporting.", correct: 0 },
     { text: "Person Centred Care is about giving people real choice in how they live.", correct: 0 },
     { text: "Person Centred Care is all about the choices of the carer coming first.", correct: 1 },
-    { text: "Maintaining a service user’s privacy and dignity are important.", correct: 0 },
+    { text: "Maintaining a service user's privacy and dignity are important.", correct: 0 },
     { text: "Life history is just a list of people they know.", correct: 1 },
     { text: "Management should be focused on providing Person Centred Care.", correct: 0 },
     { text: "All employees should be trained to provide Person Centred Care.", correct: 0 },
     { text: "Employees do not need to promote meaningful activities.", correct: 1 },
     { text: "Employees should be promoting dignity.", correct: 0 },
-    { text: "Understanding a person’s life history builds relationships.", correct: 0 },
-    { text: "There is no need for service user’s information to be kept confidential.", correct: 1 },
+    { text: "Understanding a person's life history builds relationships.", correct: 0 },
+    { text: "There is no need for service user's information to be kept confidential.", correct: 1 },
     { text: "A service user must conform to the will of the organisation of the home.", correct: 1 },
     { text: "Team meetings are useful to review Person Centred Care.", correct: 0 },
     { text: "Helping a service user to engage in activities is not important.", correct: 1 },
@@ -426,7 +426,7 @@ const modulesData = [
     { text: "We all have a duty to protect adults at risk.", correct: 0 },
     { text: "There is no need to report concerns we may have about abuse.", correct: 1 },
     { text: "An adult at risk may have an acquired brain injury.", correct: 0 },
-    { text: "Abuse is the violation of an individual’s human and civil rights by another.", correct: 0 },
+    { text: "Abuse is the violation of an individual's human and civil rights by another.", correct: 0 },
     { text: "A category of abuse could be defined as sexual.", correct: 0 },
     { text: "Emotional abuse would not be considered an issue.", correct: 1 },
     { text: "Neglect is a category of abuse.", correct: 0 },
@@ -451,7 +451,7 @@ const modulesData = [
     { text: "Which of these statements is correct? (1 is correct)", options: ["Emotional abuse would not be considered an issue.", "Emotional abuse is not considered as important.", "Emotional abuse should be reported."], correct: 2 },
     { text: "Which of these statements is correct? (1 is correct)", options: ["Neglect is not considered a category of abuse.", "Neglect is considered a category of abuse.", "There is no need to report when someone is abused through neglect."], correct: 1 },
     { text: "Which of these statements is correct? (1 is correct)", options: ["It is ok to write illegible statements about abuse.", "Written statements about abuse need to be legible.", "Only I need to understand the statement about abuse I have written."], correct: 1 },
-    { text: "Which of these statements is correct? (1 is correct)", options: ["Ensuring ‘best evidence’ in cases of abuse is important.", "‘Best evidence’ does not help in the prosecution of offenders.", "Ensuring ‘best evidence’ in cases of abuse is not important."], correct: 0 },
+    { text: "Which of these statements is correct? (1 is correct)", options: ["Ensuring 'best evidence' in cases of abuse is important.", "'Best evidence' does not help in the prosecution of offenders.", "Ensuring 'best evidence' in cases of abuse is not important."], correct: 0 },
     { text: "Which of these statements is correct? (1 is correct)", options: ["Being discriminating would not be classed as a category of abuse.", "There is no need to report cases of discrimination at work.", "Discrimination is considered a category of abuse."], correct: 2 },
     { text: "Which of these statements is correct? (1 is correct)", options: ["When being told of abuse you should always panic.", "When being told of abuse you should initially ignore the claim.", "When being told of abuse you should remain calm."], correct: 2 },
     { text: "Which of these statements is correct? (1 is correct)", options: ["Abuse can be through repeated acts of poor professional practice.", "Abuse cannot occur through repeated acts of poor professional practice.", "Repeated acts of poor professional practice are not considered abuse."], correct: 0 },
@@ -495,7 +495,7 @@ const modulesData = [
     { text: "I should work in ways agreed with my employer.", correct: 0 },
     { text: "Some information you must share with your manager or supervisor.", correct: 0 },
     { text: "There are many people I will work with as a healthcare worker.", correct: 0 },
-    { text: "Maintaining a service user’s privacy and dignity are not important.", correct: 1 },
+    { text: "Maintaining a service user's privacy and dignity are not important.", correct: 1 },
     { text: "There are qualities and skills that are beneficial to partnership working.", correct: 0 },
     { text: "There are many sources of support for my learning and development.", correct: 0 },
     { text: "All healthcare workers should be trained to undertake their role.", correct: 0 },
@@ -505,17 +505,17 @@ const modulesData = [
     { text: "I do not need to report it if someone is being abused.", correct: 1 },
     { text: "You do not report colleagues who are abusive or use bad practice.", correct: 1 },
     { text: "Team meetings are useful as a source of personal development.", correct: 0 },
-    { text: "Promoting a service user’s independence is not important.", correct: 1 },
+    { text: "Promoting a service user's independence is not important.", correct: 1 },
     { text: "There are laws to protect healthcare workers and those they care for.", correct: 0 }
   ]}
 ];
 
 async function main() {
-  console.log('📚 Seeding 23 modules with complete content...');
+  console.log('📚 Seeding 23 modules with complete content (20 questions each)...');
   for (const mod of modulesData) {
     const formattedQuestions = mod.questions.map((q, idx) => ({
       id: `mod${mod.id}_q${idx + 1}`,
-      text: typeof q === 'string' ? q : q.text,
+      text: q.text,
       options: q.options || ["True", "False"],
       correct: q.correct
     }));
@@ -524,8 +524,15 @@ async function main() {
       update: { name: mod.name, passMark: mod.passMark, questions: formattedQuestions },
       create: { id: mod.id, name: mod.name, passMark: mod.passMark, questions: formattedQuestions }
     });
-    console.log(`✅ Module ${mod.id}: ${mod.name}`);
+    console.log(`✅ Module ${mod.id}: ${mod.name} - ${mod.questions.length} questions (Pass: ${mod.passMark}/20)`);
   }
-  console.log('🎉 Seeding complete!');
+  console.log('\n🎉 Seeding complete! All 23 modules now have 20 questions each.');
+  
+  // Verify the counts
+  const modules = await prisma.module.findMany({ orderBy: { id: 'asc' } });
+  console.log('\n📊 Verification:');
+  for (const m of modules) {
+    console.log(`   Module ${m.id}: ${m.name} - ${m.questions?.length || 0} questions`);
+  }
 }
 main().catch(console.error).finally(async () => await prisma.$disconnect());

@@ -1,3 +1,16 @@
+#!/bin/bash
+
+echo "========================================="
+echo "FIXING CUSTOM MODULE UNLOCKING"
+echo "========================================="
+
+cd frontend/src
+
+# Backup current App.jsx
+cp App.jsx App.jsx.backup-unlock-fix
+
+# Fix the getModuleStatus function to handle custom routes
+cat > App.jsx.fixed << 'APP_FIX'
 import React, { useState, useEffect } from 'react';
 import {
   LogOut, BookOpen, FileText, ChevronLeft, ChevronRight, Target, CheckCircle, AlertCircle,
@@ -790,3 +803,24 @@ function App() {
 }
 
 export default App;
+APP_FIX
+
+mv App.jsx.fixed App.jsx
+
+echo ""
+echo "========================================="
+echo "✅ CUSTOM MODULE UNLOCKING FIXED!"
+echo "========================================="
+echo ""
+echo "CHANGES MADE:"
+echo "1. CUSTOM route modules are ALL available immediately"
+echo "2. No dependency on Module 1 or sequential order"
+echo "3. FULL_22 route still uses sequential unlocking"
+echo ""
+echo "To test:"
+echo "1. Refresh your browser at http://localhost:5173"
+echo "2. Login as Admin"
+echo "3. Generate codes with Custom Selection (pick any modules, e.g., 5, 8, 12)"
+echo "4. Login as that trainee"
+echo "5. ALL selected modules will be available immediately"
+echo "========================================="

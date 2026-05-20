@@ -8,9 +8,6 @@
     "build": "vite build",
     "preview": "vite preview"
   },
-  "engines": {
-    "node": "20.x"
-  },
   "dependencies": {
     "canvas-confetti": "^1.9.4",
     "jspdf": "^2.5.1",

@@ -66,3 +66,4 @@ backend/prisma/*.db-journal
 # Frontend specific
 frontend/dist/
 frontend/.vite/
+.env*.local

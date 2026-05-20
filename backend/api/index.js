@@ -5,10 +5,22 @@ const { PrismaClient } = require('@prisma/client');
 const app = express();
 const prisma = new PrismaClient();
 
+// CORS configuration - allow all origins for production
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3002'],
-  credentials: true
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:3002',
+    'https://mandatory-training-assessment-dsca.vercel.app',
+    'https://mandatory-training-assessment-dsca.vercel.app',
+    'https://mandatory-training-assessment-dsca-1bft2qzve.vercel.app',
+    /\.vercel\.app$/
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 app.use(express.json());
 
 function generateCode() {
@@ -29,22 +41,46 @@ app.get('/api/health', (req, res) => {
 // Admin login
 app.post('/api/auth/admin-login', async (req, res) => {
   const { email, password } = req.body;
+  console.log('📝 Login attempt:', email);
+  
   try {
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || user.role === 'TRAINEE') {
-      return res.status(401).json({ error: 'Unauthorized' });
+    const user = await prisma.user.findUnique({ 
+      where: { email: email.toLowerCase() } 
+    });
+    
+    console.log('👤 User found:', user ? user.email : 'No user found');
+    
+    if (!user) {
+      console.log('❌ User not found:', email);
+      return res.status(401).json({ error: 'Invalid email or password' });
     }
+    
+    if (user.role === 'TRAINEE') {
+      console.log('❌ Trainee trying to use admin login');
+      return res.status(401).json({ error: 'Please use code login for trainee accounts' });
+    }
+    
     const validPasswords = {
       'admin@careworks.com': 'Admin@2025',
       'director@careworks.com': 'Director@2025',
       'supervisor@careworks.com': 'Supervisor@2025'
     };
-    if (validPasswords[email] !== password) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+    
+    if (validPasswords[email.toLowerCase()] !== password) {
+      console.log('❌ Invalid password for:', email);
+      return res.status(401).json({ error: 'Invalid email or password' });
     }
-    res.json(user);
+    
+    console.log('✅ Login successful:', email);
+    res.json({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role
+    });
+    
   } catch (error) {
-    console.error('Admin login error:', error);
+    console.error('❌ Admin login error:', error);
     res.status(500).json({ error: 'Login failed' });
   }
 });
@@ -385,6 +421,6 @@ module.exports = app;
 if (require.main === module) {
   const PORT = 3002;
   app.listen(PORT, () => {
-    console.log(`Backend running on http://localhost:${PORT}`);
+    console.log(`✅ Backend running on http://localhost:${PORT}`);
   });
 }

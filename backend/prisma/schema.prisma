@@ -7,28 +7,15 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  ADMIN
-  DIRECTOR
-  SUPERVISOR
-  TRAINEE
-}
-
-enum TrainingRoute {
-  FULL_22
-  CUSTOM
-}
-
 model User {
   id              String          @id @default(cuid())
   email           String          @unique
   name            String?
-  role            Role            @default(TRAINEE)
-  trainingRoute   TrainingRoute   @default(FULL_22)
-  selectedModules Json?
+  role            String          @default("TRAINEE")
+  trainingRoute   String          @default("FULL_22")
+  selectedModules String?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
-  
   results         QuizResult[]
   progress        ModuleProgress[]
   moduleAttempts  ModuleAttempt[]
@@ -39,61 +26,56 @@ model Module {
   id              Int             @id
   name            String
   passMark        Int             @default(15)
-  questions       Json
-  
+  questions       String
   results         QuizResult[]
   progress        ModuleProgress[]
   moduleAttempts  ModuleAttempt[]
 }
 
 model ModuleAttempt {
-  id              String      @id @default(cuid())
+  id              String          @id @default(cuid())
   userId          String
   moduleId        Int
   score           Int
   passed          Boolean
-  answers         Json
+  answers         String
   timeSpent       Int
   completedAt     DateTime
-  
-  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  module          Module      @relation(fields: [moduleId], references: [id])
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module          Module          @relation(fields: [moduleId], references: [id])
 }
 
 model ModuleProgress {
-  id              String      @id @default(cuid())
+  id              String          @id @default(cuid())
   userId          String
   moduleId        Int
-  status          String      @default("locked")
+  status          String          @default("locked")
   score           Int?
-  attempts        Int         @default(0)
+  attempts        Int             @default(0)
   passedAt        DateTime?
-  
-  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  module          Module      @relation(fields: [moduleId], references: [id])
-  
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module          Module          @relation(fields: [moduleId], references: [id])
+
   @@unique([userId, moduleId])
 }
 
 model QuizResult {
-  id              String      @id @default(cuid())
+  id              String          @id @default(cuid())
   score           Int
-  passed          Boolean     @default(false)
+  passed          Boolean         @default(false)
   moduleId        Int
   userId          String
-  createdAt       DateTime    @default(now())
-  
-  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  module          Module      @relation(fields: [moduleId], references: [id])
+  createdAt       DateTime        @default(now())
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module          Module          @relation(fields: [moduleId], references: [id])
 }
 
 model LoginCode {
-  id              String      @id @default(cuid())
+  id              String          @id @default(cuid())
   email           String
   code            String
   expiresAt       DateTime
-  used            Boolean     @default(false)
-  createdAt       DateTime    @default(now())
-  
-  user            User?       @relation(fields: [email], references: [email], onDelete: Cascade)
+  used            Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  user            User?           @relation(fields: [email], references: [email], onDelete: Cascade)
 }

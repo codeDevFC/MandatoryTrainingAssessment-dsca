@@ -6,7 +6,7 @@ const app = express();
 const prisma = new PrismaClient();
 
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3002'],
+  origin: ['http://localhost:5173', 'http://localhost:5174', 'https://careworks-assessment.vercel.app'],
   credentials: true
 }));
 app.use(express.json());
@@ -49,7 +49,7 @@ app.post('/api/auth/admin-login', async (req, res) => {
   }
 });
 
-// Batch generate codes
+// Batch generate codes (supports FULL_22 and CUSTOM)
 app.post('/api/admin/batch-generate-codes', async (req, res) => {
   const { students, trainingRoute = 'FULL_22', selectedModules = [] } = req.body;
   const results = [];
@@ -57,20 +57,18 @@ app.post('/api/admin/batch-generate-codes', async (req, res) => {
   for (const student of students) {
     try {
       const email = generateEmail(student.surname, student.firstName);
-      const selectedModulesJson = trainingRoute === 'CUSTOM' ? JSON.stringify(selectedModules) : null;
-      
       let user = await prisma.user.upsert({
         where: { email },
-        update: {
-          trainingRoute,
-          selectedModules: selectedModulesJson
+        update: { 
+          trainingRoute, 
+          selectedModules: trainingRoute === 'CUSTOM' ? selectedModules : null 
         },
         create: {
           email,
           name: `${student.firstName} ${student.surname}`,
           role: 'TRAINEE',
           trainingRoute,
-          selectedModules: selectedModulesJson
+          selectedModules: trainingRoute === 'CUSTOM' ? selectedModules : null
         }
       });
       
@@ -78,9 +76,9 @@ app.post('/api/admin/batch-generate-codes', async (req, res) => {
       const code = generateCode();
       const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
       await prisma.loginCode.create({ data: { email, code, expiresAt } });
-      results.push({ name: user.name, email, code, trainingRoute });
+      results.push({ name: user.name, email, code });
     } catch (e) {
-      console.error('Error generating code:', e.message);
+      console.error('Error generating code:', e);
     }
   }
   res.json({ success: true, codes: results, count: results.length });
@@ -94,12 +92,7 @@ app.get('/api/admin/students', async (req, res) => {
       include: { moduleAttempts: { include: { module: true } } },
       orderBy: { createdAt: 'desc' }
     });
-    
-    const parsedStudents = students.map(s => ({
-      ...s,
-      selectedModules: s.selectedModules ? JSON.parse(s.selectedModules) : []
-    }));
-    res.json(parsedStudents);
+    res.json(students);
   } catch (error) {
     console.error('Get students error:', error);
     res.status(500).json({ error: 'Failed to fetch students' });
@@ -120,7 +113,7 @@ app.get('/api/admin/modules', async (req, res) => {
   }
 });
 
-// Export user report
+// Export user report (detailed)
 app.get('/api/user/:userId/export', async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
@@ -143,7 +136,7 @@ app.get('/api/user/:userId/export', async (req, res) => {
         role: user.role,
         joinedAt: user.createdAt,
         trainingRoute: user.trainingRoute,
-        selectedModules: user.selectedModules ? JSON.parse(user.selectedModules) : []
+        selectedModules: user.selectedModules
       },
       totalAttempts: user.moduleAttempts.length,
       passedModules: user.moduleAttempts.filter(a => a.passed).length,
@@ -152,7 +145,15 @@ app.get('/api/user/:userId/export', async (req, res) => {
         ? user.moduleAttempts.reduce((acc, a) => acc + a.score, 0) / user.moduleAttempts.length 
         : 0,
       totalTimeSpent: user.moduleAttempts.reduce((acc, a) => acc + (a.timeSpent || 0), 0),
-      attempts: user.moduleAttempts
+      attempts: user.moduleAttempts.map(a => ({
+        id: a.id,
+        module: a.module,
+        score: a.score,
+        passed: a.passed,
+        answers: a.answers,
+        timeSpent: a.timeSpent,
+        completedAt: a.completedAt
+      }))
     };
     res.json(summary);
   } catch (error) {
@@ -197,9 +198,11 @@ app.post('/api/auth/verify-code', async (req, res) => {
       where: { email, code, expiresAt: { gt: new Date() } },
       orderBy: { createdAt: 'desc' }
     });
+    
     if (!loginCode) {
       return res.status(401).json({ error: 'Invalid or expired code' });
     }
+    
     let user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       user = await prisma.user.create({
@@ -213,24 +216,16 @@ app.post('/api/auth/verify-code', async (req, res) => {
   }
 });
 
-// Get modules with custom filtering
+// Get modules (with custom filtering for trainees)
 app.get('/api/modules', async (req, res) => {
   const userId = req.query.userId;
   try {
     let modules;
     if (userId) {
       const user = await prisma.user.findUnique({ where: { id: userId } });
-      let selectedModules = [];
-      if (user && user.trainingRoute === 'CUSTOM' && user.selectedModules) {
-        try {
-          selectedModules = JSON.parse(user.selectedModules);
-        } catch (e) {
-          selectedModules = [];
-        }
-      }
-      if (user && user.trainingRoute === 'CUSTOM' && selectedModules.length > 0) {
+      if (user && user.trainingRoute === 'CUSTOM' && user.selectedModules && user.selectedModules.length > 0) {
         modules = await prisma.module.findMany({
-          where: { id: { in: selectedModules } },
+          where: { id: { in: user.selectedModules } },
           orderBy: { id: 'asc' }
         });
       } else {
@@ -246,23 +241,14 @@ app.get('/api/modules', async (req, res) => {
   }
 });
 
-// Get single module
+// Get single module with questions
 app.get('/api/modules/:id', async (req, res) => {
   try {
-    const moduleData = await prisma.module.findUnique({
+    const module = await prisma.module.findUnique({
       where: { id: parseInt(req.params.id) }
     });
-    if (!moduleData) return res.status(404).json({ error: 'Module not found' });
-    
-    let parsedModule = { ...moduleData };
-    if (moduleData.questions && typeof moduleData.questions === 'string') {
-      try {
-        parsedModule.questions = JSON.parse(moduleData.questions);
-      } catch (e) {
-        parsedModule.questions = [];
-      }
-    }
-    res.json(parsedModule);
+    if (!module) return res.status(404).json({ error: 'Module not found' });
+    res.json(module);
   } catch (error) {
     console.error('Module fetch error:', error);
     res.status(500).json({ error: 'Fetch failed' });
@@ -275,18 +261,10 @@ app.post('/api/modules/:id/submit', async (req, res) => {
   const moduleId = parseInt(req.params.id);
   
   try {
-    const moduleData = await prisma.module.findUnique({ where: { id: moduleId } });
-    if (!moduleData) return res.status(404).json({ error: 'Module not found' });
+    const module = await prisma.module.findUnique({ where: { id: moduleId } });
+    if (!module) return res.status(404).json({ error: 'Module not found' });
     
-    let questions = [];
-    if (moduleData.questions && typeof moduleData.questions === 'string') {
-      try {
-        questions = JSON.parse(moduleData.questions);
-      } catch (e) {
-        questions = [];
-      }
-    }
-    
+    const questions = module.questions || [];
     let score = 0;
     const errors = [];
     
@@ -304,48 +282,47 @@ app.post('/api/modules/:id/submit', async (req, res) => {
       }
     });
     
-    const passed = score >= moduleData.passMark;
-    const answersJson = JSON.stringify(answers);
+    const passed = score >= module.passMark;
     
     await prisma.moduleAttempt.create({
       data: {
-        userId: userId,
-        moduleId: moduleId,
-        score: score,
-        passed: passed,
-        answers: answersJson,
+        userId,
+        moduleId,
+        score,
+        passed,
+        answers,
         timeSpent: timeSpent || 0,
         completedAt: new Date()
       }
     });
     
     await prisma.moduleProgress.upsert({
-      where: { userId_moduleId: { userId: userId, moduleId: moduleId } },
+      where: { userId_moduleId: { userId, moduleId } },
       update: {
         status: passed ? 'passed' : 'failed',
-        score: score,
+        score,
         attempts: { increment: 1 },
         passedAt: passed ? new Date() : undefined
       },
       create: {
-        userId: userId,
-        moduleId: moduleId,
+        userId,
+        moduleId,
         status: passed ? 'passed' : 'failed',
-        score: score,
+        score,
         attempts: 1,
         passedAt: passed ? new Date() : undefined
       }
     });
     
     await prisma.quizResult.create({
-      data: { score: score, moduleId: moduleId, userId: userId, passed: passed }
+      data: { score, moduleId, userId, passed }
     });
     
     res.json({
-      score: score,
-      passed: passed,
+      score,
+      passed,
       total: questions.length,
-      passMark: moduleData.passMark,
+      passMark: module.passMark,
       errors: errors.slice(0, 5)
     });
   } catch (error) {
@@ -365,26 +342,15 @@ app.get('/api/user/:userId/progress', async (req, res) => {
       orderBy: { completedAt: 'desc' },
       include: { module: true }
     });
-    
-    const parsedAttempts = attempts.map(a => ({
-      ...a,
-      answers: a.answers ? JSON.parse(a.answers) : {}
-    }));
-    
-    res.json({ progress: progress || [], attempts: parsedAttempts || [] });
+    res.json({ progress: progress || [], attempts: attempts || [] });
   } catch (error) {
     console.error('Progress error:', error);
     res.json({ progress: [], attempts: [] });
   }
 });
 
-// For Vercel serverless
-module.exports = app;
+const PORT = 3002;
+app.listen(PORT, () => {
+  console.log(`✅ Backend running on http://localhost:${PORT}`);
+});
 
-// Start server if not in Vercel
-if (require.main === module) {
-  const PORT = 3002;
-  app.listen(PORT, () => {
-    console.log(`Backend running on http://localhost:${PORT}`);
-  });
-}

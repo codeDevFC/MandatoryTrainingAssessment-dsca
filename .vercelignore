@@ -1,14 +1,3 @@
-# Ignore backend completely
-backend/
-*.sh
-*.md
-
-# Ignore config files
-.git/
-.gitignore
-README.md
-
-# Ignore development files
-*.log
-.DS_Store
-node_modules/
+frontend/.env
+.env
+node_modules

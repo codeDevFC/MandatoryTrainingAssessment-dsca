@@ -1,3 +1,4 @@
+import Signature from "./components/Signature.jsx";
 import React, { useState, useEffect } from 'react';
 import {
   LogOut, BookOpen, FileText, ChevronLeft, ChevronRight, Target, CheckCircle, AlertCircle,
@@ -491,6 +492,7 @@ function App() {
             </form>
           )}
         </div>
+              <Signature />
       </div>
     );
   }
@@ -539,7 +541,8 @@ function App() {
             </div>
           </div>
         </div>
-      </div>
+                <Signature />
+        </div>
     );
   }
 
@@ -554,6 +557,7 @@ function App() {
           <p className="text-slate-600 mb-4">You scored <strong className="text-2xl">{result.score}</strong> out of <strong>{result.total}</strong></p>
           <button onClick={() => { setSelectedModule(null); setShowResults(false); fetchUserProgress(user.id); }} className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">Return to Dashboard</button>
         </div>
+              <Signature />
       </div>
     );
   }
@@ -728,6 +732,7 @@ function App() {
             </div>
           </div>
         )}
+              <Signature />
       </div>
     );
   }
@@ -785,7 +790,8 @@ function App() {
           })}
         </div>
       </div>
-    </div>
+          <Signature />
+      </div>
   );
 }
 

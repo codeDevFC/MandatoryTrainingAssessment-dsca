@@ -1,7 +1,10 @@
 {
-  "name": "dsca-mandatory-training-assessment",
+  "name": "dsca-training-assessment",
   "version": "1.0.0",
   "private": true,
+  "scripts": {
+    "vercel-build": "cd frontend && npm install && npm run build"
+  },
   "engines": {
     "node": "20.x"
   }

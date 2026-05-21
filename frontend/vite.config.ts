@@ -8,14 +8,12 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: 'http://localhost:3002',
-        changeOrigin: true,
-        secure: false
+        changeOrigin: true
       }
     }
   },
   build: {
     outDir: 'dist',
-    assetsDir: 'assets',
     sourcemap: false,
     minify: 'terser'
   }

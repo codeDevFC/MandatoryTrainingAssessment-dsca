@@ -5,24 +5,16 @@ const { PrismaClient } = require('@prisma/client');
 const app = express();
 const prisma = new PrismaClient();
 
-// CORS configuration - allow all origins for production
+// CORS - Allow all origins for production
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://localhost:3002',
-    'https://mandatory-training-assessment-dsca.vercel.app',
-    'https://mandatory-training-assessment-dsca.vercel.app',
-    'https://mandatory-training-assessment-dsca-1bft2qzve.vercel.app',
-    /\.vercel\.app$/
-  ],
+  origin: '*',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-
 app.use(express.json());
 
+// Helper functions
 function generateCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
@@ -41,23 +33,15 @@ app.get('/api/health', (req, res) => {
 // Admin login
 app.post('/api/auth/admin-login', async (req, res) => {
   const { email, password } = req.body;
-  console.log('📝 Login attempt:', email);
+  console.log('Login attempt:', email);
   
   try {
-    const user = await prisma.user.findUnique({ 
-      where: { email: email.toLowerCase() } 
-    });
-    
-    console.log('👤 User found:', user ? user.email : 'No user found');
-    
+    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
     if (!user) {
-      console.log('❌ User not found:', email);
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
-    
     if (user.role === 'TRAINEE') {
-      console.log('❌ Trainee trying to use admin login');
-      return res.status(401).json({ error: 'Please use code login for trainee accounts' });
+      return res.status(401).json({ error: 'Use code login for trainees' });
     }
     
     const validPasswords = {
@@ -67,20 +51,12 @@ app.post('/api/auth/admin-login', async (req, res) => {
     };
     
     if (validPasswords[email.toLowerCase()] !== password) {
-      console.log('❌ Invalid password for:', email);
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
     
-    console.log('✅ Login successful:', email);
-    res.json({
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role
-    });
-    
+    res.json({ id: user.id, email: user.email, name: user.name, role: user.role });
   } catch (error) {
-    console.error('❌ Admin login error:', error);
+    console.error('Login error:', error);
     res.status(500).json({ error: 'Login failed' });
   }
 });
@@ -97,10 +73,7 @@ app.post('/api/admin/batch-generate-codes', async (req, res) => {
       
       let user = await prisma.user.upsert({
         where: { email },
-        update: {
-          trainingRoute,
-          selectedModules: selectedModulesJson
-        },
+        update: { trainingRoute, selectedModules: selectedModulesJson },
         create: {
           email,
           name: `${student.firstName} ${student.surname}`,
@@ -114,9 +87,9 @@ app.post('/api/admin/batch-generate-codes', async (req, res) => {
       const code = generateCode();
       const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
       await prisma.loginCode.create({ data: { email, code, expiresAt } });
-      results.push({ name: user.name, email, code, trainingRoute });
+      results.push({ name: user.name, email, code });
     } catch (e) {
-      console.error('Error generating code:', e.message);
+      console.error('Error:', e.message);
     }
   }
   res.json({ success: true, codes: results, count: results.length });
@@ -130,14 +103,8 @@ app.get('/api/admin/students', async (req, res) => {
       include: { moduleAttempts: { include: { module: true } } },
       orderBy: { createdAt: 'desc' }
     });
-    
-    const parsedStudents = students.map(s => ({
-      ...s,
-      selectedModules: s.selectedModules ? JSON.parse(s.selectedModules) : []
-    }));
-    res.json(parsedStudents);
+    res.json(students);
   } catch (error) {
-    console.error('Get students error:', error);
     res.status(500).json({ error: 'Failed to fetch students' });
   }
 });
@@ -151,7 +118,6 @@ app.get('/api/admin/modules', async (req, res) => {
     });
     res.json(modules);
   } catch (error) {
-    console.error('Get modules error:', error);
     res.status(500).json({ error: 'Failed to fetch modules' });
   }
 });
@@ -161,38 +127,18 @@ app.get('/api/user/:userId/export', async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.params.userId },
-      include: {
-        moduleAttempts: {
-          include: { module: true },
-          orderBy: { completedAt: 'desc' }
-        }
-      }
+      include: { moduleAttempts: { include: { module: true }, orderBy: { completedAt: 'desc' } } }
     });
-    
     if (!user) return res.status(404).json({ error: 'User not found' });
     
-    const summary = {
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        joinedAt: user.createdAt,
-        trainingRoute: user.trainingRoute,
-        selectedModules: user.selectedModules ? JSON.parse(user.selectedModules) : []
-      },
+    res.json({
+      user: { name: user.name, email: user.email, role: user.role },
       totalAttempts: user.moduleAttempts.length,
       passedModules: user.moduleAttempts.filter(a => a.passed).length,
       failedModules: user.moduleAttempts.filter(a => !a.passed).length,
-      averageScore: user.moduleAttempts.length > 0 
-        ? user.moduleAttempts.reduce((acc, a) => acc + a.score, 0) / user.moduleAttempts.length 
-        : 0,
-      totalTimeSpent: user.moduleAttempts.reduce((acc, a) => acc + (a.timeSpent || 0), 0),
       attempts: user.moduleAttempts
-    };
-    res.json(summary);
+    });
   } catch (error) {
-    console.error('Export error:', error);
     res.status(500).json({ error: 'Export failed' });
   }
 });
@@ -203,7 +149,6 @@ app.delete('/api/admin/delete-user/:id', async (req, res) => {
     await prisma.user.delete({ where: { id: req.params.id } });
     res.json({ success: true });
   } catch (error) {
-    console.error('Delete error:', error);
     res.status(500).json({ error: 'Delete failed' });
   }
 });
@@ -215,13 +160,10 @@ app.delete('/api/admin/bulk-delete-users', async (req, res) => {
     return res.status(400).json({ error: 'No user IDs provided' });
   }
   try {
-    const result = await prisma.user.deleteMany({
-      where: { id: { in: userIds }, role: 'TRAINEE' }
-    });
+    const result = await prisma.user.deleteMany({ where: { id: { in: userIds }, role: 'TRAINEE' } });
     res.json({ success: true, count: result.count });
   } catch (error) {
-    console.error('Bulk delete error:', error);
-    res.status(500).json({ error: 'Failed to delete users' });
+    res.status(500).json({ error: 'Delete failed' });
   }
 });
 
@@ -244,29 +186,22 @@ app.post('/api/auth/verify-code', async (req, res) => {
     }
     res.json(user);
   } catch (error) {
-    console.error('Verify error:', error);
     res.status(500).json({ error: 'Verification failed' });
   }
 });
 
-// Get modules with custom filtering
+// Get modules for trainee
 app.get('/api/modules', async (req, res) => {
   const userId = req.query.userId;
   try {
     let modules;
     if (userId) {
       const user = await prisma.user.findUnique({ where: { id: userId } });
-      let selectedModules = [];
       if (user && user.trainingRoute === 'CUSTOM' && user.selectedModules) {
-        try {
-          selectedModules = JSON.parse(user.selectedModules);
-        } catch (e) {
-          selectedModules = [];
-        }
-      }
-      if (user && user.trainingRoute === 'CUSTOM' && selectedModules.length > 0) {
+        let selected = [];
+        try { selected = JSON.parse(user.selectedModules); } catch(e) { selected = []; }
         modules = await prisma.module.findMany({
-          where: { id: { in: selectedModules } },
+          where: { id: { in: selected } },
           orderBy: { id: 'asc' }
         });
       } else {
@@ -277,7 +212,6 @@ app.get('/api/modules', async (req, res) => {
     }
     res.json(modules);
   } catch (error) {
-    console.error('Modules fetch error:', error);
     res.status(500).json({ error: 'Failed to fetch modules' });
   }
 });
@@ -285,22 +219,14 @@ app.get('/api/modules', async (req, res) => {
 // Get single module
 app.get('/api/modules/:id', async (req, res) => {
   try {
-    const moduleData = await prisma.module.findUnique({
-      where: { id: parseInt(req.params.id) }
-    });
+    const moduleData = await prisma.module.findUnique({ where: { id: parseInt(req.params.id) } });
     if (!moduleData) return res.status(404).json({ error: 'Module not found' });
     
-    let parsedModule = { ...moduleData };
     if (moduleData.questions && typeof moduleData.questions === 'string') {
-      try {
-        parsedModule.questions = JSON.parse(moduleData.questions);
-      } catch (e) {
-        parsedModule.questions = [];
-      }
+      moduleData.questions = JSON.parse(moduleData.questions);
     }
-    res.json(parsedModule);
+    res.json(moduleData);
   } catch (error) {
-    console.error('Module fetch error:', error);
     res.status(500).json({ error: 'Fetch failed' });
   }
 });
@@ -316,76 +242,30 @@ app.post('/api/modules/:id/submit', async (req, res) => {
     
     let questions = [];
     if (moduleData.questions && typeof moduleData.questions === 'string') {
-      try {
-        questions = JSON.parse(moduleData.questions);
-      } catch (e) {
-        questions = [];
-      }
+      questions = JSON.parse(moduleData.questions);
     }
     
     let score = 0;
-    const errors = [];
-    
-    questions.forEach((question, index) => {
-      const userAnswer = answers[index];
-      if (userAnswer === question.correct) {
-        score++;
-      } else {
-        errors.push({
-          questionIndex: index,
-          questionText: question.text,
-          userAnswer: userAnswer,
-          correctAnswer: question.correct
-        });
-      }
-    });
-    
+    questions.forEach((q, i) => { if (answers[i] === q.correct) score++; });
     const passed = score >= moduleData.passMark;
-    const answersJson = JSON.stringify(answers);
     
     await prisma.moduleAttempt.create({
       data: {
-        userId: userId,
-        moduleId: moduleId,
-        score: score,
-        passed: passed,
-        answers: answersJson,
+        userId, moduleId, score, passed,
+        answers: JSON.stringify(answers),
         timeSpent: timeSpent || 0,
         completedAt: new Date()
       }
     });
     
     await prisma.moduleProgress.upsert({
-      where: { userId_moduleId: { userId: userId, moduleId: moduleId } },
-      update: {
-        status: passed ? 'passed' : 'failed',
-        score: score,
-        attempts: { increment: 1 },
-        passedAt: passed ? new Date() : undefined
-      },
-      create: {
-        userId: userId,
-        moduleId: moduleId,
-        status: passed ? 'passed' : 'failed',
-        score: score,
-        attempts: 1,
-        passedAt: passed ? new Date() : undefined
-      }
+      where: { userId_moduleId: { userId, moduleId } },
+      update: { status: passed ? 'passed' : 'failed', score, attempts: { increment: 1 } },
+      create: { userId, moduleId, status: passed ? 'passed' : 'failed', score, attempts: 1 }
     });
     
-    await prisma.quizResult.create({
-      data: { score: score, moduleId: moduleId, userId: userId, passed: passed }
-    });
-    
-    res.json({
-      score: score,
-      passed: passed,
-      total: questions.length,
-      passMark: moduleData.passMark,
-      errors: errors.slice(0, 5)
-    });
+    res.json({ score, passed, total: questions.length, passMark: moduleData.passMark });
   } catch (error) {
-    console.error('Submit error:', error);
     res.status(500).json({ error: 'Submit failed' });
   }
 });
@@ -393,34 +273,21 @@ app.post('/api/modules/:id/submit', async (req, res) => {
 // Get user progress
 app.get('/api/user/:userId/progress', async (req, res) => {
   try {
-    const progress = await prisma.moduleProgress.findMany({
-      where: { userId: req.params.userId }
-    });
+    const progress = await prisma.moduleProgress.findMany({ where: { userId: req.params.userId } });
     const attempts = await prisma.moduleAttempt.findMany({
       where: { userId: req.params.userId },
       orderBy: { completedAt: 'desc' },
       include: { module: true }
     });
-    
-    const parsedAttempts = attempts.map(a => ({
-      ...a,
-      answers: a.answers ? JSON.parse(a.answers) : {}
-    }));
-    
-    res.json({ progress: progress || [], attempts: parsedAttempts || [] });
+    res.json({ progress: progress || [], attempts: attempts || [] });
   } catch (error) {
-    console.error('Progress error:', error);
     res.json({ progress: [], attempts: [] });
   }
 });
 
-// For Vercel serverless
 module.exports = app;
 
-// Start server if not in Vercel
 if (require.main === module) {
-  const PORT = 3002;
-  app.listen(PORT, () => {
-    console.log(`✅ Backend running on http://localhost:${PORT}`);
-  });
+  const PORT = process.env.PORT || 3002;
+  app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
 }

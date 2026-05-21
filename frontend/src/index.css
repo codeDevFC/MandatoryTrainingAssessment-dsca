@@ -1,54 +1,43 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
 @layer base {
-  body {
-    @apply bg-slate-50 text-slate-900 antialiased font-sans;
-  }
+html, body {
+@apply bg-slate-50 text-slate-900 antialiased font-sans;
+overflow-x: hidden;
+max-width: 100vw;
+width: 100%;
+}
+}
+/* Anti-Copy Protection */
+
+{
+-webkit-touch-callout: none;
+-webkit-user-select: none;
+user-select: none;
 }
 
-/* Anti-Copy Protection - Disable text selection everywhere */
-* {
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  -khtml-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-}
-
-/* Allow text selection only in input fields and textareas */
 input, textarea, [contenteditable="true"] {
-  -webkit-touch-callout: text;
-  -webkit-user-select: text;
-  -khtml-user-select: text;
-  -moz-user-select: text;
-  -ms-user-select: text;
-  user-select: text;
+-webkit-touch-callout: text;
+-webkit-user-select: text;
+user-select: text;
 }
-
-/* Disable image dragging */
 img {
-  -webkit-user-drag: none;
-  user-drag: none;
+-webkit-user-drag: none;
+user-drag: none;
 }
-
-/* Mobile responsive adjustments */
-@media (max-width: 640px) {
-  .signature-container {
-    padding-top: 1rem;
-    padding-bottom: 0.5rem;
-  }
+/* Custom Scrollbar for horizontal elements */
+.overflow-x-auto::-webkit-scrollbar {
+height: 4px;
 }
-
-/* Print styles - signature appears on PDF exports */
-@media print {
-  .no-print {
-    display: none !important;
-  }
-  body {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
+.overflow-x-auto::-webkit-scrollbar-thumb {
+background: #cbd5e1;
+border-radius: 10px;
+}
+.no-scrollbar::-webkit-scrollbar {
+display: none;
+}
+.no-scrollbar {
+-ms-overflow-style: none;
+scrollbar-width: none;
 }

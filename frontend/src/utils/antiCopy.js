@@ -28,4 +28,6 @@ export const initAntiCopyProtection = () => {
     input, textarea { -webkit-user-select: text !important; user-select: text !important; }
   `;
   document.head.appendChild(style);
+  
+  console.log('✅ Anti-copy protection active');
 };

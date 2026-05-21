@@ -1,3 +1,17 @@
+#!/bin/bash
+
+echo "========================================="
+echo "FIXING DSCA MTA QUIZ DEPLOYMENT"
+echo "========================================="
+
+# Navigate to the project source directory and fix the backend CORS
+cd ~/Downloads/dsca-MTA-Quiz/backend
+
+# Backup current index.js
+cp api/index.js api/index.js.backup.$(date +%Y%m%d_%H%M%S)
+
+# Fix CORS to allow Vercel frontend
+cat > api/index.js << 'BACKEND_EOF'
 const express = require('express');
 const cors = require('cors');
 const { PrismaClient } = require('@prisma/client');
@@ -288,3 +302,83 @@ if (require.main === module) {
   const PORT = process.env.PORT || 3002;
   app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
 }
+BACKEND_EOF
+
+echo "✅ Backend CORS fixed"
+
+# 2. Update frontend App.jsx to use environment variable
+cd ~/Downloads/dsca-MTA-Quiz/frontend/src
+
+# Backup App.jsx
+cp App.jsx App.jsx.backup.$(date +%Y%m%d_%H%M%S)
+
+# Update API_URL to use environment variable
+sed -i '' 's|const API_URL = .*|const API_URL = import.meta.env.VITE_API_URL || "";|g' App.jsx
+
+# Verify the change
+echo "✅ App.jsx API_URL updated to:"
+grep "const API_URL" App.jsx
+
+# 3. Create .env.production with the backend URL
+cd ~/Downloads/dsca-MTA-Quiz/frontend
+
+# Create production environment file
+cat > .env.production << 'ENV_EOF'
+VITE_API_URL=https://dsca-backend.onrender.com
+ENV_EOF
+
+# Also create .env for local development
+cat > .env << 'ENV_EOF'
+VITE_API_URL=http://localhost:3002
+ENV_EOF
+
+echo "✅ Environment files created"
+
+# 4. Clean and rebuild frontend
+echo "🔨 Rebuilding frontend..."
+rm -rf dist node_modules package-lock.json
+npm install
+npm run build
+
+# 5. Commit and push changes
+cd ~/Downloads/dsca-MTA-Quiz
+
+# Create .gitignore if missing
+if [ ! -f .gitignore ]; then
+  cat > .gitignore << 'GITIGNORE_EOF'
+node_modules/
+dist/
+.env
+.env.local
+.DS_Store
+*.log
+.vercel
+GITIGNORE_EOF
+fi
+
+# Add all changes
+git add .
+git commit -m "Fix: Update CORS and API_URL for production deployment"
+git push origin main --force
+
+echo "✅ Changes committed and pushed"
+
+# 6. Final Instructions
+echo ""
+echo "========================================="
+echo "NEXT STEPS:"
+echo "========================================="
+echo ""
+echo "1. Deploy BACKEND to Render:"
+echo "   - Go to https://dashboard.render.com"
+echo "   - Select your backend service"
+echo "   - Click 'Manual Deploy' -> 'Deploy latest commit'"
+echo ""
+echo "2. Deploy FRONTEND to Vercel:"
+echo "   Run: vercel --prod --force"
+echo ""
+echo "3. After deployment, verify:"
+echo "   curl https://dsca-backend.onrender.com/api/health"
+echo "   open https://dsca-mta-quiz.vercel.app"
+echo ""
+echo "========================================="

@@ -1,27 +1,20 @@
 const express = require('express');
 const cors = require('cors');
 const { PrismaClient } = require('@prisma/client');
+
 const app = express();
 const prisma = new PrismaClient();
 
-// Updated CORS to allow all Vercel domains
+// CORS - Allow all origins for production
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://localhost:3000',
-    'https://dsca-mta-quiz.vercel.app',
-    'https://dsca-mta-quiz-lk7hkcz55-felix-cobbinahs-projects.vercel.app',
-    /\.vercel\.app$/,  // Allow all Vercel preview deployments
-    /\.onrender\.com$/ // Allow Render backend itself
-  ],
+  origin: '*',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-
 app.use(express.json());
 
+// Helper functions
 function generateCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
@@ -40,22 +33,30 @@ app.get('/api/health', (req, res) => {
 // Admin login
 app.post('/api/auth/admin-login', async (req, res) => {
   const { email, password } = req.body;
+  console.log('Login attempt:', email);
+  
   try {
     const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
-    if (!user || user.role === 'TRAINEE') {
+    if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+    if (user.role === 'TRAINEE') {
+      return res.status(401).json({ error: 'Use code login for trainees' });
+    }
+    
     const validPasswords = {
       'admin@careworks.com': 'Admin@2025',
       'director@careworks.com': 'Director@2025',
       'supervisor@careworks.com': 'Supervisor@2025'
     };
+    
     if (validPasswords[email.toLowerCase()] !== password) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+    
     res.json({ id: user.id, email: user.email, name: user.name, role: user.role });
   } catch (error) {
-    console.error('Admin login error:', error);
+    console.error('Login error:', error);
     res.status(500).json({ error: 'Login failed' });
   }
 });
@@ -64,10 +65,12 @@ app.post('/api/auth/admin-login', async (req, res) => {
 app.post('/api/admin/batch-generate-codes', async (req, res) => {
   const { students, trainingRoute = 'FULL_22', selectedModules = [] } = req.body;
   const results = [];
+  
   for (const student of students) {
     try {
       const email = generateEmail(student.surname, student.firstName);
       const selectedModulesJson = trainingRoute === 'CUSTOM' ? JSON.stringify(selectedModules) : null;
+      
       let user = await prisma.user.upsert({
         where: { email },
         update: { trainingRoute, selectedModules: selectedModulesJson },
@@ -79,6 +82,7 @@ app.post('/api/admin/batch-generate-codes', async (req, res) => {
           selectedModules: selectedModulesJson
         }
       });
+      
       await prisma.loginCode.deleteMany({ where: { email } });
       const code = generateCode();
       const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
@@ -126,6 +130,7 @@ app.get('/api/user/:userId/export', async (req, res) => {
       include: { moduleAttempts: { include: { module: true }, orderBy: { completedAt: 'desc' } } }
     });
     if (!user) return res.status(404).json({ error: 'User not found' });
+    
     res.json({
       user: { name: user.name, email: user.email, role: user.role },
       totalAttempts: user.moduleAttempts.length,
@@ -155,9 +160,7 @@ app.delete('/api/admin/bulk-delete-users', async (req, res) => {
     return res.status(400).json({ error: 'No user IDs provided' });
   }
   try {
-    const result = await prisma.user.deleteMany({
-      where: { id: { in: userIds }, role: 'TRAINEE' }
-    });
+    const result = await prisma.user.deleteMany({ where: { id: { in: userIds }, role: 'TRAINEE' } });
     res.json({ success: true, count: result.count });
   } catch (error) {
     res.status(500).json({ error: 'Delete failed' });
@@ -196,9 +199,7 @@ app.get('/api/modules', async (req, res) => {
       const user = await prisma.user.findUnique({ where: { id: userId } });
       if (user && user.trainingRoute === 'CUSTOM' && user.selectedModules) {
         let selected = [];
-        try {
-          selected = JSON.parse(user.selectedModules);
-        } catch(e) { selected = []; }
+        try { selected = JSON.parse(user.selectedModules); } catch(e) { selected = []; }
         modules = await prisma.module.findMany({
           where: { id: { in: selected } },
           orderBy: { id: 'asc' }
@@ -218,10 +219,9 @@ app.get('/api/modules', async (req, res) => {
 // Get single module
 app.get('/api/modules/:id', async (req, res) => {
   try {
-    const moduleData = await prisma.module.findUnique({
-      where: { id: parseInt(req.params.id) }
-    });
+    const moduleData = await prisma.module.findUnique({ where: { id: parseInt(req.params.id) } });
     if (!moduleData) return res.status(404).json({ error: 'Module not found' });
+    
     if (moduleData.questions && typeof moduleData.questions === 'string') {
       moduleData.questions = JSON.parse(moduleData.questions);
     }
@@ -235,32 +235,35 @@ app.get('/api/modules/:id', async (req, res) => {
 app.post('/api/modules/:id/submit', async (req, res) => {
   const { userId, answers, timeSpent } = req.body;
   const moduleId = parseInt(req.params.id);
+  
   try {
     const moduleData = await prisma.module.findUnique({ where: { id: moduleId } });
     if (!moduleData) return res.status(404).json({ error: 'Module not found' });
+    
     let questions = [];
     if (moduleData.questions && typeof moduleData.questions === 'string') {
       questions = JSON.parse(moduleData.questions);
     }
+    
     let score = 0;
     questions.forEach((q, i) => { if (answers[i] === q.correct) score++; });
     const passed = score >= moduleData.passMark;
+    
     await prisma.moduleAttempt.create({
       data: {
-        userId,
-        moduleId,
-        score,
-        passed,
+        userId, moduleId, score, passed,
         answers: JSON.stringify(answers),
         timeSpent: timeSpent || 0,
         completedAt: new Date()
       }
     });
+    
     await prisma.moduleProgress.upsert({
       where: { userId_moduleId: { userId, moduleId } },
       update: { status: passed ? 'passed' : 'failed', score, attempts: { increment: 1 } },
       create: { userId, moduleId, status: passed ? 'passed' : 'failed', score, attempts: 1 }
     });
+    
     res.json({ score, passed, total: questions.length, passMark: moduleData.passMark });
   } catch (error) {
     res.status(500).json({ error: 'Submit failed' });

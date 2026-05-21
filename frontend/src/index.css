@@ -7,22 +7,48 @@
     @apply bg-slate-50 text-slate-900 antialiased font-sans;
   }
 }
-/* Signature Styles */
-.signature-container {
-opacity: 0.8;
-transition: opacity 0.3s ease;
+
+/* Anti-Copy Protection - Disable text selection everywhere */
+* {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
-.signature-container:hover {
-opacity: 1;
+
+/* Allow text selection only in input fields and textareas */
+input, textarea, [contenteditable="true"] {
+  -webkit-touch-callout: text;
+  -webkit-user-select: text;
+  -khtml-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
 }
+
+/* Disable image dragging */
+img {
+  -webkit-user-drag: none;
+  user-drag: none;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 640px) {
+  .signature-container {
+    padding-top: 1rem;
+    padding-bottom: 0.5rem;
+  }
+}
+
+/* Print styles - signature appears on PDF exports */
 @media print {
-.signature-container {
-opacity: 1 !important;
-position: static !important;
-margin-top: 40px;
-border-top: 1px solid #eee;
-}
-.signature-global {
-display: none;
-}
+  .no-print {
+    display: none !important;
+  }
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }

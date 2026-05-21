@@ -1,8 +1,22 @@
-.git
+# Backend files
+backend/
+*.sh
+*.md
+
+# Git files
+.git/
 .gitignore
-README.md
+
+# Config files that confuse Vercel
+frontend/eslint.config.js
+frontend/tsconfig.json
+frontend/tsconfig.app.json
+frontend/tsconfig.node.json
+frontend/vite.config.ts
+frontend/postcss.config.js
+frontend/tailwind.config.js
+
+# Development files
 *.log
 .DS_Store
-node_modules
-backend/prisma/*.db
-frontend/.env*
+node_modules/

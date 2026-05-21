@@ -1,22 +1,14 @@
-# Backend files
+# Ignore backend completely
 backend/
 *.sh
 *.md
 
-# Git files
+# Ignore config files
 .git/
 .gitignore
+README.md
 
-# Config files that confuse Vercel
-frontend/eslint.config.js
-frontend/tsconfig.json
-frontend/tsconfig.app.json
-frontend/tsconfig.node.json
-frontend/vite.config.ts
-frontend/postcss.config.js
-frontend/tailwind.config.js
-
-# Development files
+# Ignore development files
 *.log
 .DS_Store
 node_modules/

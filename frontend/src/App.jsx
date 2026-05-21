@@ -6,7 +6,7 @@ import {
   FileSpreadsheet, BarChart3, AlertTriangle, Zap, PlayCircle, Lock
 } from 'lucide-react';
 
-const API_URL = "";
+const API_URL = 'https://dsca-backend.onrender.com';
 
 function App() {
   const [user, setUser] = useState(null);

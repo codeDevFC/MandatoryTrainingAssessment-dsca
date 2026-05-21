@@ -41,3 +41,57 @@ display: none;
 -ms-overflow-style: none;
 scrollbar-width: none;
 }
+
+/* Mobile Responsive Fixes */
+@media (max-width: 640px) {
+  /* Make tabs scrollable */
+  .flex.gap-2.mb-6.border-b {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 0.5rem;
+  }
+  
+  /* 2-column stats grid */
+  .grid-cols-1.md\:grid-cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.75rem !important;
+  }
+  
+  /* Stack form fields vertically */
+  .flex.gap-6.mb-3 {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+  }
+  
+  /* Stack student input fields */
+  .flex.gap-3 {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+  }
+  
+  /* Make table scrollable */
+  .overflow-x-auto {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  /* Adjust modal padding */
+  .fixed.inset-0 .bg-white {
+    margin: 1rem;
+    max-width: calc(100% - 2rem);
+  }
+  
+  /* Better spacing on mobile */
+  .px-4.py-3 {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 641px) and (max-width: 768px) {
+  .grid-cols-1.md\:grid-cols-4 {
+    gap: 0.75rem !important;
+  }
+}

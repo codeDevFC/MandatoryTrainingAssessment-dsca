@@ -1,4 +1,3 @@
-import Signature from "./components/Signature.jsx";
 import React, { useState, useEffect } from 'react';
 import {
   LogOut, BookOpen, FileText, ChevronLeft, ChevronRight, Target, CheckCircle, AlertCircle,
@@ -453,7 +452,7 @@ function App() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col items-center justify-center p-6">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-6">
         <div className="bg-white border border-slate-200 rounded-2xl shadow-xl max-w-md w-full p-8">
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -492,7 +491,6 @@ function App() {
             </form>
           )}
         </div>
-              <Signature />
       </div>
     );
   }
@@ -500,7 +498,7 @@ function App() {
   if (selectedModule && !showResults) {
     const questions = selectedModule.questions || [];
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col">
+      <div className="min-h-screen bg-slate-50">
         <div className="bg-white border-b border-slate-200 sticky top-0 z-10 px-6 py-4 flex justify-between items-center">
           <button onClick={() => setSelectedModule(null)} className="text-slate-600 hover:text-slate-900">← Back to Dashboard</button>
           <div className="flex items-center gap-3">
@@ -541,8 +539,7 @@ function App() {
             </div>
           </div>
         </div>
-                <Signature />
-        </div>
+      </div>
     );
   }
 
@@ -557,7 +554,6 @@ function App() {
           <p className="text-slate-600 mb-4">You scored <strong className="text-2xl">{result.score}</strong> out of <strong>{result.total}</strong></p>
           <button onClick={() => { setSelectedModule(null); setShowResults(false); fetchUserProgress(user.id); }} className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">Return to Dashboard</button>
         </div>
-              <Signature />
       </div>
     );
   }
@@ -569,7 +565,7 @@ function App() {
     const passRate = totalAttempts > 0 ? Math.round((totalPassed / totalAttempts) * 100) : 0;
 
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col">
+      <div className="min-h-screen bg-slate-50">
         <div className="bg-white border-b border-slate-200 sticky top-0 z-10 px-6 py-4 flex justify-between items-center shadow-sm">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl flex items-center justify-center shadow-md">
@@ -580,7 +576,7 @@ function App() {
           <button onClick={() => setUser(null)} className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition">🚪 Logout</button>
         </div>
         <div className="max-w-7xl mx-auto p-6">
-          <div className="flex gap-2 mb-6 border-b overflow-x-auto pb-1">
+          <div className="flex gap-2 mb-6 border-b">
             <button onClick={() => setActiveTab('dashboard')} className={`px-4 py-2 text-sm font-medium transition-all ${activeTab === 'dashboard' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}>📊 Dashboard</button>
             <button onClick={() => { setActiveTab('generate'); setShowCodes(false); }} className={`px-4 py-2 text-sm font-medium transition-all ${activeTab === 'generate' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}>🎟️ Generate Codes</button>
             <button onClick={() => setActiveTab('students')} className={`px-4 py-2 text-sm font-medium transition-all ${activeTab === 'students' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}>👥 Students</button>
@@ -589,7 +585,7 @@ function App() {
           {success && <div className="bg-green-50 border border-green-200 text-green-700 p-3 rounded-lg mb-4">{success}</div>}
           
           {activeTab === 'dashboard' && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
               <div className="bg-white rounded-xl border p-6 shadow-sm"><div className="text-2xl font-bold">{totalStudents}</div><p className="text-sm text-gray-500">Total Students</p></div>
               <div className="bg-white rounded-xl border p-6 shadow-sm"><div className="text-2xl font-bold">{modules.length}</div><p className="text-sm text-gray-500">Total Modules</p></div>
               <div className="bg-white rounded-xl border p-6 shadow-sm"><div className="text-2xl font-bold">{totalAttempts}</div><p className="text-sm text-gray-500">Total Attempts</p></div>
@@ -602,7 +598,7 @@ function App() {
               <h2 className="text-xl font-bold text-gray-800 mb-4">🎟️ Batch Login Code Generation</h2>
               <div className="mb-6 p-4 bg-slate-50 rounded-lg border">
                 <label className="block font-semibold text-gray-700 mb-3">Access Level:</label>
-                <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 mb-3">
+                <div className="flex gap-6 mb-3">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="radio" name="trainingRoute" value="FULL_22" checked={trainingRoute === 'FULL_22'}
                       onChange={() => { setTrainingRoute('FULL_22'); setSelectedCustomModules([]); }} className="w-4 h-4 text-indigo-600" />
@@ -617,7 +613,7 @@ function App() {
                 {trainingRoute === 'CUSTOM' && (
                   <div className="mt-4 pt-4 border-t">
                     <p className="text-sm text-gray-600 mb-2">Select modules (all will be available immediately):</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded-lg bg-white">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded-lg bg-white">
                       {allModulesList.map(module => (
                         <label key={module.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-slate-50 p-2 rounded">
                           <input type="checkbox" checked={selectedCustomModules.includes(module.id)} onChange={() => toggleModuleSelection(module.id)} className="w-4 h-4 text-indigo-600 rounded" />
@@ -639,7 +635,7 @@ function App() {
                   </div>
                 ))}
               </div>
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+              <div className="flex gap-3">
                 <button onClick={addStudentField} disabled={studentBatch.length >= 20} className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50 hover:bg-slate-50 transition">+ Add Student ({studentBatch.length}/20)</button>
                 <button onClick={batchGenerateCodes} disabled={loading} className="px-6 py-2 bg-slate-900 text-white rounded-lg text-sm hover:bg-slate-800 transition shadow-sm">⚡ Generate Codes</button>
               </div>
@@ -666,19 +662,19 @@ function App() {
           {activeTab === 'students' && (
             <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
               {selectedStudents.length > 0 && (
-                <div className="bg-indigo-50 border-b border-indigo-200 px-3 sm:px-4 py-2 sm:py-3 flex flex-col sm:flex-row gap-2 justify-between items-center">
+                <div className="bg-indigo-50 border-b border-indigo-200 px-4 py-3 flex justify-between items-center">
                   <div className="flex items-center gap-3"><CheckSquare className="w-5 h-5 text-indigo-600" /><span className="text-sm text-indigo-800 font-medium">{selectedStudents.length} student(s) selected</span></div>
                   <button onClick={() => setShowBulkDeleteConfirm(true)} className="flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm shadow-sm"><Trash2 size={16} /> Delete Selected</button>
                 </div>
               )}
-              <div className="p-3 sm:p-4 border-b flex flex-col sm:flex-row justify-between items-center gap-3">
+              <div className="p-4 border-b flex justify-between items-center flex-wrap gap-2">
                 <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" /><input type="text" placeholder="Search students..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10 pr-4 py-2 border rounded-lg w-64 focus:ring-2 focus:ring-indigo-500 outline-none" /></div>
                 <div className="flex items-center gap-4">
                   <button onClick={toggleSelectAll} className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-800">{selectAll ? <CheckSquare size={16} /> : <Square size={16} />} {selectAll ? 'Deselect All' : 'Select All'}</button>
                   <span className="text-sm text-slate-500">{filteredStudents.length} students</span>
                 </div>
               </div>
-              <div className="overflow-x-auto"><table className="w-full min-w-[600px]">
+              <table className="w-full">
                 <thead className="bg-slate-50 border-b"><tr><th className="p-4 w-10"><input type="checkbox" checked={selectAll} onChange={toggleSelectAll} className="w-4 h-4 text-indigo-600 rounded" /></th><th className="p-4 text-left">Name</th><th className="p-4 text-left">Email</th><th className="p-4 text-left">Attempts</th><th className="p-4 text-left">Passed</th><th className="p-4 text-left">Actions</th></tr></thead>
                 <tbody className="divide-y">
                   {filteredStudents.map(student => (
@@ -688,7 +684,7 @@ function App() {
                       <td className="p-4 text-slate-600 text-sm font-mono">{student.email}</td>
                       <td className="p-4 text-slate-600">{student.moduleAttempts?.length || 0}</td>
                       <td className="p-4 text-slate-600">{student.moduleAttempts?.filter(a => a.passed).length || 0}</td>
-                      <td className="p-4"><div className="flex flex-col sm:flex-row gap-2 sm:gap-3"><button onClick={() => generateFullReport(student)} className="text-indigo-600 text-sm hover:underline flex items-center gap-1"><FileSpreadsheet size={14} /> Report</button><button onClick={() => { setDeleteUserId(student.id); setShowDeleteConfirm(true); }} className="text-red-600 text-sm hover:underline flex items-center gap-1"><Trash2 size={14} /> Delete</button></div></td>
+                      <td className="p-4"><div className="flex gap-3"><button onClick={() => generateFullReport(student)} className="text-indigo-600 text-sm hover:underline flex items-center gap-1"><FileSpreadsheet size={14} /> Report</button><button onClick={() => { setDeleteUserId(student.id); setShowDeleteConfirm(true); }} className="text-red-600 text-sm hover:underline flex items-center gap-1"><Trash2 size={14} /> Delete</button></div></td>
                     </tr>
                   ))}
                   {filteredStudents.length === 0 && <tr><td colSpan="6" className="text-center p-8 text-slate-500">No students found</td></tr>}
@@ -704,7 +700,7 @@ function App() {
               <div className="flex items-center gap-3 text-red-600 mb-4"><AlertTriangle className="w-8 h-8" /><h3 className="text-xl font-bold">⚠️ Delete Student</h3></div>
               <p className="text-slate-600 mb-4">Type <strong className="font-mono bg-slate-100 px-2 py-1 rounded">DELETE</strong> to confirm:</p>
               <input type="text" value={deleteConfirmText} onChange={e => setDeleteConfirmText(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg mb-4 font-mono focus:ring-2 focus:ring-red-500 outline-none" placeholder="DELETE" />
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3"><button onClick={deleteUser} disabled={deleteConfirmText !== 'DELETE'} className="flex-1 bg-red-600 text-white py-2 rounded-lg disabled:opacity-50 hover:bg-red-700 transition">Delete</button><button onClick={() => { setShowDeleteConfirm(false); setDeleteUserId(null); setDeleteConfirmText(''); }} className="flex-1 bg-slate-200 text-slate-700 py-2 rounded-lg hover:bg-slate-300 transition">Cancel</button></div>
+              <div className="flex gap-3"><button onClick={deleteUser} disabled={deleteConfirmText !== 'DELETE'} className="flex-1 bg-red-600 text-white py-2 rounded-lg disabled:opacity-50 hover:bg-red-700 transition">Delete</button><button onClick={() => { setShowDeleteConfirm(false); setDeleteUserId(null); setDeleteConfirmText(''); }} className="flex-1 bg-slate-200 text-slate-700 py-2 rounded-lg hover:bg-slate-300 transition">Cancel</button></div>
             </div>
           </div>
         )}
@@ -715,7 +711,7 @@ function App() {
               <div className="flex items-center gap-3 text-red-600 mb-4"><AlertTriangle className="w-8 h-8" /><h3 className="text-xl font-bold">⚠️ Bulk Delete Students</h3></div>
               <p className="text-slate-600 mb-2">Delete <strong className="text-red-600">{selectedStudents.length}</strong> student(s). Type <strong className="font-mono bg-slate-100 px-2 py-1 rounded">DELETE</strong> to confirm:</p>
               <input type="text" value={bulkDeleteConfirmText} onChange={e => setBulkDeleteConfirmText(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg mb-4 font-mono focus:ring-2 focus:ring-red-500 outline-none" placeholder="DELETE" />
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3"><button onClick={bulkDeleteUsers} disabled={bulkDeleteConfirmText !== 'DELETE'} className="flex-1 bg-red-600 text-white py-2 rounded-lg disabled:opacity-50 hover:bg-red-700 transition">Delete All</button><button onClick={() => { setShowBulkDeleteConfirm(false); setBulkDeleteConfirmText(''); }} className="flex-1 bg-slate-200 text-slate-700 py-2 rounded-lg hover:bg-slate-300 transition">Cancel</button></div>
+              <div className="flex gap-3"><button onClick={bulkDeleteUsers} disabled={bulkDeleteConfirmText !== 'DELETE'} className="flex-1 bg-red-600 text-white py-2 rounded-lg disabled:opacity-50 hover:bg-red-700 transition">Delete All</button><button onClick={() => { setShowBulkDeleteConfirm(false); setBulkDeleteConfirmText(''); }} className="flex-1 bg-slate-200 text-slate-700 py-2 rounded-lg hover:bg-slate-300 transition">Cancel</button></div>
             </div>
           </div>
         )}
@@ -732,7 +728,6 @@ function App() {
             </div>
           </div>
         )}
-              <Signature />
       </div>
     );
   }
@@ -745,7 +740,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-slate-50">
       <div className="bg-white border-b border-slate-200 sticky top-0 z-10 px-6 py-4 flex justify-between items-center shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-md"><BookOpen className="w-5 h-5 text-white" /></div>
@@ -790,10 +785,8 @@ function App() {
           })}
         </div>
       </div>
-          <Signature />
-      </div>
+    </div>
   );
 }
 
 export default App;
-// =============================================

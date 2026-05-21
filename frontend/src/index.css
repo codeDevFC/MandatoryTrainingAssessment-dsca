@@ -7,3 +7,22 @@
     @apply bg-slate-50 text-slate-900 antialiased font-sans;
   }
 }
+/* Signature Styles */
+.signature-container {
+opacity: 0.8;
+transition: opacity 0.3s ease;
+}
+.signature-container:hover {
+opacity: 1;
+}
+@media print {
+.signature-container {
+opacity: 1 !important;
+position: static !important;
+margin-top: 40px;
+border-top: 1px solid #eee;
+}
+.signature-global {
+display: none;
+}
+}

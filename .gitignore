@@ -67,3 +67,5 @@ backend/prisma/*.db-journal
 frontend/dist/
 frontend/.vite/
 .env*.local
+@coht.co.uk
+COHT

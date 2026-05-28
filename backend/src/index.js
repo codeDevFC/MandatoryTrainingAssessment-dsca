@@ -22,7 +22,7 @@ function generateCode() {
 function generateEmail(surname, firstName) {
   const initial = firstName.charAt(0).toUpperCase();
   const formattedSurname = surname.charAt(0).toUpperCase() + surname.slice(1).toLowerCase();
-  return `${formattedSurname}.${initial}@dsca.co.uk`;
+  return `${formattedSurname}.${initial}@coht.co.uk`;
 }
 
 // ============ ADMIN LOGIN ============
@@ -347,5 +347,5 @@ app.get('/api/health', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`✅ Backend server running on http://localhost:${PORT}`);
-  console.log(`📧 Batch code generator ready - Email domain: @dsca.co.uk`);
+  console.log(`📧 Batch code generator ready - Email domain: @coht.co.uk`);
 });

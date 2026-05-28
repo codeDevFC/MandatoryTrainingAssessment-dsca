@@ -13,7 +13,7 @@ return (
 <span className="font-mono text-red-500 font-bold">{'}'}</span>
 </div>
 <div className="text-[9px] sm:text-xs text-amber-700 mt-1.5 tracking-wide font-medium uppercase break-words px-4">
-✦ Crafted with precision for DSCA@2026 ✦
+✦ Crafted with precision for COHT@2026 ✦
 </div>
 </div>
 </div>

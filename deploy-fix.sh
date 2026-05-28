@@ -1,3 +1,12 @@
+#!/bin/bash
+
+echo "📦 Creating backups..."
+cp backend/api/index.js backend/api/index.js.backup 2>/dev/null || true
+cp frontend/src/App.jsx frontend/src/App.jsx.backup 2>/dev/null || true
+
+echo "✉️ Fixing email format to lowercase..."
+
+cat > backend/api/index.js << 'EOF'
 const express = require('express');
 const cors = require('cors');
 const { PrismaClient } = require('@prisma/client');
@@ -188,3 +197,51 @@ if (require.main === module) {
  const PORT = process.env.PORT || 3002;
  app.listen(PORT, () => console.log("Backend running on port " + PORT));
 }
+EOF
+
+echo "📝 Updating frontend branding..."
+cd frontend/src
+sed -i '' 's/surname\.initial@coht\.co\.uk/surnameinitial@coht.co.uk/g' App.jsx 2>/dev/null || true
+sed -i '' 's/CareWorks/COHT/g' App.jsx 2>/dev/null || true
+
+echo "⏳ Adding loading indicator..."
+mkdir -p utils
+cat > utils/loading.js << 'EOF'
+export const showColdStartMessage = () => {
+  const existing = document.getElementById('cold-start-message');
+  if (existing) return;
+  const div = document.createElement('div');
+  div.id = 'cold-start-message';
+  div.innerHTML = '<div style="position: fixed; bottom: 20px; left: 20px; z-index: 9999; background: #1e293b; color: white; padding: 12px 20px; border-radius: 12px; font-size: 13px; font-family: monospace;">' +
+    '🔄 Server waking up - first request may take 15-30s</div>';
+  document.body.appendChild(div);
+};
+export const hideColdStartMessage = () => {
+  const el = document.getElementById('cold-start-message');
+  if (el) el.remove();
+};
+EOF
+
+# Add loading to main.tsx
+if ! grep -q "showColdStartMessage" main.tsx 2>/dev/null; then
+  sed -i '' 's/import { initAntiCopyProtection }/import { initAntiCopyProtection }\nimport { showColdStartMessage, hideColdStartMessage }/g' main.tsx
+  sed -i '' 's/initAntiCopyProtection();/initAntiCopyProtection();\nshowColdStartMessage();\nsetTimeout(hideColdStartMessage, 35000);/g' main.tsx
+fi
+
+cd ../..
+
+echo "🏗️ Rebuilding and deploying..."
+cd frontend
+npm run build
+cd ..
+
+git add .
+git commit -m "Fix: lowercase email format (surnameinitial@coht.co.uk) and branding"
+git push origin main --force
+vercel --prod --force
+
+echo ""
+echo "✅ DEPLOYMENT COMPLETE!"
+echo "📍 https://dsca-mta-quiz.vercel.app"
+echo ""
+echo "📧 NEW EMAIL FORMAT: surnameinitial@coht.co.uk (e.g., erikt@coht.co.uk)"

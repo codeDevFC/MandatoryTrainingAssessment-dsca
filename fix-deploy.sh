@@ -1,3 +1,11 @@
+#!/bin/bash
+
+echo "🔧 FIXING EMAIL FORMAT AND BUILD ERRORS..."
+
+# 1. Fix the backend email function
+echo "📧 Fixing email format to lowercase..."
+
+cat > backend/api/index.js << 'BACKEND_EOF'
 const express = require('express');
 const cors = require('cors');
 const { PrismaClient } = require('@prisma/client');
@@ -271,3 +279,90 @@ if (require.main === module) {
  const PORT = process.env.PORT || 3002;
  app.listen(PORT, () => console.log("Backend running on port " + PORT));
 }
+BACKEND_EOF
+
+# 2. Fix main.tsx - restore proper import syntax
+echo "🔧 Fixing main.tsx imports..."
+
+cat > frontend/src/main.tsx << 'MAIN_EOF'
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App'
+import './index.css'
+import { initAntiCopyProtection } from './utils/antiCopy'
+
+// Initialize anti-copy protection
+initAntiCopyProtection();
+
+// Cold start loading indicator
+const showColdStartMessage = () => {
+  const existing = document.getElementById('cold-start-message');
+  if (existing) return;
+  const div = document.createElement('div');
+  div.id = 'cold-start-message';
+  div.innerHTML = '<div style="position: fixed; bottom: 20px; left: 20px; z-index: 9999; background: #1e293b; color: white; padding: 12px 20px; border-radius: 12px; font-size: 13px; font-family: monospace; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">' +
+    '<span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #10b981; margin-right: 8px; animation: pulse 1.5s infinite;"></span>' +
+    '🔄 Server waking up - first request may take 15-30s' +
+    '</div>' +
+    '<style>@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }</style>';
+  document.body.appendChild(div);
+};
+
+const hideColdStartMessage = () => {
+  const el = document.getElementById('cold-start-message');
+  if (el) el.remove();
+};
+
+showColdStartMessage();
+setTimeout(hideColdStartMessage, 35000);
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+MAIN_EOF
+
+# 3. Update frontend email placeholder text
+echo "📝 Updating frontend email hints..."
+
+cd frontend/src
+sed -i '' 's/surname\.initial@coht\.co\.uk/surnameinitial@coht.co.uk/g' App.jsx 2>/dev/null || true
+sed -i '' 's/CareWorks/COHT/g' App.jsx 2>/dev/null || true
+sed -i '' 's/careworks/coht/g' App.jsx 2>/dev/null || true
+
+cd ../..
+
+# 4. Rebuild and deploy
+echo "🏗️ Rebuilding frontend..."
+cd frontend
+npm run build
+
+if [ $? -eq 0 ]; then
+  echo "✅ Build successful!"
+else
+  echo "❌ Build failed - check errors above"
+  exit 1
+fi
+
+cd ..
+
+echo "📦 Committing and deploying..."
+git add .
+git commit -m "Fix: lowercase email format (surnameinitial@coht.co.uk) and fix main.tsx imports"
+git push origin main --force
+vercel --prod --force
+
+echo ""
+echo "=========================================="
+echo "✅ DEPLOYMENT COMPLETE!"
+echo "=========================================="
+echo ""
+echo "📍 URL: https://dsca-mta-quiz.vercel.app"
+echo ""
+echo "📧 NEW EMAIL FORMAT: surnameinitial@coht.co.uk"
+echo "   Example: Trainee01 + Erik = trainee01e@coht.co.uk"
+echo ""
+echo "⚠️  Note: Existing users keep old emails."
+echo "   Only NEW users get lowercase format."
+echo "=========================================="

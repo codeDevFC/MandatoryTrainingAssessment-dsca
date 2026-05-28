@@ -29,7 +29,7 @@ function generateCode() {
 function generateEmail(surname, firstName) {
   const initial = firstName.charAt(0).toUpperCase();
   const formattedSurname = surname.charAt(0).toUpperCase() + surname.slice(1).toLowerCase();
-  return `${formattedSurname}.${initial}@coht.co.uk`;
+  return `${formattedSurname}${initial}@coht.co.uk`;
 }
 
 // Health check

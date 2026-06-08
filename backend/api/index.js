@@ -4,23 +4,8 @@ const { PrismaClient } = require('@prisma/client');
 const app = express();
 const prisma = new PrismaClient();
 
-// Production URL - change this to your actual Vercel URL
-const PRODUCTION_URL = 'https://dsca-mta-quiz01.vercel.app';
-// Local URL for development
-const LOCAL_URL = 'http://localhost:5173';
-
-// Detect environment - you can also use an environment variable
-const getBaseUrl = () => {
-  // You can set NODE_ENV or use an env var
-  if (process.env.NODE_ENV === 'production') {
-    return PRODUCTION_URL;
-  }
-  // Also check for VERCEL_ENV
-  if (process.env.VERCEL_ENV === 'production') {
-    return PRODUCTION_URL;
-  }
-  return LOCAL_URL;
-};
+// PRODUCTION URL - Use your actual Vercel URL
+const BASE_URL = 'https://dsca-mta-quiz01.vercel.app';
 
 app.use(cors({
   origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3002', 'https://dsca-mta-quiz01.vercel.app'],
@@ -207,12 +192,14 @@ app.post('/api/admin/generate-code-with-route/:id', async (req, res) => {
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     await prisma.loginCode.create({ data: { email: loginEmail, code: code, expiresAt: expiresAt } });
     
-    // Get the correct base URL (production or local)
-    const baseUrl = getBaseUrl();
+    // USE PRODUCTION URL
+    const loginUrl = BASE_URL;
     
-    // Create WhatsApp message with credentials using the correct URL
-    const whatsappMessage = `COHT Training Credentials%0A%0A🔐 Login Email: ${loginEmail}%0A🔑 Code: ${code}%0A%0A🌐 Login: ${baseUrl}%0A%0A⏰ Code expires in 30 days`;
+    // Create WhatsApp message with credentials using production URL
+    const whatsappMessage = `COHT Training Credentials%0A%0A🔐 Login Email: ${loginEmail}%0A🔑 Code: ${code}%0A%0A🌐 Login: ${loginUrl}%0A%0A⏰ Code expires in 30 days`;
     const whatsappLink = `https://wa.me/${user.phone.replace('+', '')}?text=${whatsappMessage}`;
+    
+    console.log('WhatsApp link generated with URL:', loginUrl);
     
     res.json({ 
       success: true, 
@@ -254,11 +241,11 @@ app.post('/api/admin/resend-login-details/:id', async (req, res) => {
       });
     }
     
-    // Get the correct base URL (production or local)
-    const baseUrl = getBaseUrl();
+    // USE PRODUCTION URL
+    const loginUrl = BASE_URL;
     
-    // Create WhatsApp message with credentials using the correct URL
-    const whatsappMessage = `COHT Training Credentials%0A%0A🔐 Login Email: ${user.email}%0A🔑 Code: ${loginCode.code}%0A%0A🌐 Login: ${baseUrl}%0A%0A⏰ Code expires in 30 days`;
+    // Create WhatsApp message with credentials using production URL
+    const whatsappMessage = `COHT Training Credentials%0A%0A🔐 Login Email: ${user.email}%0A🔑 Code: ${loginCode.code}%0A%0A🌐 Login: ${loginUrl}%0A%0A⏰ Code expires in 30 days`;
     const whatsappLink = `https://wa.me/${user.phone.replace('+', '')}?text=${whatsappMessage}`;
     
     res.json({ 
@@ -561,7 +548,7 @@ app.delete('/api/admin/bulk-delete-users', async (req, res) => {
 const PORT = 3002;
 app.listen(PORT, () => {
   console.log(`Backend running on http://localhost:${PORT}`);
-  console.log(`Production URL configured: ${getBaseUrl()}`);
+  console.log(`Production URL configured: ${BASE_URL}`);
   console.log(`Registration endpoint: POST /api/auth/register`);
   console.log(`Confirm payment: POST /api/admin/confirm-payment/:id`);
   console.log(`Generate code with route: POST /api/admin/generate-code-with-route/:id`);

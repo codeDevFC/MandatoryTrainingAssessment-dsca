@@ -4,6 +4,7 @@
   "description": "DSCA Training Assessment Backend",
   "main": "api/index.js",
   "scripts": {
+    "dev": "node api/index.js",
     "start": "node api/index.js",
     "vercel-start": "node api/index.js",
     "seed": "node prisma/seed-complete-23-modules.js"

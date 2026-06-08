@@ -4,270 +4,565 @@ const { PrismaClient } = require('@prisma/client');
 const app = express();
 const prisma = new PrismaClient();
 
+// Production URL - change this to your actual Vercel URL
+const PRODUCTION_URL = 'https://dsca-mta-quiz01.vercel.app';
+// Local URL for development
+const LOCAL_URL = 'http://localhost:5173';
+
+// Detect environment - you can also use an environment variable
+const getBaseUrl = () => {
+  // You can set NODE_ENV or use an env var
+  if (process.env.NODE_ENV === 'production') {
+    return PRODUCTION_URL;
+  }
+  // Also check for VERCEL_ENV
+  if (process.env.VERCEL_ENV === 'production') {
+    return PRODUCTION_URL;
+  }
+  return LOCAL_URL;
+};
+
 app.use(cors({
- origin: [
-   'http://localhost:5173',
-   'http://localhost:5174',
-   'http://localhost:3000',
-   'https://dsca-mta-quiz.vercel.app',
-   /\.vercel\.app$/,
-   /\.onrender\.com$/
- ],
- credentials: true,
- methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
- allowedHeaders: ['Content-Type', 'Authorization']
+  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3002', 'https://dsca-mta-quiz01.vercel.app'],
+  credentials: true
 }));
 app.use(express.json());
 
 function generateCode() {
- return Math.floor(100000 + Math.random() * 900000).toString();
+  return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 function generateEmail(surname, firstName) {
- const initial = firstName.charAt(0).toLowerCase();
- const formattedSurname = surname.toLowerCase();
- return formattedSurname + initial + "@coht.co.uk";
+  const initial = firstName.charAt(0).toLowerCase();
+  const formattedSurname = surname.toLowerCase();
+  return formattedSurname + initial + "@coht.co.uk";
 }
 
+// Health check
 app.get('/api/health', (req, res) => {
- res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+  res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
+// ============ STUDENT REGISTRATION ============
+app.post('/api/auth/register', async (req, res) => {
+  const { firstName, lastName, email, phone, address, postCode } = req.body;
+  
+  console.log('Registration attempt:', { firstName, lastName, email, phone });
+  
+  const phoneRegex = /^\+44\d{10}$/;
+  if (!phoneRegex.test(phone)) {
+    return res.status(400).json({ error: 'Phone must start with +44 and have 10 digits' });
+  }
+  
+  try {
+    const existingUser = await prisma.user.findUnique({ where: { email: email } });
+    if (existingUser) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+    
+    const user = await prisma.user.create({
+      data: {
+        email: email,
+        name: firstName + ' ' + lastName,
+        phone: phone,
+        address: address || '',
+        postCode: postCode || '',
+        role: 'TRAINEE',
+        trainingRoute: 'FULL_22',
+        paymentConfirmed: false
+      }
+    });
+    
+    console.log('Registration successful:', user.id);
+    res.json({
+      success: true,
+      message: 'Registration submitted! Awaiting payment confirmation.',
+      registration: { id: user.id, name: user.name, email: user.email, phone: user.phone }
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ error: 'Registration failed: ' + error.message });
+  }
+});
+
+// ============ GET ALL STUDENTS WITH PAYMENT STATUS ============
+app.get('/api/admin/all-students-with-status', async (req, res) => {
+  try {
+    const students = await prisma.user.findMany({
+      where: { role: 'TRAINEE' },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        paymentConfirmed: true,
+        paymentConfirmedAt: true,
+        createdAt: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(students);
+  } catch (error) {
+    console.error('Get students with status error:', error);
+    res.status(500).json({ error: 'Failed to fetch students' });
+  }
+});
+
+// ============ GET STUDENT FULL DETAILS ============
+app.get('/api/admin/student-full-details/:id', async (req, res) => {
+  try {
+    const student = await prisma.user.findUnique({
+      where: { id: req.params.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        address: true,
+        postCode: true,
+        trainingRoute: true,
+        selectedModules: true,
+        paymentConfirmed: true,
+        paymentConfirmedAt: true,
+        createdAt: true,
+        loginCodes: {
+          where: { expiresAt: { gt: new Date() } },
+          orderBy: { createdAt: 'desc' },
+          take: 1
+        }
+      }
+    });
+    
+    if (!student) return res.status(404).json({ error: 'Student not found' });
+    
+    res.json({
+      ...student,
+      currentCode: student.loginCodes[0]?.code || null,
+      codeExpiresAt: student.loginCodes[0]?.expiresAt || null,
+      originalRegistrationEmail: student.email
+    });
+  } catch (error) {
+    console.error('Get student full details error:', error);
+    res.status(500).json({ error: 'Failed to fetch student details' });
+  }
+});
+
+// ============ CONFIRM PAYMENT (Admin) ============
+app.post('/api/admin/confirm-payment/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const user = await prisma.user.update({
+      where: { id: id },
+      data: { 
+        paymentConfirmed: true,
+        paymentConfirmedAt: new Date()
+      }
+    });
+    console.log('Payment confirmed for:', user.email);
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error('Confirm payment error:', error);
+    res.status(500).json({ error: 'Failed to confirm payment: ' + error.message });
+  }
+});
+
+// ============ GENERATE CODE WITH ROUTE SELECTION ============
+app.post('/api/admin/generate-code-with-route/:id', async (req, res) => {
+  const { id } = req.params;
+  const { trainingRoute = 'FULL_22', selectedModules = [] } = req.body;
+  
+  console.log('Generate code request for student:', id, 'Route:', trainingRoute);
+  
+  try {
+    const user = await prisma.user.findUnique({ where: { id: id } });
+    if (!user) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+    
+    if (!user.paymentConfirmed) {
+      return res.status(400).json({ error: 'Payment not confirmed yet' });
+    }
+    
+    // Generate login email based on name
+    const nameParts = user.name ? user.name.split(' ') : ['user', 'unknown'];
+    const surname = nameParts[nameParts.length - 1] || 'user';
+    const firstName = nameParts[0] || 'user';
+    const loginEmail = surname.toLowerCase() + firstName.charAt(0).toLowerCase() + "@coht.co.uk";
+    
+    const selectedModulesJson = trainingRoute === 'CUSTOM' ? JSON.stringify(selectedModules) : null;
+    
+    // Update user with login email and training route
+    const updatedUser = await prisma.user.update({
+      where: { id: id },
+      data: {
+        email: loginEmail,
+        trainingRoute: trainingRoute,
+        selectedModules: selectedModulesJson
+      }
+    });
+    
+    // Generate login code
+    await prisma.loginCode.deleteMany({ where: { email: loginEmail } });
+    const code = generateCode();
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    await prisma.loginCode.create({ data: { email: loginEmail, code: code, expiresAt: expiresAt } });
+    
+    // Get the correct base URL (production or local)
+    const baseUrl = getBaseUrl();
+    
+    // Create WhatsApp message with credentials using the correct URL
+    const whatsappMessage = `COHT Training Credentials%0A%0A🔐 Login Email: ${loginEmail}%0A🔑 Code: ${code}%0A%0A🌐 Login: ${baseUrl}%0A%0A⏰ Code expires in 30 days`;
+    const whatsappLink = `https://wa.me/${user.phone.replace('+', '')}?text=${whatsappMessage}`;
+    
+    res.json({ 
+      success: true, 
+      user: updatedUser, 
+      code: code, 
+      loginEmail: loginEmail,
+      phone: user.phone,
+      whatsappLink: whatsappLink,
+      trainingRoute: trainingRoute,
+      message: 'Code generated! Click the WhatsApp link to send credentials.'
+    });
+  } catch (error) {
+    console.error('Generate error:', error);
+    res.status(500).json({ error: 'Failed to generate code: ' + error.message });
+  }
+});
+
+// ============ RESEND LOGIN DETAILS ============
+app.post('/api/admin/resend-login-details/:id', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const user = await prisma.user.findUnique({ where: { id: id } });
+    if (!user) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+    
+    // Get existing valid code or generate new one
+    let loginCode = await prisma.loginCode.findFirst({
+      where: { email: user.email, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: 'desc' }
+    });
+    
+    if (!loginCode) {
+      const code = generateCode();
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      loginCode = await prisma.loginCode.create({ 
+        data: { email: user.email, code: code, expiresAt: expiresAt } 
+      });
+    }
+    
+    // Get the correct base URL (production or local)
+    const baseUrl = getBaseUrl();
+    
+    // Create WhatsApp message with credentials using the correct URL
+    const whatsappMessage = `COHT Training Credentials%0A%0A🔐 Login Email: ${user.email}%0A🔑 Code: ${loginCode.code}%0A%0A🌐 Login: ${baseUrl}%0A%0A⏰ Code expires in 30 days`;
+    const whatsappLink = `https://wa.me/${user.phone.replace('+', '')}?text=${whatsappMessage}`;
+    
+    res.json({ 
+      success: true, 
+      code: loginCode.code,
+      loginEmail: user.email,
+      phone: user.phone,
+      whatsappLink: whatsappLink,
+      message: 'Credentials resent! Click the WhatsApp link to send credentials.'
+    });
+  } catch (error) {
+    console.error('Resend error:', error);
+    res.status(500).json({ error: 'Failed to resend credentials: ' + error.message });
+  }
+});
+
+// ============ ADMIN LOGIN ============
 app.post('/api/auth/admin-login', async (req, res) => {
- const { email, password } = req.body;
- try {
-   const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
-   if (!user || user.role === 'TRAINEE') {
-     return res.status(401).json({ error: 'Invalid credentials' });
-   }
-   const validPasswords = {
-     'admin@careworks.com': 'Admin@2025',
-     'director@careworks.com': 'Director@2025',
-     'supervisor@careworks.com': 'Supervisor@2025'
-   };
-   if (validPasswords[email.toLowerCase()] !== password) {
-     return res.status(401).json({ error: 'Invalid credentials' });
-   }
-   res.json({ id: user.id, email: user.email, name: user.name, role: user.role });
- } catch (error) {
-   res.status(500).json({ error: 'Login failed' });
- }
+  const { email, password } = req.body;
+  console.log('Login attempt:', email);
+  
+  const validAdmins = {
+    'admin@careworks.com': 'Admin@2025',
+    'director@careworks.com': 'Director@2025',
+    'supervisor@careworks.com': 'Supervisor@2025'
+  };
+  
+  try {
+    if (validAdmins[email] && validAdmins[email] === password) {
+      let user = await prisma.user.findUnique({ where: { email: email } });
+      if (!user) {
+        let role = 'TRAINEE';
+        if (email === 'admin@careworks.com') role = 'ADMIN';
+        else if (email === 'director@careworks.com') role = 'DIRECTOR';
+        else if (email === 'supervisor@careworks.com') role = 'SUPERVISOR';
+        
+        user = await prisma.user.create({
+          data: { email: email, name: email.split('@')[0], role: role }
+        });
+      }
+      console.log('Login successful:', email);
+      return res.json({ id: user.id, email: user.email, name: user.name, role: user.role });
+    }
+    console.log('Login failed:', email);
+    res.status(401).json({ error: 'Invalid email or password' });
+  } catch (error) {
+    console.error('Admin login error:', error);
+    res.status(500).json({ error: 'Login failed' });
+  }
 });
 
+// ============ BATCH GENERATE CODES ============
 app.post('/api/admin/batch-generate-codes', async (req, res) => {
- const { students, trainingRoute = 'FULL_22', selectedModules = [] } = req.body;
- const results = [];
- for (const student of students) {
-   try {
-     const email = generateEmail(student.surname, student.firstName);
-     const selectedModulesJson = trainingRoute === 'CUSTOM' ? JSON.stringify(selectedModules) : null;
-     let user = await prisma.user.upsert({
-       where: { email },
-       update: { trainingRoute, selectedModules: selectedModulesJson },
-       create: {
-         email,
-         name: student.firstName + " " + student.surname,
-         role: 'TRAINEE',
-         trainingRoute,
-         selectedModules: selectedModulesJson
-       }
-     });
-     await prisma.loginCode.deleteMany({ where: { email } });
-     const code = generateCode();
-     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-     await prisma.loginCode.create({ data: { email, code, expiresAt } });
-     results.push({ name: user.name, email, code });
-   } catch (e) {
-     console.error('Error:', e.message);
-   }
- }
- res.json({ success: true, codes: results, count: results.length });
+  const { students, trainingRoute = 'FULL_22', selectedModules = [] } = req.body;
+  const results = [];
+  
+  for (const student of students) {
+    try {
+      const email = generateEmail(student.surname, student.firstName);
+      const selectedModulesJson = trainingRoute === 'CUSTOM' ? JSON.stringify(selectedModules) : null;
+      
+      let user = await prisma.user.upsert({
+        where: { email: email },
+        update: { trainingRoute: trainingRoute, selectedModules: selectedModulesJson },
+        create: {
+          email: email,
+          name: student.firstName + " " + student.surname,
+          role: 'TRAINEE',
+          trainingRoute: trainingRoute,
+          selectedModules: selectedModulesJson,
+          phone: student.phone || ''
+        }
+      });
+      
+      await prisma.loginCode.deleteMany({ where: { email: email } });
+      const code = generateCode();
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      await prisma.loginCode.create({ data: { email: email, code: code, expiresAt: expiresAt } });
+      results.push({ name: user.name, email: email, code: code });
+      console.log('Generated code for:', email);
+    } catch (e) {
+      console.error('Error generating code:', e.message);
+    }
+  }
+  res.json({ success: true, codes: results, count: results.length });
 });
 
+// ============ GET ALL STUDENTS ============
 app.get('/api/admin/students', async (req, res) => {
- try {
-   const students = await prisma.user.findMany({
-     where: { role: 'TRAINEE' },
-     include: { moduleAttempts: { include: { module: true } } },
-     orderBy: { createdAt: 'desc' }
-   });
-   res.json(students);
- } catch (error) {
-   res.status(500).json({ error: 'Failed to fetch students' });
- }
+  try {
+    const students = await prisma.user.findMany({
+      where: { role: 'TRAINEE' },
+      include: { moduleAttempts: { include: { module: true } } },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(students);
+  } catch (error) {
+    console.error('Get students error:', error);
+    res.status(500).json({ error: 'Failed to fetch students' });
+  }
 });
 
+// ============ GET ALL MODULES ============
 app.get('/api/admin/modules', async (req, res) => {
- try {
-   const modules = await prisma.module.findMany({
-     orderBy: { id: 'asc' },
-     select: { id: true, name: true, passMark: true }
-   });
-   res.json(modules);
- } catch (error) {
-   res.status(500).json({ error: 'Failed to fetch modules' });
- }
+  try {
+    const modules = await prisma.module.findMany({
+      orderBy: { id: 'asc' },
+      select: { id: true, name: true, passMark: true }
+    });
+    res.json(modules);
+  } catch (error) {
+    console.error('Get modules error:', error);
+    res.status(500).json({ error: 'Failed to fetch modules' });
+  }
 });
 
-app.get('/api/user/:userId/export', async (req, res) => {
- try {
-   const user = await prisma.user.findUnique({
-     where: { id: req.params.userId },
-     include: { moduleAttempts: { include: { module: true }, orderBy: { completedAt: 'desc' } } }
-   });
-   if (!user) return res.status(404).json({ error: 'User not found' });
-   res.json({
-     user: { name: user.name, email: user.email, role: user.role },
-     totalAttempts: user.moduleAttempts.length,
-     passedModules: user.moduleAttempts.filter(a => a.passed).length,
-     failedModules: user.moduleAttempts.filter(a => !a.passed).length,
-     attempts: user.moduleAttempts
-   });
- } catch (error) {
-   res.status(500).json({ error: 'Export failed' });
- }
-});
-
-app.delete('/api/admin/delete-user/:id', async (req, res) => {
- try {
-   await prisma.user.delete({ where: { id: req.params.id } });
-   res.json({ success: true });
- } catch (error) {
-   res.status(500).json({ error: 'Delete failed' });
- }
-});
-
-app.delete('/api/admin/bulk-delete-users', async (req, res) => {
- const { userIds } = req.body;
- if (!userIds || userIds.length === 0) {
-   return res.status(400).json({ error: 'No user IDs provided' });
- }
- try {
-   const result = await prisma.user.deleteMany({
-     where: { id: { in: userIds }, role: 'TRAINEE' }
-   });
-   res.json({ success: true, count: result.count });
- } catch (error) {
-   res.status(500).json({ error: 'Delete failed' });
- }
-});
-
+// ============ VERIFY TRAINEE CODE ============
 app.post('/api/auth/verify-code', async (req, res) => {
- const { email, code } = req.body;
- try {
-   const loginCode = await prisma.loginCode.findFirst({
-     where: { email, code, expiresAt: { gt: new Date() } },
-     orderBy: { createdAt: 'desc' }
-   });
-   if (!loginCode) {
-     return res.status(401).json({ error: 'Invalid or expired code' });
-   }
-   let user = await prisma.user.findUnique({ where: { email } });
-   if (!user) {
-     user = await prisma.user.create({
-       data: { email, name: email.split("@")[0], role: 'TRAINEE', trainingRoute: 'FULL_22' }
-     });
-   }
-   res.json(user);
- } catch (error) {
-   res.status(500).json({ error: 'Verification failed' });
- }
+  const { email, code } = req.body;
+  try {
+    const loginCode = await prisma.loginCode.findFirst({
+      where: { email: email, code: code, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: 'desc' }
+    });
+    if (!loginCode) {
+      return res.status(401).json({ error: 'Invalid or expired code' });
+    }
+    let user = await prisma.user.findUnique({ where: { email: email } });
+    if (!user) {
+      user = await prisma.user.create({
+        data: { email: email, name: email.split('@')[0], role: 'TRAINEE', trainingRoute: 'FULL_22' }
+      });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error('Verify error:', error);
+    res.status(500).json({ error: 'Verification failed' });
+  }
 });
 
+// ============ GET MODULES FOR TRAINEE ============
 app.get('/api/modules', async (req, res) => {
- const userId = req.query.userId;
- try {
-   let modules;
-   if (userId) {
-     const user = await prisma.user.findUnique({ where: { id: userId } });
-     if (user && user.trainingRoute === 'CUSTOM' && user.selectedModules) {
-       let selected = [];
-       try {
-         selected = JSON.parse(user.selectedModules);
-       } catch(e) { selected = []; }
-       modules = await prisma.module.findMany({
-         where: { id: { in: selected } },
-         orderBy: { id: 'asc' }
-       });
-     } else {
-       modules = await prisma.module.findMany({ orderBy: { id: 'asc' } });
-     }
-   } else {
-     modules = await prisma.module.findMany({ orderBy: { id: 'asc' } });
-   }
-   res.json(modules);
- } catch (error) {
-   res.status(500).json({ error: 'Failed to fetch modules' });
- }
+  const userId = req.query.userId;
+  try {
+    let modules;
+    if (userId) {
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      let selectedModules = [];
+      if (user && user.trainingRoute === 'CUSTOM' && user.selectedModules) {
+        try {
+          selectedModules = JSON.parse(user.selectedModules);
+        } catch(e) { selectedModules = []; }
+      }
+      if (user && user.trainingRoute === 'CUSTOM' && selectedModules.length > 0) {
+        modules = await prisma.module.findMany({
+          where: { id: { in: selectedModules } },
+          orderBy: { id: 'asc' }
+        });
+      } else {
+        modules = await prisma.module.findMany({ orderBy: { id: 'asc' } });
+      }
+    } else {
+      modules = await prisma.module.findMany({ orderBy: { id: 'asc' } });
+    }
+    res.json(modules);
+  } catch (error) {
+    console.error('Modules fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch modules' });
+  }
 });
 
+// ============ GET SINGLE MODULE ============
 app.get('/api/modules/:id', async (req, res) => {
- try {
-   const moduleData = await prisma.module.findUnique({
-     where: { id: parseInt(req.params.id) }
-   });
-   if (!moduleData) return res.status(404).json({ error: 'Module not found' });
-   if (moduleData.questions && typeof moduleData.questions === 'string') {
-     moduleData.questions = JSON.parse(moduleData.questions);
-   }
-   res.json(moduleData);
- } catch (error) {
-   res.status(500).json({ error: 'Fetch failed' });
- }
+  try {
+    const moduleData = await prisma.module.findUnique({
+      where: { id: parseInt(req.params.id) }
+    });
+    if (!moduleData) return res.status(404).json({ error: 'Module not found' });
+    
+    if (moduleData.questions && typeof moduleData.questions === 'string') {
+      try {
+        moduleData.questions = JSON.parse(moduleData.questions);
+      } catch(e) { moduleData.questions = []; }
+    }
+    res.json(moduleData);
+  } catch (error) {
+    console.error('Module fetch error:', error);
+    res.status(500).json({ error: 'Fetch failed' });
+  }
 });
 
+// ============ SUBMIT ASSESSMENT ============
 app.post('/api/modules/:id/submit', async (req, res) => {
- const { userId, answers, timeSpent } = req.body;
- const moduleId = parseInt(req.params.id);
- try {
-   const moduleData = await prisma.module.findUnique({ where: { id: moduleId } });
-   if (!moduleData) return res.status(404).json({ error: 'Module not found' });
-   let questions = [];
-   if (moduleData.questions && typeof moduleData.questions === 'string') {
-     questions = JSON.parse(moduleData.questions);
-   }
-   let score = 0;
-   questions.forEach((q, i) => { if (answers[i] === q.correct) score++; });
-   const passed = score >= moduleData.passMark;
-   await prisma.moduleAttempt.create({
-     data: {
-       userId: userId,
-       moduleId: moduleId,
-       score: score,
-       passed: passed,
-       answers: JSON.stringify(answers),
-       timeSpent: timeSpent || 0,
-       completedAt: new Date()
-     }
-   });
-   await prisma.moduleProgress.upsert({
-     where: { userId_moduleId: { userId: userId, moduleId: moduleId } },
-     update: { status: passed ? 'passed' : 'failed', score: score, attempts: { increment: 1 } },
-     create: { userId: userId, moduleId: moduleId, status: passed ? 'passed' : 'failed', score: score, attempts: 1 }
-   });
-   res.json({ score: score, passed: passed, total: questions.length, passMark: moduleData.passMark });
- } catch (error) {
-   res.status(500).json({ error: 'Submit failed' });
- }
+  const { userId, answers, timeSpent } = req.body;
+  const moduleId = parseInt(req.params.id);
+  try {
+    const moduleData = await prisma.module.findUnique({ where: { id: moduleId } });
+    if (!moduleData) return res.status(404).json({ error: 'Module not found' });
+    
+    let questions = [];
+    if (moduleData.questions && typeof moduleData.questions === 'string') {
+      try {
+        questions = JSON.parse(moduleData.questions);
+      } catch(e) { questions = []; }
+    }
+    
+    let score = 0;
+    questions.forEach((q, i) => { if (answers[i] === q.correct) score++; });
+    const passed = score >= moduleData.passMark;
+    
+    await prisma.moduleAttempt.create({
+      data: { 
+        userId: userId, 
+        moduleId: moduleId, 
+        score: score, 
+        passed: passed, 
+        answers: JSON.stringify(answers), 
+        timeSpent: timeSpent || 0, 
+        completedAt: new Date() 
+      }
+    });
+    await prisma.moduleProgress.upsert({
+      where: { userId_moduleId: { userId: userId, moduleId: moduleId } },
+      update: { status: passed ? 'passed' : 'failed', score: score, attempts: { increment: 1 } },
+      create: { userId: userId, moduleId: moduleId, status: passed ? 'passed' : 'failed', score: score, attempts: 1 }
+    });
+    res.json({ score: score, passed: passed, total: questions.length, passMark: moduleData.passMark });
+  } catch (error) {
+    console.error('Submit error:', error);
+    res.status(500).json({ error: 'Submit failed' });
+  }
 });
 
+// ============ GET USER PROGRESS ============
 app.get('/api/user/:userId/progress', async (req, res) => {
- try {
-   const progress = await prisma.moduleProgress.findMany({ where: { userId: req.params.userId } });
-   const attempts = await prisma.moduleAttempt.findMany({
-     where: { userId: req.params.userId },
-     orderBy: { completedAt: 'desc' },
-     include: { module: true }
-   });
-   res.json({ progress: progress || [], attempts: attempts || [] });
- } catch (error) {
-   res.json({ progress: [], attempts: [] });
- }
+  try {
+    const progress = await prisma.moduleProgress.findMany({ where: { userId: req.params.userId } });
+    const attempts = await prisma.moduleAttempt.findMany({
+      where: { userId: req.params.userId },
+      orderBy: { completedAt: 'desc' },
+      include: { module: true }
+    });
+    res.json({ progress: progress || [], attempts: attempts || [] });
+  } catch (error) {
+    console.error('Progress error:', error);
+    res.json({ progress: [], attempts: [] });
+  }
 });
 
-module.exports = app;
+// ============ EXPORT REPORT ============
+app.get('/api/user/:userId/export', async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.params.userId },
+      include: { moduleAttempts: { include: { module: true }, orderBy: { completedAt: 'desc' } } }
+    });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    
+    res.json({
+      user: { name: user.name, email: user.email, role: user.role },
+      totalAttempts: user.moduleAttempts.length,
+      passedModules: user.moduleAttempts.filter(a => a.passed).length,
+      failedModules: user.moduleAttempts.filter(a => !a.passed).length,
+      attempts: user.moduleAttempts
+    });
+  } catch (error) {
+    console.error('Export error:', error);
+    res.status(500).json({ error: 'Export failed' });
+  }
+});
 
-if (require.main === module) {
- const PORT = process.env.PORT || 3002;
- app.listen(PORT, () => console.log("Backend running on port " + PORT));
-}
+// ============ DELETE USER ============
+app.delete('/api/admin/delete-user/:id', async (req, res) => {
+  try {
+    await prisma.user.delete({ where: { id: req.params.id } });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Delete error:', error);
+    res.status(500).json({ error: 'Delete failed' });
+  }
+});
+
+// ============ BULK DELETE USERS ============
+app.delete('/api/admin/bulk-delete-users', async (req, res) => {
+  const { userIds } = req.body;
+  if (!userIds || userIds.length === 0) {
+    return res.status(400).json({ error: 'No user IDs provided' });
+  }
+  try {
+    const result = await prisma.user.deleteMany({
+      where: { id: { in: userIds }, role: 'TRAINEE' }
+    });
+    res.json({ success: true, count: result.count });
+  } catch (error) {
+    console.error('Bulk delete error:', error);
+    res.status(500).json({ error: 'Delete failed' });
+  }
+});
+
+const PORT = 3002;
+app.listen(PORT, () => {
+  console.log(`Backend running on http://localhost:${PORT}`);
+  console.log(`Production URL configured: ${getBaseUrl()}`);
+  console.log(`Registration endpoint: POST /api/auth/register`);
+  console.log(`Confirm payment: POST /api/admin/confirm-payment/:id`);
+  console.log(`Generate code with route: POST /api/admin/generate-code-with-route/:id`);
+});

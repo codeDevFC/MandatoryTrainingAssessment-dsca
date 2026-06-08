@@ -1,81 +1,88 @@
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "debian-openssl-3.0.x"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url = env("DATABASE_URL")
 }
 
 model User {
-  id              String          @id @default(cuid())
-  email           String          @unique
-  name            String?
-  role            String          @default("TRAINEE")
-  trainingRoute   String          @default("FULL_22")
+  id String @id @default(cuid())
+  email String @unique
+  name String?
+  phone String?
+  address String?
+  postCode String?
+  paymentConfirmed Boolean @default(false)
+  paymentConfirmedAt DateTime?
+  registrationDate DateTime @default(now())
+  role String @default("TRAINEE")
+  trainingRoute String @default("FULL_22")
   selectedModules String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  results         QuizResult[]
-  progress        ModuleProgress[]
-  moduleAttempts  ModuleAttempt[]
-  loginCodes      LoginCode[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  results QuizResult[]
+  progress ModuleProgress[]
+  moduleAttempts ModuleAttempt[]
+  loginCodes LoginCode[]
 }
 
 model Module {
-  id              Int             @id
-  name            String
-  passMark        Int             @default(15)
-  questions       String
-  results         QuizResult[]
-  progress        ModuleProgress[]
-  moduleAttempts  ModuleAttempt[]
+  id Int @id
+  name String
+  passMark Int @default(15)
+  questions String
+  results QuizResult[]
+  progress ModuleProgress[]
+  moduleAttempts ModuleAttempt[]
 }
 
 model ModuleAttempt {
-  id              String          @id @default(cuid())
-  userId          String
-  moduleId        Int
-  score           Int
-  passed          Boolean
-  answers         String
-  timeSpent       Int
-  completedAt     DateTime
-  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  module          Module          @relation(fields: [moduleId], references: [id])
+  id String @id @default(cuid())
+  userId String
+  moduleId Int
+  score Int
+  passed Boolean
+  answers String
+  errors String?
+  timeSpent Int
+  attemptNumber Int @default(1)
+  completedAt DateTime
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module Module @relation(fields: [moduleId], references: [id])
 }
 
 model ModuleProgress {
-  id              String          @id @default(cuid())
-  userId          String
-  moduleId        Int
-  status          String          @default("locked")
-  score           Int?
-  attempts        Int             @default(0)
-  passedAt        DateTime?
-  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  module          Module          @relation(fields: [moduleId], references: [id])
+  id String @id @default(cuid())
+  userId String
+  moduleId Int
+  status String @default("locked")
+  score Int?
+  attempts Int @default(0)
+  passedAt DateTime?
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module Module @relation(fields: [moduleId], references: [id])
   @@unique([userId, moduleId])
 }
 
 model QuizResult {
-  id              String          @id @default(cuid())
-  score           Int
-  passed          Boolean         @default(false)
-  moduleId        Int
-  userId          String
-  createdAt       DateTime        @default(now())
-  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  module          Module          @relation(fields: [moduleId], references: [id])
+  id String @id @default(cuid())
+  score Int
+  passed Boolean @default(false)
+  moduleId Int
+  userId String
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module Module @relation(fields: [moduleId], references: [id])
 }
 
 model LoginCode {
-  id              String          @id @default(cuid())
-  email           String
-  code            String
-  expiresAt       DateTime
-  used            Boolean         @default(false)
-  createdAt       DateTime        @default(now())
-  user            User?           @relation(fields: [email], references: [email], onDelete: Cascade)
+  id String @id @default(cuid())
+  email String
+  code String
+  expiresAt DateTime
+  used Boolean @default(false)
+  createdAt DateTime @default(now())
+  user User? @relation(fields: [email], references: [email], onDelete: Cascade)
 }

@@ -1,3 +1,77 @@
+#!/bin/bash
+
+# Navigate to the root project directory
+cd ~/Downloads/dsca-MTA-Quiz
+
+# ============================================================
+# FIX 1: Update frontend to use environment variable
+# ============================================================
+cd frontend
+
+# Create backup of App.jsx
+cp src/App.jsx src/App.jsx.backup
+
+# Update API_URL in App.jsx to use environment variable
+sed -i '' 's|const API_URL = .*|const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3002";|g' src/App.jsx
+
+# Verify the change (optional, but good for debugging)
+echo "✅ API_URL now uses environment variable:"
+grep "const API_URL" src/App.jsx
+
+# Create .env.production for Vercel deployment
+cat > .env.production << 'EOF'
+VITE_API_URL=https://dsca-backend.onrender.com
+EOF
+
+# Create .env for local development
+cat > .env << 'EOF'
+VITE_API_URL=http://localhost:3002
+EOF
+
+echo "✅ Environment files created"
+
+# ============================================================
+# FIX 2: Fix vercel.json - DON'T run backend on Vercel
+# ============================================================
+cd ..
+
+# Create new vercel.json
+cat > vercel.json << 'EOF'
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "frontend/**",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "frontend/dist",
+        "buildCommand": "cd frontend && npm install && npm run build"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "frontend/dist/$1"
+    }
+  ]
+}
+EOF
+
+echo "✅ vercel.json fixed - now only serves frontend"
+
+# ============================================================
+# FIX 3: Update your backend to listen on all interfaces and configure CORS
+# ============================================================
+cd backend
+
+# Update backend to listen on 0.0.0.0 for mobile access
+# This sed command is designed to be idempotent and only makes the change if not already present.
+# It also redirects stderr to /dev/null to suppress "no such file or directory" if the pattern isn't found.
+sed -i '' 's|app.listen(PORT, ()|app.listen(PORT, "0.0.0.0", ()|g' api/index.js 2>/dev/null || true
+
+# Overwrite api/index.js with the complete fixed content, including CORS
+cat > api/index.js << 'BACKEND_FIXED_EOF'
 const express = require('express');
 const cors = require('cors');
 const { PrismaClient } = require('@prisma/client');
@@ -470,3 +544,33 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Backend running on http://localhost:${PORT}`);
   console.log(`🌐 Production URL: ${BASE_URL}`);
 });
+BACKEND_FIXED_EOF
+
+echo "✅ Backend updated"
+
+# ============================================================
+# FINAL: Rebuild frontend
+# ============================================================
+cd ../frontend
+
+# Rebuild the frontend
+npm run build
+
+echo ""
+echo "==================================================="
+echo "✅ ALL FIXES COMPLETE!"
+echo "==================================================="
+echo ""
+echo "🚀 To deploy to Vercel:"
+echo "   cd ~/Downloads/dsca-MTA-Quiz"
+echo "   vercel --prod --force"
+echo ""
+echo "📱 For mobile testing on same WiFi:"
+MY_IP=$(ipconfig getifaddr en0 2>/dev/null || echo "unknown")
+echo "   Your Mac IP is: $MY_IP"
+echo "   Open on phone: http://$MY_IP:5173"
+echo ""
+echo "🔧 The API_URL is now dynamic and will work on:"
+echo "   - Local development: http://localhost:3002"
+echo "   - Vercel production: Uses environment variable"
+echo ""

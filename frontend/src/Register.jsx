@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { GraduationCap, Send, CreditCard, CheckCircle, AlertCircle, MessageCircle } from 'lucide-react';
 
-const API_URL = 'http://localhost:3002';
+const API_URL = 'https://dsca-backend.onrender.com';
 
 function Register() {
   const [formData, setFormData] = useState({

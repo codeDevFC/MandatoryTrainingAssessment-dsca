@@ -1,13 +1,17 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import App from './App'
 import Register from './Register'
 import './index.css'
 
-const pathname = window.location.pathname;
-
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    {pathname === '/register' ? <Register /> : <App />}
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<App />} />
+        <Route path="/register" element={<Register />} />
+      </Routes>
+    </BrowserRouter>
   </React.StrictMode>
 );

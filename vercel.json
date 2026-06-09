@@ -1,7 +1,10 @@
 {
   "version": 2,
-  "buildCommand": "cd frontend && npm install && npm run build",
+  "buildCommand": "cd frontend && npm install && npm run build && cp dist/index.html dist/register.html",
   "outputDirectory": "frontend/dist",
-  "installCommand": "npm install",
-  "framework": "vite"
+  "installCommand": "cd frontend && npm install",
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }

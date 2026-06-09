@@ -469,3 +469,42 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Backend running on port ${PORT}`);
   console.log(`🌐 Accepting requests from Vercel frontend`);
 });
+
+// ============ REGISTRATION ENDPOINT ============
+app.post('/api/auth/register', async (req, res) => {
+  const { firstName, lastName, email, phone, address, postCode } = req.body;
+  
+  const phoneRegex = /^\+44\d{10}$/;
+  if (!phoneRegex.test(phone)) {
+    return res.status(400).json({ error: 'Phone must start with +44 and have 10 digits' });
+  }
+  
+  try {
+    const existingUser = await prisma.user.findUnique({ where: { email: email } });
+    if (existingUser) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+    
+    const user = await prisma.user.create({
+      data: {
+        email: email,
+        name: firstName + ' ' + lastName,
+        phone: phone,
+        address: address || '',
+        postCode: postCode || '',
+        role: 'TRAINEE',
+        trainingRoute: 'FULL_22',
+        paymentConfirmed: false
+      }
+    });
+    
+    res.json({
+      success: true,
+      message: 'Registration submitted! Awaiting payment confirmation.',
+      registration: { id: user.id, name: user.name, email: user.email, phone: user.phone }
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ error: 'Registration failed: ' + error.message });
+  }
+});

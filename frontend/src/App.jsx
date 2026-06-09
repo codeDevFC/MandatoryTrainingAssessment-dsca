@@ -11,7 +11,7 @@ import {
   RefreshCw, AlertTriangle as AlertTriangleIcon
 } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002';
+const API_URL = 'http://localhost:3002';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -98,7 +98,7 @@ function App() {
       const res = await fetch(`${API_URL}/api/admin/students`);
       const data = await res.json();
       setAllStudents(Array.isArray(data) ? data : []);
-      setFilteredStudents(Array.isArray(data) ? data : []);
+      applyFilters(data, searchTerm, paymentFilter);
     } catch (err) {
       setAllStudents([]);
       setFilteredStudents([]);
@@ -121,6 +121,23 @@ function App() {
     } catch (err) {
       setRegisteredStudents([]);
     }
+  };
+
+  const applyFilters = (students, term, filter) => {
+    let filtered = [...students];
+    if (term) {
+      filtered = filtered.filter(s =>
+        (s.name || '').toLowerCase().includes(term.toLowerCase()) ||
+        (s.email || '').toLowerCase().includes(term.toLowerCase()) ||
+        (s.phone || '').includes(term)
+      );
+    }
+    if (filter === 'confirmed') {
+      filtered = filtered.filter(s => s.paymentConfirmed === true);
+    } else if (filter === 'pending') {
+      filtered = filtered.filter(s => s.paymentConfirmed === false);
+    }
+    setFilteredStudents(filtered);
   };
 
   const fetchStudentFullDetails = async (studentId) => {
@@ -319,19 +336,23 @@ function App() {
     );
   };
 
+  const toggleSelectAllStudents = () => {
+    if (selectedStudentIds.length === filteredBulkStudents.length) {
+      setSelectedStudentIds([]);
+    } else {
+      setSelectedStudentIds(filteredBulkStudents.map(s => s.id));
+    }
+  };
+
   const filteredBulkStudents = registeredStudents.filter(student => {
     if (bulkPaymentFilter === 'confirmed') return student.paymentConfirmed === true;
     if (bulkPaymentFilter === 'pending') return student.paymentConfirmed === false;
     return true;
   });
 
-  const toggleSelectAllStudents = () => {
-    if (selectedStudentIds.length === filteredBulkStudents.length && filteredBulkStudents.length > 0) {
-      setSelectedStudentIds([]);
-    } else {
-      setSelectedStudentIds(filteredBulkStudents.map(s => s.id));
-    }
-  };
+  useEffect(() => {
+    applyFilters(allStudents, searchTerm, paymentFilter);
+  }, [searchTerm, paymentFilter, allStudents]);
 
   const deleteUser = async () => {
     if (deleteConfirmText !== 'DELETE') {
@@ -604,7 +625,7 @@ function App() {
         <p>Total Attempts: ${reportData.totalAttempts || 0}</p>
         <p>Passed Modules: ${reportData.passedModules || 0}</p>
         <p>Failed Modules: ${reportData.failedModules || 0}</p>
-        <table><thead><tr><th>Module</th><th>Score</th><th>Status</th><th>Date</th></tr></thead>
+        <tr><thead><tr><th>Module</th><th>Score</th><th>Status</th><th>Date</th></tr></thead>
         <tbody>${(reportData.attempts || []).map(a => `<tr><td>${a.module?.name}</td><td>${a.score}/20</td><td class="${a.passed ? 'passed' : 'failed'}">${a.passed ? 'PASSED' : 'FAILED'}</td><td>${new Date(a.completedAt).toLocaleString()}</td></tr>`).join('')}</tbody>
       </table>
       </body>
@@ -916,7 +937,7 @@ function App() {
                   <tbody className="divide-y">
                     {filteredStudents.map(student => (
                       <tr key={student.id} className="hover:bg-gray-50">
-                        <td className="p-4"><input type="checkbox" checked={selectedStudents.includes(student.id)} onChange={() => toggleStudentSelectionDelete(student.id)} className="w-4 h-4 rounded" /></table>
+                        <td className="p-4"><input type="checkbox" checked={selectedStudents.includes(student.id)} onChange={() => toggleStudentSelectionDelete(student.id)} className="w-4 h-4 rounded" /></td>
                         <td className="p-4 font-medium">{student.name || '-'}</td>
                         <td className="p-4 text-sm font-mono">{student.email}</td>
                         <td className="p-4 text-sm font-mono">{student.phone || '-'}</td>

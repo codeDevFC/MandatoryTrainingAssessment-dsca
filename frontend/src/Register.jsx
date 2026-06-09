@@ -78,10 +78,10 @@ function Register() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-12 px-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8 px-3 md:py-12 md:px-4">
         <div className="max-w-2xl mx-auto">
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-            <div className="p-8">
+            <div className="p-6 md:p-8">
               <div className="text-center mb-8">
                 <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <GraduationCap className="text-white w-8 h-8" />
@@ -108,7 +108,7 @@ function Register() {
 
               {!isSubmitted && (
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">First Name *</label>
                       <input
@@ -183,7 +183,7 @@ function Register() {
                     />
                   </div>
 
-                  <div className="flex gap-3 pt-4">
+                  <div className="flex gap-2 md:gap-3 pt-4">
                     <button
                       type="submit"
                       disabled={loading}
@@ -205,7 +205,7 @@ function Register() {
               )}
 
               {isSubmitted && (
-                <div className="flex gap-3 pt-4">
+                <div className="flex gap-2 md:gap-3 pt-4">
                   <button
                     disabled
                     className="flex-1 bg-green-600 text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 opacity-75 cursor-not-allowed"

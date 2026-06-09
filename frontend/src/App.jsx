@@ -916,7 +916,7 @@ function App() {
                   <tbody className="divide-y">
                     {filteredStudents.map(student => (
                       <tr key={student.id} className="hover:bg-gray-50">
-                        <td className="p-4"><input type="checkbox" checked={selectedStudents.includes(student.id)} onChange={() => toggleStudentSelectionDelete(student.id)} className="w-4 h-4 rounded" /></td>
+                        <td className="p-4"><input type="checkbox" checked={selectedStudents.includes(student.id)} onChange={() => toggleStudentSelectionDelete(student.id)} className="w-4 h-4 rounded" /></table>
                         <td className="p-4 font-medium">{student.name || '-'}</td>
                         <td className="p-4 text-sm font-mono">{student.email}</td>
                         <td className="p-4 text-sm font-mono">{student.phone || '-'}</td>
@@ -969,7 +969,7 @@ function App() {
                       </tr>
                     ))}
                     {filteredStudents.length === 0 && (
-                      <tr><td colSpan="7" className="text-center p-8 text-gray-500">No students found</tr>
+                      <tr><td colSpan="7" className="text-center p-8 text-gray-500">No students found</td></tr>
                     )}
                   </tbody>
                 </table>

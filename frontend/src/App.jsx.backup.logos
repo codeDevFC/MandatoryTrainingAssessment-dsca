@@ -11,7 +11,7 @@ import {
   RefreshCw, AlertTriangle as AlertTriangleIcon
 } from 'lucide-react';
 
-const API_URL = 'https://dsca-backend.onrender.com';
+const API_URL = 'http://localhost:3002';
 
 function App() {
   const [user, setUser] = useState(null);

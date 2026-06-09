@@ -70,6 +70,8 @@ function Register() {
   };
 
   return (
+     <>
+      <Header />
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-6">
       <div className="bg-white border border-slate-200 rounded-2xl shadow-xl max-w-2xl w-full p-8">
         <div className="text-center mb-8">
@@ -276,7 +278,10 @@ function Register() {
         )}
       </div>
     </div>
+          <Footer />
+    </>
   );
 }
 
 export default Register;
+  

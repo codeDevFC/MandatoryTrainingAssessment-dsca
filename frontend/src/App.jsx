@@ -11,7 +11,11 @@ import {
   RefreshCw, AlertTriangle as AlertTriangleIcon
 } from 'lucide-react';
 
-const API_URL = 'http://localhost:3002';
+import Header from './components/Header';
+import Footer from './components/Footer';
+import PrintHeader from './components/PrintHeader';
+
+const API_URL = import.meta.env.VITE_API_URL || 'https://dsca-backend.onrender.com';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -636,7 +640,10 @@ function App() {
   };
 
   if (!user) {
-    return (
+  return (
+    <>
+      <PrintHeader />
+      <Header />
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-6">
         <div className="bg-white border border-slate-200 rounded-2xl shadow-xl max-w-md w-full p-8">
           <div className="text-center mb-8">
@@ -678,14 +685,18 @@ function App() {
           <div className="text-center mt-4">
             <a href="/register" className="text-sm text-indigo-600 hover:underline">📝 New Student? Register Here</a>
           </div>
-        </div>
-      </div>
-    );
-  }
+              </div>
+    </div>
+      <Footer />
+    </>
+  );
+}
 
   if (selectedModule && !showResults) {
-    const questions = selectedModule.questions || [];
-    return (
+  return (
+    <>
+      <PrintHeader />
+      <Header />
       <div className="min-h-screen bg-slate-50">
         <div className="bg-white border-b border-slate-200 sticky top-0 z-10 px-6 py-4 flex justify-between items-center">
           <button onClick={() => setSelectedModule(null)} className="text-slate-600 hover:text-slate-900">← Back to Dashboard</button>
@@ -728,25 +739,33 @@ function App() {
           </div>
         </div>
       </div>
-    );
-  }
+        <Footer />
+    </>
+  );
+}
 
-  if (showResults && result) {
+   if (showResults && result) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+      <>
+        <PrintHeader />
+        <Header />
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
         <div className="bg-white rounded-xl border border-slate-200 p-8 max-w-md text-center shadow-lg">
           <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4 ${result.passed ? 'bg-green-100' : 'bg-red-100'}`}>
             {result.passed ? <CheckCircle className="w-12 h-12 text-green-600" /> : <AlertCircle className="w-12 h-12 text-red-600" />}
           </div>
           <h2 className="text-2xl font-bold mb-2">{result.passed ? 'Congratulations! 🎉' : 'Not This Time ❌'}</h2>
           <p className="text-slate-600 mb-4">You scored <strong className="text-2xl">{result.score}</strong> out of <strong>{result.total}</strong></p>
-          <button onClick={() => { setSelectedModule(null); setShowResults(false); fetchUserProgress(user.id); }} className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">Return to Dashboard</button>
+                   <button onClick={() => { setSelectedModule(null); setShowResults(false); fetchUserProgress(user.id); }} className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">Return to Dashboard</button>
         </div>
       </div>
-    );
+      <Footer />
+    </>
+  );
   }
 
   if (user.role !== 'TRAINEE') {
+  
     const totalStudents = allStudents.length;
     const totalAttempts = allStudents.reduce((acc, s) => acc + (s.moduleAttempts?.length || 0), 0);
     const totalPassed = allStudents.reduce((acc, s) => acc + (s.moduleAttempts?.filter(a => a.passed).length || 0), 0);
@@ -755,6 +774,9 @@ function App() {
     const pendingCount = registeredStudents.filter(s => !s.paymentConfirmed).length;
 
     return (
+    <>
+      <PrintHeader />
+      <Header />
       <div className="min-h-screen bg-slate-50">
         <div className="bg-white border-b border-slate-200 sticky top-0 z-10 px-6 py-4 flex justify-between items-center shadow-sm">
           <div className="flex items-center gap-3">
@@ -1113,10 +1135,12 @@ function App() {
               </div>
             </div>
           </div>
-        )}
+                )}
       </div>
-    );
-  }
+      <Footer />
+    </>
+  );
+}
 
   const stats = {
     total: modules.length,
@@ -1126,6 +1150,9 @@ function App() {
   };
 
   return (
+  <>
+    <PrintHeader />
+    <Header />
     <div className="min-h-screen bg-slate-50">
       <div className="bg-white border-b border-slate-200 sticky top-0 z-10 px-6 py-4 flex justify-between items-center shadow-sm">
         <div className="flex items-center gap-3"><div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-md"><BookOpen className="w-5 h-5 text-white" /></div><div><h1 className="font-bold text-slate-800">COHT Assessment</h1><p className="text-xs text-slate-500">Trainee Dashboard</p></div></div>
@@ -1166,6 +1193,8 @@ function App() {
         </div>
       </div>
     </div>
+      <Footer />
+    </>
   );
 }
 

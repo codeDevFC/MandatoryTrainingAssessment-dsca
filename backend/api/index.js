@@ -331,62 +331,80 @@ app.get('/api/modules/:id', async (req, res) => {
  }
 });
 
+// FIXED SUBMIT ASSESSMENT with proper error tracking
 app.post('/api/modules/:id/submit', async (req, res) => {
  const { userId, answers, timeSpent } = req.body;
  const moduleId = parseInt(req.params.id);
  try {
  const moduleData = await prisma.module.findUnique({ where: { id: moduleId } });
  if (!moduleData) return res.status(404).json({ error: 'Module not found' });
+ 
  let questions = [];
  if (moduleData.questions && typeof moduleData.questions === 'string') {
  try { questions = JSON.parse(moduleData.questions); } catch(e) { questions = []; }
  }
+ 
  let score = 0;
  const errors = [];
+ 
  questions.forEach((q, i) => {
- const userAnswer = answers[i];
- const isCorrect = (userAnswer === q.correct);
- if (isCorrect) {
- score++;
- } else {
- errors.push({
- questionNumber: i + 1,
- questionText: q.text,
- userAnswer: userAnswer === 0 ? (q.options ? q.options[0] : 'True') : (q.options ? q.options[1] : 'False'),
- correctAnswer: q.correct === 0 ? (q.options ? q.options[0] : 'True') : (q.options ? q.options[1] : 'False'),
- options: q.options || ["True", "False"]
+   const userAnswer = answers[i];
+   const isCorrect = (userAnswer === q.correct);
+   if (isCorrect) {
+     score++;
+   } else {
+     // Get the text of the user's answer and correct answer
+     let userAnswerText = '';
+     let correctAnswerText = '';
+     if (q.options && q.options.length > 0) {
+       userAnswerText = userAnswer !== undefined ? q.options[userAnswer] : 'No answer';
+       correctAnswerText = q.options[q.correct];
+     } else {
+       userAnswerText = userAnswer === 0 ? 'True' : (userAnswer === 1 ? 'False' : 'No answer');
+       correctAnswerText = q.correct === 0 ? 'True' : 'False';
+     }
+     
+     errors.push({
+       questionNumber: i + 1,
+       questionText: q.text,
+       userAnswer: userAnswerText,
+       correctAnswer: correctAnswerText
+     });
+   }
  });
- }
- });
+ 
  const passed = score >= moduleData.passMark;
+ 
  const attempt = await prisma.moduleAttempt.create({
- data: {
- userId: userId,
- moduleId: moduleId,
- score: score,
- passed: passed,
- answers: JSON.stringify(answers),
- errors: JSON.stringify(errors),
- timeSpent: timeSpent || 0,
- completedAt: new Date()
- }
+   data: {
+     userId: userId,
+     moduleId: moduleId,
+     score: score,
+     passed: passed,
+     answers: JSON.stringify(answers),
+     errors: JSON.stringify(errors),
+     timeSpent: timeSpent || 0,
+     completedAt: new Date()
+   }
  });
+ 
  await prisma.moduleProgress.upsert({
- where: { userId_moduleId: { userId: userId, moduleId: moduleId } },
- update: { status: passed ? 'passed' : 'failed', score: score, attempts: { increment: 1 } },
- create: { userId: userId, moduleId: moduleId, status: passed ? 'passed' : 'failed', score: score, attempts: 1 }
+   where: { userId_moduleId: { userId: userId, moduleId: moduleId } },
+   update: { status: passed ? 'passed' : 'failed', score: score, attempts: { increment: 1 } },
+   create: { userId: userId, moduleId: moduleId, status: passed ? 'passed' : 'failed', score: score, attempts: 1 }
  });
+ 
  res.json({
- score: score,
- passed: passed,
- total: questions.length,
- passMark: moduleData.passMark,
- errors: errors.slice(0, 10),
- attemptId: attempt.id
+   score: score,
+   passed: passed,
+   total: questions.length,
+   passMark: moduleData.passMark,
+   errors: errors.slice(0, 10),
+   attemptId: attempt.id
  });
  } catch (error) {
- console.error('Submit error:', error);
- res.status(500).json({ error: 'Submit failed' });
+   console.error('Submit error:', error);
+   res.status(500).json({ error: 'Submit failed: ' + error.message });
  }
 });
 
@@ -417,34 +435,45 @@ app.get('/api/user/:userId/export', async (req, res) => {
  }
  });
  if (!user) return res.status(404).json({ error: 'User not found' });
+ 
  const attemptsWithErrors = user.moduleAttempts.map(attempt => {
- let errors = [];
- try {
- errors = JSON.parse(attempt.errors || '[]');
- } catch(e) { errors = []; }
- return {
- id: attempt.id,
- module: attempt.module,
- score: attempt.score,
- passed: attempt.passed,
- timeSpent: attempt.timeSpent,
- completedAt: attempt.completedAt,
- errors: errors,
- totalQuestions: 20
- };
+   let errors = [];
+   try {
+     const parsedErrors = JSON.parse(attempt.errors || '[]');
+     errors = Array.isArray(parsedErrors) ? parsedErrors : [];
+   } catch(e) { 
+     errors = []; 
+   }
+   return {
+     id: attempt.id,
+     module: attempt.module,
+     score: attempt.score,
+     passed: attempt.passed,
+     timeSpent: attempt.timeSpent,
+     completedAt: attempt.completedAt,
+     errors: errors,
+     totalQuestions: 20
+   };
  });
+ 
  res.json({
- user: { name: user.name, email: user.email, role: user.role, joinedAt: user.createdAt, trainingRoute: user.trainingRoute },
- totalAttempts: user.moduleAttempts.length,
- passedModules: user.moduleAttempts.filter(a => a.passed).length,
- failedModules: user.moduleAttempts.filter(a => !a.passed).length,
- averageScore: user.moduleAttempts.length > 0 ? user.moduleAttempts.reduce((acc, a) => acc + a.score, 0) / user.moduleAttempts.length : 0,
- totalTimeSpent: user.moduleAttempts.reduce((acc, a) => acc + (a.timeSpent || 0), 0),
- attempts: attemptsWithErrors
+   user: { 
+     name: user.name, 
+     email: user.email, 
+     role: user.role, 
+     joinedAt: user.createdAt, 
+     trainingRoute: user.trainingRoute 
+   },
+   totalAttempts: user.moduleAttempts.length,
+   passedModules: user.moduleAttempts.filter(a => a.passed).length,
+   failedModules: user.moduleAttempts.filter(a => !a.passed).length,
+   averageScore: user.moduleAttempts.length > 0 ? user.moduleAttempts.reduce((acc, a) => acc + a.score, 0) / user.moduleAttempts.length : 0,
+   totalTimeSpent: user.moduleAttempts.reduce((acc, a) => acc + (a.timeSpent || 0), 0),
+   attempts: attemptsWithErrors
  });
  } catch (error) {
- console.error('Export error:', error);
- res.status(500).json({ error: 'Export failed' });
+   console.error('Export error:', error);
+   res.status(500).json({ error: 'Export failed: ' + error.message });
  }
 });
 

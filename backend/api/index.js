@@ -4,7 +4,6 @@ const { PrismaClient } = require('@prisma/client');
 const app = express();
 const prisma = new PrismaClient();
 
-// Updated CORS to allow your Vercel frontend
 app.use(cors({
  origin: [
  'http://localhost:5173',
@@ -32,7 +31,6 @@ function generateEmail(surname, firstName) {
  return formattedSurname + initial + "@coht.co.uk";
 }
 
-// Health check
 app.get('/api/health', (req, res) => {
  res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
@@ -40,18 +38,15 @@ app.get('/api/health', (req, res) => {
 // ============ REGISTRATION ============
 app.post('/api/auth/register', async (req, res) => {
  const { firstName, lastName, email, phone, address, postCode } = req.body;
- 
  const phoneRegex = /^\+44\d{10}$/;
  if (!phoneRegex.test(phone)) {
  return res.status(400).json({ error: 'Phone must start with +44 and have 10 digits' });
  }
- 
  try {
  const existingUser = await prisma.user.findUnique({ where: { email: email } });
  if (existingUser) {
  return res.status(400).json({ error: 'Email already registered' });
  }
- 
  const user = await prisma.user.create({
  data: {
  email: email,
@@ -64,7 +59,6 @@ app.post('/api/auth/register', async (req, res) => {
  paymentConfirmed: false
  }
  });
- 
  res.json({
  success: true,
  message: 'Registration submitted! Awaiting payment confirmation.',
@@ -76,7 +70,6 @@ app.post('/api/auth/register', async (req, res) => {
  }
 });
 
-// ============ GET STUDENTS WITH STATUS ============
 app.get('/api/admin/all-students-with-status', async (req, res) => {
  try {
  const students = await prisma.user.findMany({
@@ -98,7 +91,6 @@ app.get('/api/admin/all-students-with-status', async (req, res) => {
  }
 });
 
-// ============ GET STUDENT FULL DETAILS ============
 app.get('/api/admin/student-full-details/:id', async (req, res) => {
  try {
  const student = await prisma.user.findUnique({
@@ -122,9 +114,7 @@ app.get('/api/admin/student-full-details/:id', async (req, res) => {
  }
  }
  });
- 
  if (!student) return res.status(404).json({ error: 'Student not found' });
- 
  res.json({
  ...student,
  currentCode: student.loginCodes[0]?.code || null,
@@ -136,7 +126,6 @@ app.get('/api/admin/student-full-details/:id', async (req, res) => {
  }
 });
 
-// ============ CONFIRM PAYMENT ============
 app.post('/api/admin/confirm-payment/:id', async (req, res) => {
  const { id } = req.params;
  try {
@@ -150,82 +139,65 @@ app.post('/api/admin/confirm-payment/:id', async (req, res) => {
  }
 });
 
-// ============ GENERATE CODE WITH ROUTE ============
 app.post('/api/admin/generate-code-with-route/:id', async (req, res) => {
  const { id } = req.params;
  const { trainingRoute = 'FULL_22', selectedModules = [] } = req.body;
- 
  try {
  const user = await prisma.user.findUnique({ where: { id: id } });
  if (!user) return res.status(404).json({ error: 'Student not found' });
  if (!user.paymentConfirmed) return res.status(400).json({ error: 'Payment not confirmed yet' });
- 
  const nameParts = user.name ? user.name.split(' ') : ['user', 'unknown'];
  const surname = nameParts[nameParts.length - 1] || 'user';
  const firstName = nameParts[0] || 'user';
  const loginEmail = surname.toLowerCase() + firstName.charAt(0).toLowerCase() + "@coht.co.uk";
- 
  const selectedModulesJson = trainingRoute === 'CUSTOM' ? JSON.stringify(selectedModules) : null;
- 
  await prisma.user.update({
  where: { id: id },
  data: { email: loginEmail, trainingRoute: trainingRoute, selectedModules: selectedModulesJson }
  });
- 
  await prisma.loginCode.deleteMany({ where: { email: loginEmail } });
  const code = generateCode();
  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
  await prisma.loginCode.create({ data: { email: loginEmail, code: code, expiresAt: expiresAt } });
- 
  const BASE_URL = 'https://dsca-mta-quiz01.vercel.app';
  const whatsappMessage = `COHT Training Credentials%0A%0A? Login Email: ${loginEmail}%0A? Code: ${code}%0A%0A? Login: ${BASE_URL}%0A%0A? Code expires in 30 days`;
  const whatsappLink = `https://wa.me/${user.phone.replace('+', '')}?text=${whatsappMessage}`;
- 
  res.json({ success: true, code: code, loginEmail: loginEmail, phone: user.phone, whatsappLink: whatsappLink, trainingRoute: trainingRoute });
  } catch (error) {
  res.status(500).json({ error: 'Failed to generate code: ' + error.message });
  }
 });
 
-// ============ RESEND LOGIN DETAILS ============
 app.post('/api/admin/resend-login-details/:id', async (req, res) => {
  const { id } = req.params;
- 
  try {
  const user = await prisma.user.findUnique({ where: { id: id } });
  if (!user) return res.status(404).json({ error: 'Student not found' });
- 
  let loginCode = await prisma.loginCode.findFirst({
  where: { email: user.email, expiresAt: { gt: new Date() } },
  orderBy: { createdAt: 'desc' }
  });
- 
  if (!loginCode) {
  const code = generateCode();
  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
  loginCode = await prisma.loginCode.create({ data: { email: user.email, code: code, expiresAt: expiresAt } });
  }
- 
  const BASE_URL = 'https://dsca-mta-quiz01.vercel.app';
  const whatsappMessage = `COHT Training Credentials%0A%0A? Login Email: ${user.email}%0A? Code: ${loginCode.code}%0A%0A? Login: ${BASE_URL}%0A%0A? Code expires in 30 days`;
  const whatsappLink = `https://wa.me/${user.phone.replace('+', '')}?text=${whatsappMessage}`;
- 
  res.json({ success: true, code: loginCode.code, loginEmail: user.email, whatsappLink: whatsappLink });
  } catch (error) {
  res.status(500).json({ error: 'Failed to resend credentials: ' + error.message });
  }
 });
 
-// ============ ADMIN LOGIN ============
 app.post('/api/auth/admin-login', async (req, res) => {
  const { email, password } = req.body;
- 
  const validAdmins = {
  'admin@careworks.com': 'Admin@2025',
  'director@careworks.com': 'Director@2025',
  'supervisor@careworks.com': 'Supervisor@2025'
  };
- 
  try {
  if (validAdmins[email] && validAdmins[email] === password) {
  let user = await prisma.user.findUnique({ where: { email: email } });
@@ -244,16 +216,13 @@ app.post('/api/auth/admin-login', async (req, res) => {
  }
 });
 
-// ============ BATCH GENERATE CODES ============
 app.post('/api/admin/batch-generate-codes', async (req, res) => {
  const { students, trainingRoute = 'FULL_22', selectedModules = [] } = req.body;
  const results = [];
- 
  for (const student of students) {
  try {
  const email = generateEmail(student.surname, student.firstName);
  const selectedModulesJson = trainingRoute === 'CUSTOM' ? JSON.stringify(selectedModules) : null;
- 
  await prisma.user.upsert({
  where: { email: email },
  update: { trainingRoute: trainingRoute, selectedModules: selectedModulesJson },
@@ -266,7 +235,6 @@ app.post('/api/admin/batch-generate-codes', async (req, res) => {
  phone: student.phone || ''
  }
  });
- 
  await prisma.loginCode.deleteMany({ where: { email: email } });
  const code = generateCode();
  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
@@ -279,7 +247,6 @@ app.post('/api/admin/batch-generate-codes', async (req, res) => {
  res.json({ success: true, codes: results, count: results.length });
 });
 
-// ============ GET ALL STUDENTS ============
 app.get('/api/admin/students', async (req, res) => {
  try {
  const students = await prisma.user.findMany({
@@ -293,7 +260,6 @@ app.get('/api/admin/students', async (req, res) => {
  }
 });
 
-// ============ GET ALL MODULES ============
 app.get('/api/admin/modules', async (req, res) => {
  try {
  const modules = await prisma.module.findMany({
@@ -306,34 +272,28 @@ app.get('/api/admin/modules', async (req, res) => {
  }
 });
 
-// ============ VERIFY TRAINEE CODE ============
 app.post('/api/auth/verify-code', async (req, res) => {
  const { email, code } = req.body;
- 
  try {
  const loginCode = await prisma.loginCode.findFirst({
  where: { email: email, code: code, expiresAt: { gt: new Date() } },
  orderBy: { createdAt: 'desc' }
  });
- 
  if (!loginCode) {
  return res.status(401).json({ error: 'Invalid or expired code' });
  }
- 
  let user = await prisma.user.findUnique({ where: { email: email } });
  if (!user) {
  user = await prisma.user.create({
  data: { email: email, name: email.split('@')[0], role: 'TRAINEE', trainingRoute: 'FULL_22' }
  });
  }
- 
  res.json(user);
  } catch (error) {
  res.status(500).json({ error: 'Verification failed' });
  }
 });
 
-// ============ GET MODULES FOR TRAINEE ============
 app.get('/api/modules', async (req, res) => {
  const userId = req.query.userId;
  try {
@@ -358,7 +318,6 @@ app.get('/api/modules', async (req, res) => {
  }
 });
 
-// ============ GET SINGLE MODULE ============
 app.get('/api/modules/:id', async (req, res) => {
  try {
  const moduleData = await prisma.module.findUnique({ where: { id: parseInt(req.params.id) } });
@@ -372,48 +331,65 @@ app.get('/api/modules/:id', async (req, res) => {
  }
 });
 
-// ============ SUBMIT ASSESSMENT ============
 app.post('/api/modules/:id/submit', async (req, res) => {
  const { userId, answers, timeSpent } = req.body;
  const moduleId = parseInt(req.params.id);
  try {
  const moduleData = await prisma.module.findUnique({ where: { id: moduleId } });
  if (!moduleData) return res.status(404).json({ error: 'Module not found' });
- 
  let questions = [];
  if (moduleData.questions && typeof moduleData.questions === 'string') {
  try { questions = JSON.parse(moduleData.questions); } catch(e) { questions = []; }
  }
- 
  let score = 0;
- questions.forEach((q, i) => { if (answers[i] === q.correct) score++; });
- const passed = score >= moduleData.passMark;
- 
- await prisma.moduleAttempt.create({
- data: { 
- userId: userId, 
- moduleId: moduleId, 
- score: score, 
- passed: passed, 
- answers: JSON.stringify(answers), 
- timeSpent: timeSpent || 0, 
- completedAt: new Date() 
+ const errors = [];
+ questions.forEach((q, i) => {
+ const userAnswer = answers[i];
+ const isCorrect = (userAnswer === q.correct);
+ if (isCorrect) {
+ score++;
+ } else {
+ errors.push({
+ questionNumber: i + 1,
+ questionText: q.text,
+ userAnswer: userAnswer === 0 ? (q.options ? q.options[0] : 'True') : (q.options ? q.options[1] : 'False'),
+ correctAnswer: q.correct === 0 ? (q.options ? q.options[0] : 'True') : (q.options ? q.options[1] : 'False'),
+ options: q.options || ["True", "False"]
+ });
  }
  });
- 
+ const passed = score >= moduleData.passMark;
+ const attempt = await prisma.moduleAttempt.create({
+ data: {
+ userId: userId,
+ moduleId: moduleId,
+ score: score,
+ passed: passed,
+ answers: JSON.stringify(answers),
+ errors: JSON.stringify(errors),
+ timeSpent: timeSpent || 0,
+ completedAt: new Date()
+ }
+ });
  await prisma.moduleProgress.upsert({
  where: { userId_moduleId: { userId: userId, moduleId: moduleId } },
  update: { status: passed ? 'passed' : 'failed', score: score, attempts: { increment: 1 } },
  create: { userId: userId, moduleId: moduleId, status: passed ? 'passed' : 'failed', score: score, attempts: 1 }
  });
- 
- res.json({ score: score, passed: passed, total: questions.length, passMark: moduleData.passMark });
+ res.json({
+ score: score,
+ passed: passed,
+ total: questions.length,
+ passMark: moduleData.passMark,
+ errors: errors.slice(0, 10),
+ attemptId: attempt.id
+ });
  } catch (error) {
+ console.error('Submit error:', error);
  res.status(500).json({ error: 'Submit failed' });
  }
 });
 
-// ============ GET USER PROGRESS ============
 app.get('/api/user/:userId/progress', async (req, res) => {
  try {
  const progress = await prisma.moduleProgress.findMany({ where: { userId: req.params.userId } });
@@ -428,28 +404,50 @@ app.get('/api/user/:userId/progress', async (req, res) => {
  }
 });
 
-// ============ EXPORT REPORT ============
+// ENHANCED EXPORT REPORT with detailed errors
 app.get('/api/user/:userId/export', async (req, res) => {
  try {
  const user = await prisma.user.findUnique({
  where: { id: req.params.userId },
- include: { moduleAttempts: { include: { module: true }, orderBy: { completedAt: 'desc' } } }
+ include: {
+ moduleAttempts: {
+ include: { module: true },
+ orderBy: { completedAt: 'desc' }
+ }
+ }
  });
  if (!user) return res.status(404).json({ error: 'User not found' });
- 
+ const attemptsWithErrors = user.moduleAttempts.map(attempt => {
+ let errors = [];
+ try {
+ errors = JSON.parse(attempt.errors || '[]');
+ } catch(e) { errors = []; }
+ return {
+ id: attempt.id,
+ module: attempt.module,
+ score: attempt.score,
+ passed: attempt.passed,
+ timeSpent: attempt.timeSpent,
+ completedAt: attempt.completedAt,
+ errors: errors,
+ totalQuestions: 20
+ };
+ });
  res.json({
- user: { name: user.name, email: user.email, role: user.role },
+ user: { name: user.name, email: user.email, role: user.role, joinedAt: user.createdAt, trainingRoute: user.trainingRoute },
  totalAttempts: user.moduleAttempts.length,
  passedModules: user.moduleAttempts.filter(a => a.passed).length,
  failedModules: user.moduleAttempts.filter(a => !a.passed).length,
- attempts: user.moduleAttempts
+ averageScore: user.moduleAttempts.length > 0 ? user.moduleAttempts.reduce((acc, a) => acc + a.score, 0) / user.moduleAttempts.length : 0,
+ totalTimeSpent: user.moduleAttempts.reduce((acc, a) => acc + (a.timeSpent || 0), 0),
+ attempts: attemptsWithErrors
  });
  } catch (error) {
+ console.error('Export error:', error);
  res.status(500).json({ error: 'Export failed' });
  }
 });
 
-// ============ DELETE USER ============
 app.delete('/api/admin/delete-user/:id', async (req, res) => {
  try {
  await prisma.user.delete({ where: { id: req.params.id } });
@@ -459,7 +457,6 @@ app.delete('/api/admin/delete-user/:id', async (req, res) => {
  }
 });
 
-// ============ BULK DELETE USERS ============
 app.delete('/api/admin/bulk-delete-users', async (req, res) => {
  const { userIds } = req.body;
  if (!userIds || userIds.length === 0) {
@@ -475,6 +472,6 @@ app.delete('/api/admin/bulk-delete-users', async (req, res) => {
 
 const PORT = 3002;
 app.listen(PORT, '0.0.0.0', () => {
- console.log(`? Backend running on port ${PORT}`);
- console.log(`? Accepting requests from Vercel frontend`);
+ console.log(`✅ Backend running on port ${PORT}`);
+ console.log(`✅ Accepting requests from Vercel frontend`);
 });

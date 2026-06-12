@@ -10,3 +10,6 @@ dist/
 .env*.local
 .env*
 backend/.env
+node_modules/
+backend/node_modules/
+*.backup-*

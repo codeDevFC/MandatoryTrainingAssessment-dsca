@@ -1,0 +1,24 @@
+
+  // ============ SHOW STUDENT DETAILS WITH LOGIN CREDENTIALS ============
+  const showStudentFullDetails = async (student) => {
+    setSelectedStudentForDetails(student);
+    setShowDetailsPanel(true);
+    
+    // Try to fetch existing login code if any
+    try {
+      const res = await fetch(`${API_URL}/api/admin/student-full-details/${student.id}`);
+      const data = await res.json();
+      if (data.currentCode) {
+        setGeneratedLoginDetails({
+          loginEmail: data.email,
+          code: data.currentCode,
+          expiresAt: data.codeExpiresAt
+        });
+      } else {
+        setGeneratedLoginDetails(null);
+      }
+    } catch (err) {
+      console.error('Failed to fetch login details:', err);
+      setGeneratedLoginDetails(null);
+    }
+  };

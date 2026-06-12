@@ -87,3 +87,18 @@ model LoginCode {
   createdAt DateTime @default(now())
   user      User     @relation(fields: [email], references: [email], onDelete: Cascade)
 }
+
+model ModuleAttempt {
+ id String @id @default(cuid())
+ userId String
+ moduleId Int
+ score Int
+ passed Boolean
+ answers String
+ wrongAnswers String?  // NEW: Store wrong answers JSON
+ timeSpent Int
+ attemptNumber Int @default(1)
+ completedAt DateTime
+ user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+ module Module @relation(fields: [moduleId], references: [id])
+}

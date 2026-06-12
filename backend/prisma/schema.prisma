@@ -8,61 +8,61 @@ datasource db {
 }
 
 model User {
-  id                 String           @id @default(cuid())
-  email              String           @unique
-  name               String?
-  role               String           @default("TRAINEE")
-  trainingRoute      String           @default("FULL_22")
-  selectedModules    String?
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
-  address            String?
-  paymentConfirmed   Boolean          @default(false)
-  paymentConfirmedAt DateTime?
-  phone              String?
-  postCode           String?
-  registrationDate   DateTime         @default(now())
-  loginCodes         LoginCode[]
-  moduleAttempts     ModuleAttempt[]
-  progress           ModuleProgress[]
-  results            QuizResult[]
+  id                  String          @id @default(cuid())
+  email               String          @unique
+  name                String?
+  role                String          @default("TRAINEE")
+  trainingRoute       String          @default("FULL_22")
+  selectedModules     String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  address             String?
+  paymentConfirmed    Boolean         @default(false)
+  paymentConfirmedAt  DateTime?
+  phone               String?
+  postCode            String?
+  registrationDate    DateTime        @default(now())
+  loginCodes          LoginCode[]
+  moduleAttempts      ModuleAttempt[]
+  progress            ModuleProgress[]
+  results             QuizResult[]
 }
 
 model Module {
-  id             Int              @id
-  name           String
-  passMark       Int              @default(15)
-  questions      String
-  moduleAttempts ModuleAttempt[]
-  progress       ModuleProgress[]
-  results        QuizResult[]
+  id              Int             @id
+  name            String
+  passMark        Int             @default(15)
+  questions       String
+  moduleAttempts  ModuleAttempt[]
+  progress        ModuleProgress[]
+  results         QuizResult[]
 }
 
 model ModuleAttempt {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   userId        String
   moduleId      Int
   score         Int
   passed        Boolean
   answers       String
-  timeSpent     Int
-  completedAt   DateTime
-  attemptNumber Int      @default(1)
   errors        String?
-  module        Module   @relation(fields: [moduleId], references: [id])
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timeSpent     Int
+  attemptNumber Int       @default(1)
+  completedAt   DateTime
+  module        Module    @relation(fields: [moduleId], references: [id])
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model ModuleProgress {
-  id       String    @id @default(cuid())
-  userId   String
-  moduleId Int
-  status   String    @default("locked")
-  score    Int?
-  attempts Int       @default(0)
-  passedAt DateTime?
-  module   Module    @relation(fields: [moduleId], references: [id])
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  userId    String
+  moduleId  Int
+  status    String   @default("locked")
+  score     Int?
+  attempts  Int      @default(0)
+  passedAt  DateTime?
+  module    Module   @relation(fields: [moduleId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, moduleId])
 }
@@ -86,19 +86,4 @@ model LoginCode {
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
   user      User     @relation(fields: [email], references: [email], onDelete: Cascade)
-}
-
-model ModuleAttempt {
- id String @id @default(cuid())
- userId String
- moduleId Int
- score Int
- passed Boolean
- answers String
- wrongAnswers String?  // NEW: Store wrong answers JSON
- timeSpent Int
- attemptNumber Int @default(1)
- completedAt DateTime
- user User @relation(fields: [userId], references: [id], onDelete: Cascade)
- module Module @relation(fields: [moduleId], references: [id])
 }

@@ -72,6 +72,9 @@ function App() {
   // Report state
   const [reportData, setReportData] = useState(null);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showDetailsPanel, setShowDetailsPanel] = useState(false);
+  const [selectedStudentForDetails, setSelectedStudentForDetails] = useState(null);
+  const [generatedLoginDetails, setGeneratedLoginDetails] = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
 
   // ====== FETCH FUNCTIONS ======
@@ -1025,6 +1028,15 @@ function App() {
           </div>
         )}
         
+
+        {showDetailsPanel && selectedStudentForDetails && (
+          <StudentDetailsPanel 
+            student={selectedStudentForDetails} 
+            loginDetails={generatedLoginDetails} 
+            onClose={() => { setShowDetailsPanel(false); setSelectedStudentForDetails(null); setGeneratedLoginDetails(null); }} 
+            onRefresh={() => showStudentFullDetails(selectedStudentForDetails)} 
+          />
+        )}
         {showReportModal && reportData && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[85vh] overflow-y-auto p-6"><div className="flex justify-between items-center mb-4"><h3 className="text-xl font-bold">Assessment Report</h3><button onClick={() => setShowReportModal(false)} className="text-gray-500">✕</button></div><div className="bg-gray-50 p-4 rounded-lg mb-4"><p><strong>{reportData.user?.name}</strong><br />{reportData.user?.email}</p></div><div className="grid grid-cols-3 gap-4 mb-6"><div className="text-center p-3 bg-gray-100 rounded"><div className="text-2xl font-bold">{reportData.totalAttempts}</div><div className="text-xs">Attempts</div></div><div className="text-center p-3 bg-green-100 rounded"><div className="text-2xl font-bold text-green-600">{reportData.passedModules}</div><div className="text-xs">Passed</div></div><div className="text-center p-3 bg-red-100 rounded"><div className="text-2xl font-bold text-red-600">{reportData.failedModules}</div><div className="text-xs">Failed</div></div></div><div className="space-y-4">{reportData.attempts?.map(attempt => (<div key={attempt.id} className="border rounded-lg p-4"><div className="flex justify-between items-center mb-2"><h4 className="font-semibold">{attempt.module?.name}</h4><span className={`px-2 py-1 rounded text-xs ${attempt.passed ? 'bg-green-100' : 'bg-red-100'}`}>{attempt.passed ? 'PASSED' : 'FAILED'} {attempt.score}/20</span></div>{attempt.errors?.length > 0 && (<div className="mt-2"><p className="text-sm font-medium text-red-600">Incorrect Questions:</p>{attempt.errors.map((err, i) => (<div key={i} className="text-sm bg-red-50 p-2 rounded mt-1"><p className="font-medium">Q{err.questionNumber}: {err.questionText}</p><p className="text-red-600">Your answer: {err.userAnswer}</p><p className="text-green-600">Correct: {err.correctAnswer}</p></div>))}</div>)}</div>))}</div><div className="flex gap-3 mt-6"><button onClick={printReport} className="flex-1 bg-indigo-600 text-white py-2 rounded-lg">Print Report</button><button onClick={() => setShowReportModal(false)} className="flex-1 bg-gray-200 py-2 rounded-lg">Close</button></div></div>

@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
-import { GraduationCap, Send, CreditCard, CheckCircle, AlertCircle, MessageCircle } from 'lucide-react';
-import Header from './components/Header';
-import Footer from './components/Footer';
+import { GraduationCap, Send, CreditCard, CheckCircle, AlertCircle, MessageCircle, ArrowLeft } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://dsca-backend.onrender.com';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002';
 
 function Register() {
   const [formData, setFormData] = useState({
@@ -76,9 +74,29 @@ function Register() {
   };
 
   return (
-    <>
-      <Header />
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8 px-3 md:py-12 md:px-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-4 py-3 shadow-lg">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col items-center gap-3 md:flex-row md:justify-between md:gap-4">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                <GraduationCap className="w-6 h-6 text-slate-900" />
+              </div>
+              <div className="border-l-2 border-indigo-400 pl-2 md:pl-3">
+                <div className="text-white font-bold text-sm md:text-lg">Centre of Healthcare Training</div>
+                <div className="text-indigo-300 text-[10px] md:text-xs">Mandatory Training Assessment</div>
+              </div>
+            </div>
+            <a href="/" className="text-indigo-300 hover:text-white text-sm flex items-center gap-1 transition">
+              <ArrowLeft size={16} /> Back to Login
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="py-8 px-3 md:py-12 md:px-4">
         <div className="max-w-2xl mx-auto">
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
             <div className="p-6 md:p-8">
@@ -128,7 +146,7 @@ function Register() {
                         value={formData.lastName}
                         onChange={handleChange}
                         required
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition"
                       />
                     </div>
                   </div>
@@ -141,7 +159,7 @@ function Register() {
                       value={formData.email}
                       onChange={handleChange}
                       required
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition"
                     />
                   </div>
 
@@ -154,7 +172,7 @@ function Register() {
                       onChange={handleChange}
                       placeholder="+447123456789"
                       required
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition"
                     />
                     <p className="text-xs text-slate-500 mt-1">Must start with +44 (e.g., +447123456789)</p>
                   </div>
@@ -167,7 +185,7 @@ function Register() {
                       value={formData.address}
                       onChange={handleChange}
                       required
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition"
                     />
                   </div>
 
@@ -179,7 +197,7 @@ function Register() {
                       value={formData.postCode}
                       onChange={handleChange}
                       required
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition"
                     />
                   </div>
 
@@ -190,7 +208,7 @@ function Register() {
                       className="flex-1 bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition flex items-center justify-center gap-2"
                     >
                       <Send size={18} />
-                      {loading ? 'Submitting...' : 'SEND'}
+                      {loading ? 'Submitting...' : 'Send Registration'}
                     </button>
                     <button
                       type="button"
@@ -198,7 +216,7 @@ function Register() {
                       className="flex-1 bg-slate-900 text-white py-3 rounded-lg font-semibold hover:bg-slate-800 transition flex items-center justify-center gap-2"
                     >
                       <CreditCard size={18} />
-                      Click for Payment Details
+                      Payment Details
                     </button>
                   </div>
                 </form>
@@ -211,7 +229,7 @@ function Register() {
                     className="flex-1 bg-green-600 text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 opacity-75 cursor-not-allowed"
                   >
                     <CheckCircle size={18} />
-                    SENT ✓
+                    Registration Sent ✓
                   </button>
                   <button
                     type="button"
@@ -219,16 +237,16 @@ function Register() {
                     className="flex-1 bg-slate-900 text-white py-3 rounded-lg font-semibold hover:bg-slate-800 transition flex items-center justify-center gap-2"
                   >
                     <CreditCard size={18} />
-                    Click for Payment Details
+                    Payment Details
                   </button>
                 </div>
               )}
 
               {showPayment && (
                 <div className="mt-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
-                  <h3 className="font-bold text-slate-800 mb-2">💳 Payment Details</h3>
+                  <h3 className="font-bold text-slate-800 mb-2">💰 Payment Details</h3>
                   <p className="text-sm text-slate-600"><strong>Asunik Care Services Ltd</strong></p>
-                  <p className="text-sm text-slate-600">Sort code: <strong>203721</strong></p>
+                  <p className="text-sm text-slate-600">Sort code: <strong>20-37-21</strong></p>
                   <p className="text-sm text-slate-600">Account: <strong>43749215</strong></p>
                   
                   <div className="mt-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
@@ -250,7 +268,7 @@ function Register() {
                         className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition w-full justify-center"
                       >
                         <MessageCircle size={18} />
-                        📱 Click to Confirm Payment on WhatsApp
+                        💬 Click to Confirm Payment on WhatsApp
                       </a>
                       <p className="text-xs text-slate-500 mt-2 text-center">After payment, click here to notify admin via WhatsApp</p>
                     </div>
@@ -273,8 +291,28 @@ function Register() {
           </div>
         </div>
       </div>
-      <Footer />
-    </>
+
+      {/* Footer */}
+      <footer className="bg-slate-100 border-t border-slate-200 mt-auto py-4">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex flex-col items-center gap-3 md:flex-row md:justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-slate-500 md:text-xs">
+                © {new Date().getFullYear()} Centre of Healthcare Training
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-slate-500 md:text-xs">
+                Mandatory Training Assessment Portal
+              </span>
+            </div>
+          </div>
+          <div className="text-center mt-3">
+            <p className="text-[8px] text-slate-400 md:text-[10px]">trainercourses.com</p>
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }
 

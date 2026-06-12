@@ -9,6 +9,7 @@ import {
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002';
 
 function App() {
+ // ============ STATE DECLARATIONS ============
  const [user, setUser] = useState(null);
  const [email, setEmail] = useState('');
  const [password, setPassword] = useState('');
@@ -51,6 +52,7 @@ function App() {
  const [showReportModal, setShowReportModal] = useState(false);
  const [reportLoading, setReportLoading] = useState(false);
 
+ // ============ FETCH FUNCTIONS ============
  const fetchModules = async (userId = null) => {
    try {
      const url = userId ? `${API_URL}/api/modules?userId=${userId}` : `${API_URL}/api/modules`;
@@ -98,6 +100,7 @@ function App() {
    }
  };
 
+ // ============ LOGIN HANDLERS ============
  const handleAdminLogin = async (e) => {
    e.preventDefault();
    setLoading(true);
@@ -149,6 +152,7 @@ function App() {
    }
  };
 
+ // ============ MODULE ASSESSMENT ============
  const startModule = async (module) => {
    try {
      const res = await fetch(`${API_URL}/api/modules/${module.id}`);
@@ -158,7 +162,7 @@ function App() {
      setCurrentQuestion(0);
      setShowResults(false);
      setResult(null);
-     setStartTime(Date.now());
+     setStartTime(Date.now()); // FIXED: was DateTime.now()
    } catch (err) {
      setError('Failed to load module');
    }
@@ -190,14 +194,26 @@ function App() {
 
  const getModuleStatus = (moduleId) => {
    if (user?.role !== 'TRAINEE') return 'available';
-   const p = userProgress.progress?.find(x => x.moduleId === moduleId);
-   if (p?.status === 'passed') return 'completed';
+   
+   const isCustomRoute = user?.trainingRoute === 'CUSTOM';
+   const progress = userProgress.progress || [];
+   const moduleProgress = progress.find(x => x.moduleId === moduleId);
+   
+   if (moduleProgress?.status === 'passed') return 'completed';
+   
+   if (isCustomRoute) {
+     const selectedModules = user?.selectedModules || [];
+     if (selectedModules.includes(moduleId)) return 'available';
+     return 'locked';
+   }
+   
    if (moduleId === 1) return 'available';
-   const prev = userProgress.progress?.find(x => x.moduleId === moduleId - 1);
-   if (prev?.status === 'passed') return 'available';
+   const prevProgress = progress.find(x => x.moduleId === moduleId - 1);
+   if (prevProgress?.status === 'passed') return 'available';
    return 'locked';
  };
 
+ // ============ ADMIN: BATCH CODE GENERATION ============
  const batchGenerateCodes = async () => {
    const validStudents = studentBatch.filter(s => s.surname.trim() && s.firstName.trim());
    if (validStudents.length === 0) {
@@ -290,6 +306,7 @@ function App() {
    printWindow.print();
  };
 
+ // ============ ADMIN: DELETE STUDENTS ============
  const deleteUser = async () => {
    if (deleteConfirmText !== 'DELETE') {
      setError('Please type DELETE to confirm');
@@ -368,6 +385,7 @@ function App() {
    }
  };
 
+ // ============ ADMIN: GENERATE REPORT ============
  const generateFullReport = async (student) => {
    setReportLoading(true);
    try {
@@ -388,7 +406,7 @@ function App() {
    printWindow.document.write(`
      <!DOCTYPE html>
      <html>
-     <head><title>Assessment Report</title>
+     <head><title>Assessment Report - ${reportData.user?.name || 'Student'}</title>
      <style>
        body { font-family: Arial, sans-serif; padding: 20px; }
        .header { background: #1e293b; color: white; padding: 20px; text-align: center; }
@@ -405,7 +423,7 @@ function App() {
        <p>Passed Modules: ${reportData.passedModules || 0}</p>
        <p>Failed Modules: ${reportData.failedModules || 0}</p>
        <table><thead><tr><th>Module</th><th>Score</th><th>Status</th><th>Date</th></tr></thead>
-       <tbody>${(reportData.attempts || []).map(a => `<tr><td>${a.module?.name}</td><td>${a.score}/20</td><td class="${a.passed ? 'passed' : 'failed'}">${a.passed ? 'PASSED' : 'FAILED'}</td><td>${new Date(a.completedAt).toLocaleString()}</td></tr>`).join('')}</tbody>
+       <tbody>${(reportData.attempts || []).map(a => `<tr><td>${a.module?.name}</td><td>${a.score}/20</td><td class="${a.passed ? 'passed' : 'failed'}">${a.passed ? 'PASSED' : 'FAILED'}</td><td>${new Date(a.completedAt).toLocaleString()}</td>`).join('')}</tbody>
        </table>
      </body>
      </html>
@@ -414,6 +432,7 @@ function App() {
    printWindow.print();
  };
 
+ // ============ EFFECTS ============
  useEffect(() => {
    if (searchTerm) {
      setFilteredStudents(allStudents.filter(s =>
@@ -430,6 +449,7 @@ function App() {
    setSelectAll(false);
  }, [allStudents]);
 
+ // ============ RENDER LOGIN SCREEN ============
  if (!user) {
    return (
      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-6">
@@ -438,7 +458,7 @@ function App() {
            <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center mx-auto mb-4">
              <GraduationCap className="text-white w-8 h-8" />
            </div>
-           <h1 className="text-2xl font-bold text-slate-900">COHT Training</h1>
+           <h1 className="text-2xl font-bold text-slate-900">CareWorks Training</h1>
            <p className="text-slate-500 text-sm mt-1">Assessment Portal</p>
          </div>
          <div className="flex gap-2 mb-6 bg-slate-100 rounded-xl p-1">
@@ -465,7 +485,7 @@ function App() {
            <form onSubmit={handleTraineeLogin} className="space-y-4">
              <input type="email" value={email} onChange={e => setEmail(e.target.value)} 
                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" 
-               placeholder="your.email@coht.co.uk" required />
+               placeholder="your.email@dsca.co.uk" required />
              <input type="text" value={code} onChange={e => setCode(e.target.value)} 
                className="w-full px-4 py-3 border border-slate-300 rounded-xl text-center tracking-widest font-mono text-xl" 
                placeholder="000000" maxLength="6" required />
@@ -475,21 +495,12 @@ function App() {
              </button>
            </form>
          )}
-         {/* Registration Link */}
-         <div className="text-center mt-6 pt-4 border-t border-slate-200">
-           <p className="text-sm text-slate-600">
-             New student?{' '}
-             <a href="/register" className="text-indigo-600 hover:text-indigo-800 font-semibold hover:underline">
-               Register here →
-             </a>
-           </p>
-         </div>
        </div>
      </div>
    );
  }
 
- // Rest of the component continues...
+ // ============ ASSESSMENT SCREEN ============
  if (selectedModule && !showResults) {
    const questions = selectedModule.questions || [];
    return (
@@ -539,6 +550,7 @@ function App() {
    );
  }
 
+ // ============ RESULTS SCREEN ============
  if (showResults && result) {
    return (
      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
@@ -555,33 +567,209 @@ function App() {
    );
  }
 
- // Return a simplified version for the rest to keep the file manageable
+ // ============ ADMIN DASHBOARD ============
+ if (user.role !== 'TRAINEE') {
+   const totalStudents = allStudents.length;
+   const totalAttempts = allStudents.reduce((acc, s) => acc + (s.moduleAttempts?.length || 0), 0);
+   const totalPassed = allStudents.reduce((acc, s) => acc + (s.moduleAttempts?.filter(a => a.passed).length || 0), 0);
+   const passRate = totalAttempts > 0 ? Math.round((totalPassed / totalAttempts) * 100) : 0;
+   
+   return (
+     <div className="min-h-screen bg-slate-50">
+       {/* Admin header */}
+       <div className="bg-white border-b border-slate-200 sticky top-0 z-10 px-6 py-4 flex justify-between items-center shadow-sm">
+         <div className="flex items-center gap-3">
+           <div className="w-10 h-10 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl flex items-center justify-center shadow-md"><Shield className="w-5 h-5 text-white" /></div>
+           <div><h1 className="font-bold text-slate-800">CareWorks Admin Portal</h1><p className="text-xs text-slate-500">{user.email}</p></div>
+         </div>
+         <button onClick={() => setUser(null)} className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition">🚪 Logout</button>
+       </div>
+       
+       <div className="max-w-7xl mx-auto p-6">
+         {/* Tabs */}
+         <div className="flex gap-2 mb-6 border-b">
+           <button onClick={() => setActiveTab('dashboard')} className={`px-4 py-2 text-sm font-medium transition-all ${activeTab === 'dashboard' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}>📊 Dashboard</button>
+           <button onClick={() => { setActiveTab('generate'); setShowCodes(false); }} className={`px-4 py-2 text-sm font-medium transition-all ${activeTab === 'generate' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}>🎟️ Generate Codes</button>
+           <button onClick={() => setActiveTab('students')} className={`px-4 py-2 text-sm font-medium transition-all ${activeTab === 'students' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}>👥 Students</button>
+         </div>
+         
+         {error && <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg mb-4">{error}</div>}
+         {success && <div className="bg-green-50 border border-green-200 text-green-700 p-3 rounded-lg mb-4">{success}</div>}
+         
+         {/* Dashboard Tab */}
+         {activeTab === 'dashboard' && (
+           <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+             <div className="bg-white rounded-xl border p-6 shadow-sm"><div className="text-2xl font-bold">{totalStudents}</div><p className="text-sm text-gray-500">Total Students</p></div>
+             <div className="bg-white rounded-xl border p-6 shadow-sm"><div className="text-2xl font-bold">{modules.length}</div><p className="text-sm text-gray-500">Total Modules</p></div>
+             <div className="bg-white rounded-xl border p-6 shadow-sm"><div className="text-2xl font-bold">{totalAttempts}</div><p className="text-sm text-gray-500">Total Attempts</p></div>
+             <div className="bg-white rounded-xl border p-6 shadow-sm"><div className="text-2xl font-bold">{passRate}%</div><p className="text-sm text-gray-500">Pass Rate</p></div>
+           </div>
+         )}
+         
+         {/* Generate Codes Tab */}
+         {activeTab === 'generate' && (
+           <div className="bg-white rounded-xl border shadow-sm p-6">
+             <h2 className="text-xl font-bold text-gray-800 mb-4">🎟️ Batch Login Code Generation</h2>
+             
+             <div className="mb-6 p-4 bg-slate-50 rounded-lg border">
+               <label className="block font-semibold text-gray-700 mb-3">Access Level:</label>
+               <div className="flex gap-6 mb-3">
+                 <label className="flex items-center gap-2 cursor-pointer">
+                   <input type="radio" name="trainingRoute" value="FULL_22" checked={trainingRoute === 'FULL_22'} onChange={() => { setTrainingRoute('FULL_22'); setSelectedCustomModules([]); }} className="w-4 h-4 text-indigo-600" />
+                   <span className="text-sm font-medium">🎓 Full Access (All Modules)</span>
+                 </label>
+                 <label className="flex items-center gap-2 cursor-pointer">
+                   <input type="radio" name="trainingRoute" value="CUSTOM" checked={trainingRoute === 'CUSTOM'} onChange={() => setTrainingRoute('CUSTOM')} className="w-4 h-4 text-indigo-600" />
+                   <span className="text-sm font-medium">⚙️ Custom Selection</span>
+                 </label>
+               </div>
+               
+               {trainingRoute === 'CUSTOM' && (
+                 <div className="mt-4 pt-4 border-t">
+                   <p className="text-sm text-gray-600 mb-2">Select modules for this batch:</p>
+                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded-lg bg-white">
+                     {allModulesList.map(module => (
+                       <label key={module.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-slate-50 p-1 rounded">
+                         <input type="checkbox" checked={selectedCustomModules.includes(module.id)} onChange={() => toggleModuleSelection(module.id)} className="w-4 h-4 text-indigo-600 rounded" />
+                         <span>{module.name}</span>
+                       </label>
+                     ))}
+                   </div>
+                 </div>
+               )}
+             </div>
+             
+             <p className="text-sm text-slate-500 mb-4">Email format: <strong className="font-mono bg-slate-100 px-2 py-1 rounded">Surname.Initial@dsca.co.uk</strong></p>
+             
+             <div className="space-y-3 mb-4">
+               {studentBatch.map((student, idx) => (
+                 <div key={idx} className="flex gap-3">
+                   <input type="text" placeholder="Surname" value={student.surname} onChange={e => updateStudent(idx, 'surname', e.target.value)} className="flex-1 px-4 py-2 border rounded-lg" />
+                   <input type="text" placeholder="First Name" value={student.firstName} onChange={e => updateStudent(idx, 'firstName', e.target.value)} className="flex-1 px-4 py-2 border rounded-lg" />
+                   {studentBatch.length > 1 && <button onClick={() => removeStudentField(idx)} className="p-2 text-red-500">🗑️</button>}
+                 </div>
+               ))}
+             </div>
+             
+             <div className="flex gap-3">
+               <button onClick={addStudentField} disabled={studentBatch.length >= 20} className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50">+ Add ({studentBatch.length}/20)</button>
+               <button onClick={batchGenerateCodes} disabled={loading} className="px-6 py-2 bg-slate-900 text-white rounded-lg text-sm">🚀 Generate Codes</button>
+             </div>
+             
+             {showCodes && generatedCodes.length > 0 && (
+               <div className="mt-6 pt-6 border-t">
+                 <div className="flex justify-between items-center mb-4"><h3 className="font-semibold">Generated Credentials</h3><div className="flex gap-2"><button onClick={copyAllCodes} className="px-3 py-1 text-sm border rounded-lg">📋 Copy All</button><button onClick={printCodes} className="px-3 py-1 text-sm border rounded-lg">🖨️ Print</button></div></div>
+                 <table className="w-full text-sm"><thead><tr className="bg-slate-50"><th className="p-2 text-left">Name</th><th className="p-2 text-left">Email</th><th className="p-2 text-left">Code</th></tr></thead><tbody>{generatedCodes.map((s, idx) => <tr key={idx} className="border-t"><td className="p-2">{s.name}</td><td className="p-2">{s.email}</td><td className="p-2"><code className="bg-slate-100 px-2 py-1 rounded">{s.code}</code></td></tr>)}</tbody></table>
+               </div>
+             )}
+           </div>
+         )}
+         
+         {/* Students Tab */}
+         {activeTab === 'students' && (
+           <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+             {selectedStudents.length > 0 && (
+               <div className="bg-indigo-50 border-b border-indigo-200 px-4 py-3 flex justify-between items-center">
+                 <div className="flex items-center gap-3"><CheckSquare className="w-5 h-5 text-indigo-600" /><span className="text-sm text-indigo-800">{selectedStudents.length} student(s) selected</span></div>
+                 <button onClick={() => setShowBulkDeleteConfirm(true)} className="flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm"><Trash2 size={16} /> Delete Selected</button>
+               </div>
+             )}
+             
+             <div className="p-4 border-b flex justify-between items-center flex-wrap gap-2">
+               <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" /><input type="text" placeholder="Search students..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10 pr-4 py-2 border rounded-lg w-64" /></div>
+               <div className="flex items-center gap-4"><button onClick={toggleSelectAll} className="flex items-center gap-2 text-sm text-slate-600">{selectAll ? 'Deselect All' : 'Select All'}</button><span className="text-sm text-slate-500">{filteredStudents.length} students</span></div>
+             </div>
+             
+             <table className="w-full"><thead className="bg-slate-50 border-b"><tr><th className="p-4 w-10"><input type="checkbox" checked={selectAll} onChange={toggleSelectAll} /></th><th className="p-4 text-left">Name</th><th className="p-4 text-left">Email</th><th className="p-4 text-left">Attempts</th><th className="p-4 text-left">Passed</th><th className="p-4 text-left">Actions</th></tr></thead>
+             <tbody>{filteredStudents.map(student => (<tr key={student.id} className="hover:bg-slate-50 transition"><td className="p-4"><input type="checkbox" checked={selectedStudents.includes(student.id)} onChange={() => toggleStudentSelection(student.id)} /></td><td className="p-4">{student.name || '-'}</td><td className="p-4 text-sm">{student.email}</td><td className="p-4">{student.moduleAttempts?.length || 0}</td><td className="p-4">{student.moduleAttempts?.filter(a => a.passed).length || 0}</td><td className="p-4"><button onClick={() => generateFullReport(student)} className="text-indigo-600 text-sm hover:underline">Report</button><button onClick={() => { setDeleteUserId(student.id); setShowDeleteConfirm(true); }} className="text-red-600 text-sm hover:underline ml-2">Delete</button></td></tr>))}</tbody></table>
+           </div>
+         )}
+       </div>
+       
+       {/* Delete Modals */}
+       {showDeleteConfirm && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"><div className="bg-white rounded-2xl max-w-md w-full p-6"><h3 className="text-xl font-bold mb-4">Delete Student</h3><p>Type <strong className="font-mono bg-slate-100 px-2 py-1 rounded">DELETE</strong> to confirm:</p><input type="text" value={deleteConfirmText} onChange={e => setDeleteConfirmText(e.target.value)} className="w-full border rounded p-2 my-2" placeholder="DELETE" /><div className="flex gap-3 mt-4"><button onClick={deleteUser} className="bg-red-600 text-white px-4 py-2 rounded">Delete</button><button onClick={() => setShowDeleteConfirm(false)} className="px-4 py-2 border rounded">Cancel</button></div></div></div>)}
+       
+       {showBulkDeleteConfirm && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"><div className="bg-white rounded-2xl max-w-md w-full p-6"><h3 className="text-xl font-bold mb-4">Bulk Delete Students</h3><p>Delete <strong>{selectedStudents.length}</strong> student(s). Type <strong className="font-mono bg-slate-100 px-2 py-1 rounded">DELETE</strong> to confirm:</p><input type="text" value={bulkDeleteConfirmText} onChange={e => setBulkDeleteConfirmText(e.target.value)} className="w-full border rounded p-2 my-2" placeholder="DELETE" /><div className="flex gap-3 mt-4"><button onClick={bulkDeleteUsers} className="bg-red-600 text-white px-4 py-2 rounded">Delete All</button><button onClick={() => setShowBulkDeleteConfirm(false)} className="px-4 py-2 border rounded">Cancel</button></div></div></div>)}
+       
+       {showReportModal && reportData && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"><div className="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-6"><h3 className="text-xl font-bold mb-4">Student Assessment Report</h3><pre className="text-sm bg-slate-50 p-4 rounded overflow-auto">{JSON.stringify(reportData, null, 2)}</pre><div className="flex gap-3 mt-4"><button onClick={printReport} className="bg-indigo-600 text-white px-4 py-2 rounded">Print Report</button><button onClick={() => setShowReportModal(false)} className="px-4 py-2 border rounded">Close</button></div></div></div>)}
+     </div>
+   );
+ }
+
+ // ============ TRAINEE DASHBOARD ============
+ const stats = {
+   total: modules.length,
+   completed: userProgress.progress?.filter(p => p.status === 'passed').length || 0,
+   inProgress: userProgress.progress?.filter(p => p.status === 'failed').length || 0,
+   locked: modules.length - (userProgress.progress?.length || 0)
+ };
+ 
  return (
    <div className="min-h-screen bg-slate-50">
      <div className="bg-white border-b border-slate-200 sticky top-0 z-10 px-6 py-4 flex justify-between items-center shadow-sm">
        <div className="flex items-center gap-3">
          <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-md"><BookOpen className="w-5 h-5 text-white" /></div>
-         <div><h1 className="font-bold text-slate-800">COHT Training</h1><p className="text-xs text-slate-500">Assessment Portal</p></div>
+         <div><h1 className="font-bold text-slate-800">CareWorks Training</h1><p className="text-xs text-slate-500">Trainee Dashboard {user?.trainingRoute === 'CUSTOM' ? '(Custom Selection)' : '(Full Access)'}</p></div>
        </div>
-       <div className="flex items-center gap-3">
-         <a href="/register" className="flex items-center gap-2 px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 rounded-lg transition">
-           📝 Register
-         </a>
-         <button onClick={() => setUser(null)} className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition">
-           🚪 Logout
-         </button>
-       </div>
+       <button onClick={() => setUser(null)} className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition">🚪 Logout</button>
      </div>
+     
      <div className="max-w-7xl mx-auto p-6">
        <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-xl p-6 mb-8 text-white shadow-lg">
-         <h2 className="text-2xl font-bold mb-1">Welcome to COHT Training</h2>
-         <p className="text-indigo-100">Mandatory Training Assessment Portal</p>
+         <h2 className="text-2xl font-bold mb-1">Welcome back, {user.name || 'Trainee'}! 👋</h2>
+         <p className="text-indigo-100">Complete your mandatory training assessments</p>
        </div>
-       <div className="text-center py-12">
-         <p className="text-slate-600">Please log in to access your training modules.</p>
-         <a href="/" className="inline-block mt-4 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
-           Go to Login
-         </a>
+       
+       <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
+         <div className="bg-white rounded-xl border p-5 shadow-sm"><div className="text-2xl font-bold text-indigo-600">{stats.total}</div><p className="text-sm text-slate-500">Total Modules</p></div>
+         <div className="bg-white rounded-xl border p-5 shadow-sm"><div className="text-2xl font-bold text-green-600">{stats.completed}</div><p className="text-sm text-slate-500">Completed ✓</p></div>
+         <div className="bg-white rounded-xl border p-5 shadow-sm"><div className="text-2xl font-bold text-yellow-600">{stats.inProgress}</div><p className="text-sm text-slate-500">In Progress</p></div>
+         <div className="bg-white rounded-xl border p-5 shadow-sm"><div className="text-2xl font-bold text-slate-400">{stats.locked}</div><p className="text-sm text-slate-500">Locked 🔒</p></div>
+       </div>
+       
+       <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">📚 Your Modules</h2>
+       
+       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+         {modules.map(m => {
+           const status = getModuleStatus(m.id);
+           return (
+             <div key={m.id} className="bg-white rounded-xl border p-5 transition-all cursor-pointer hover:shadow-lg hover:scale-[1.02]">
+               <div className="flex justify-between items-start mb-3">
+                 <div className="flex-1">
+                   <div className="flex items-center gap-2 mb-2">
+                     <span className="text-xs font-mono text-slate-400 bg-slate-100 px-2 py-1 rounded">#{m.id}</span>
+                     <span className={`text-xs px-2 py-1 rounded-full ${status === 'completed' ? 'bg-green-100 text-green-700' : status === 'available' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>
+                       {status === 'completed' ? '✓ Completed' : status === 'available' ? 'Available' : '🔒 Locked'}
+                     </span>
+                   </div>
+                   <h3 className="font-semibold text-slate-800 mb-1">{m.name}</h3>
+                   <p className="text-xs text-slate-500">Pass mark: {m.passMark}/20 (75%)</p>
+                 </div>
+                 {status === 'completed' && <CheckCircle className="text-green-500 w-5 h-5 flex-shrink-0" />}
+                 {status === 'available' && <PlayCircle className="text-blue-500 w-5 h-5 flex-shrink-0" />}
+                 {status === 'locked' && <Lock className="text-gray-400 w-5 h-5 flex-shrink-0" />}
+               </div>
+               
+               {status === 'available' && (
+                 <button onClick={() => startModule(m)} className="w-full mt-4 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white py-2 rounded-lg hover:from-indigo-700 hover:to-indigo-800 transition text-sm font-medium shadow-sm">
+                   Start Module 🚀
+                 </button>
+               )}
+               
+               {status === 'locked' && (
+                 <button disabled className="w-full mt-4 bg-gray-100 text-gray-400 py-2 rounded-lg text-sm font-medium cursor-not-allowed">
+                   🔒 Complete Previous Module First
+                 </button>
+               )}
+               
+               {status === 'completed' && (
+                 <div className="w-full mt-4 bg-green-50 text-green-600 py-2 rounded-lg text-sm font-medium text-center flex items-center justify-center gap-2">
+                   <CheckCircle className="w-4 h-4" /> Completed
+                 </div>
+               )}
+             </div>
+           );
+         })}
        </div>
      </div>
    </div>

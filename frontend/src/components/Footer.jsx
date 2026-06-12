@@ -6,10 +6,8 @@ const Footer = () => {
   return (
     <footer className="bg-slate-100 border-t border-slate-200 mt-auto py-4">
       <div className="max-w-7xl mx-auto px-4">
-        {/* Mobile layout - stacked */}
         <div className="flex flex-col items-center gap-3 md:flex-row md:justify-between">
-          
-          {/* Left side - Logo and copyright */}
+          {/* Left side - Company Logo and copyright */}
           <div className="flex items-center gap-2">
             <img 
               src={logo01} 
@@ -22,7 +20,7 @@ const Footer = () => {
             </span>
           </div>
           
-          {/* Right side - Accredited logo and text */}
+          {/* Right side - Accredited Logo and text */}
           <div className="flex items-center gap-2">
             <img 
               src={logo2} 

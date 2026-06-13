@@ -5,7 +5,7 @@ import {
   Search, GraduationCap, CheckSquare, Square, X, Clock, Award, Calendar, UserCheck, 
   FileSpreadsheet, BarChart3, AlertTriangle, Zap, PlayCircle, Lock, CreditCard, Send, 
   MessageCircle, UserPlus, Filter, Eye as EyeIcon, RefreshCw, Home, ClipboardList, 
-  UserCog, LayoutDashboard, FileBarChart
+  UserCog, LayoutDashboard, FileBarChart, Phone, Briefcase
 } from 'lucide-react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -24,7 +24,6 @@ function App() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Module state
   const [modules, setModules] = useState([]);
   const [selectedModule, setSelectedModule] = useState(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -34,7 +33,6 @@ function App() {
   const [startTime, setStartTime] = useState(null);
   const [userProgress, setUserProgress] = useState({ progress: [], attempts: [] });
 
-  // Admin state
   const [allStudents, setAllStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -47,7 +45,6 @@ function App() {
   const [selectedCustomModules, setSelectedCustomModules] = useState([]);
   const [allModulesList, setAllModulesList] = useState([]);
 
-  // Registration and payment state
   const [registeredStudents, setRegisteredStudents] = useState([]);
   const [selectedStudentIds, setSelectedStudentIds] = useState([]);
   const [bulkPaymentFilter, setBulkPaymentFilter] = useState('confirmed');
@@ -60,7 +57,6 @@ function App() {
   const [showModulePicker, setShowModulePicker] = useState(false);
   const [currentPickerStudent, setCurrentPickerStudent] = useState(null);
 
-  // Selection state
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -69,15 +65,10 @@ function App() {
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [bulkDeleteConfirmText, setBulkDeleteConfirmText] = useState('');
 
-  // Report state
   const [reportData, setReportData] = useState(null);
   const [showReportModal, setShowReportModal] = useState(false);
-  const [showDetailsPanel, setShowDetailsPanel] = useState(false);
-  const [selectedStudentForDetails, setSelectedStudentForDetails] = useState(null);
-  const [generatedLoginDetails, setGeneratedLoginDetails] = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
 
-  // ====== FETCH FUNCTIONS ======
   const fetchModules = async (userId = null) => {
     try {
       const url = userId ? `${API_URL}/api/modules?userId=${userId}` : `${API_URL}/api/modules`;
@@ -85,7 +76,6 @@ function App() {
       const data = await res.json();
       setModules(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Fetch modules error:', err);
       setModules([]);
     }
   };
@@ -96,7 +86,6 @@ function App() {
       const data = await res.json();
       setAllModulesList(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Fetch modules selection error:', err);
       setAllModulesList([]);
     }
   };
@@ -108,7 +97,6 @@ function App() {
       setAllStudents(Array.isArray(data) ? data : []);
       setFilteredStudents(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Fetch students error:', err);
       setAllStudents([]);
       setFilteredStudents([]);
     }
@@ -128,7 +116,6 @@ function App() {
       setStudentRoutes(routes);
       setStudentCustomModules(customMods);
     } catch (err) {
-      console.error('Fetch registered students error:', err);
       setRegisteredStudents([]);
     }
   };
@@ -139,7 +126,6 @@ function App() {
       const data = await res.json();
       setUserProgress({ progress: data.progress || [], attempts: data.attempts || [] });
     } catch (err) {
-      console.error('Fetch progress error:', err);
       setUserProgress({ progress: [], attempts: [] });
     }
   };
@@ -155,61 +141,6 @@ function App() {
     }
   };
 
-  // ============ LOGIN HANDLERS ============
-  const handleAdminLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    try {
-      const response = await fetch(`${API_URL}/api/auth/admin-login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setUser({ ...data, role: 'ADMIN' });
-        fetchModules();
-        fetchAllStudents();
-        fetchAllModulesForSelection();
-        fetchRegisteredStudents();
-        setActiveTab('dashboard');
-      } else {
-        setError(data.error || 'Login failed');
-      }
-    } catch (err) {
-      setError('Cannot connect to server');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleTraineeLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    try {
-      const response = await fetch(`${API_URL}/api/auth/verify-code`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code })
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setUser({ ...data, role: 'TRAINEE' });
-        await fetchModules(data.id);
-        await fetchUserProgress(data.id);
-      } else {
-        setError(data.error || 'Invalid or expired code');
-      }
-    } catch (err) {
-      setError('Verification failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ============ PAYMENT AND CODE GENERATION ============
   const confirmPayment = async (studentId) => {
     setLoading(true);
     try {
@@ -292,7 +223,59 @@ function App() {
     }
   };
 
-  // ============ MODULE ASSESSMENT ============
+  const handleAdminLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const response = await fetch(`${API_URL}/api/auth/admin-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setUser({ ...data, role: 'ADMIN' });
+        fetchModules();
+        fetchAllStudents();
+        fetchAllModulesForSelection();
+        fetchRegisteredStudents();
+        setActiveTab('dashboard');
+      } else {
+        setError(data.error || 'Login failed');
+      }
+    } catch (err) {
+      setError('Cannot connect to server');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTraineeLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const response = await fetch(`${API_URL}/api/auth/verify-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setUser({ ...data, role: 'TRAINEE' });
+        await fetchModules(data.id);
+        await fetchUserProgress(data.id);
+      } else {
+        setError(data.error || 'Invalid or expired code');
+      }
+    } catch (err) {
+      setError('Verification failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const startModule = async (module) => {
     try {
       const res = await fetch(`${API_URL}/api/modules/${module.id}`);
@@ -347,7 +330,6 @@ function App() {
     return prevProgress?.status === 'passed' ? 'available' : 'locked';
   };
 
-  // ============ BATCH CODE GENERATION ============
   const batchGenerateCodes = async () => {
     const validStudents = studentBatch.filter(s => s.surname.trim() && s.firstName.trim() && s.phone.trim());
     if (validStudents.length === 0) {
@@ -439,9 +421,9 @@ function App() {
       <body>
         <h1>Student Login Credentials</h1>
         <p>Generated on ${new Date().toLocaleString()}</p>
-        <table><thead><tr><th>Name/Email</th><th>Code</th><tr></thead>
-        <tbody>${generatedCodes.map(c => `<tr><td>${c.name || c.email}</td>}<code>${c.code}</code></td></tr>`).join('')}</tbody>
-      </table>
+        <table><thead><tr><th>Name/Email</th><th>Code</th></tr></thead>
+        <tbody>${generatedCodes.map(c => `<tr><td>${c.name || c.email}</td><td><code>${c.code}</code></td></tr>`).join('')}</tbody>
+        </table>
       </body>
       </html>
     `);
@@ -449,7 +431,6 @@ function App() {
     printWindow.print();
   };
 
-  // ============ ADMIN: DELETE STUDENTS ============
   const deleteUser = async () => {
     if (deleteConfirmText !== 'DELETE') {
       setError('Please type DELETE to confirm');
@@ -530,7 +511,7 @@ function App() {
     }
   };
 
-  // ============ REPORT GENERATION ============
+  // FIXED: Complete printReport function with full error details
   const generateFullReport = async (student) => {
     setReportLoading(true);
     try {
@@ -548,74 +529,150 @@ function App() {
   const printReport = () => {
     if (!reportData) return;
     const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Assessment Report - ${reportData.user?.name || reportData.user?.email}</title>
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; max-width: 1200px; margin: 0 auto; background: #f5f5f5; }
-          .report-container { background: white; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); overflow: hidden; }
-          .header { background: linear-gradient(135deg, #1e293b, #0f172a); color: white; padding: 40px; text-align: center; }
-          .header h1 { font-size: 28px; margin-bottom: 8px; }
-          .section { padding: 24px 32px; border-bottom: 1px solid #e2e8f0; }
-          .section-title { font-size: 18px; font-weight: bold; color: #1e293b; margin-bottom: 20px; padding-bottom: 8px; border-bottom: 2px solid #4f46e5; display: inline-block; }
-          .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-top: 16px; }
-          .info-card { background: #f8fafc; padding: 16px; border-radius: 12px; }
-          .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 20px 0; }
-          .stat-card { text-align: center; padding: 20px; border-radius: 12px; }
-          .stat-card.total { background: #e0e7ff; color: #3730a3; }
-          .stat-card.passed { background: #dcfce7; color: #166534; }
-          .stat-card.failed { background: #fee2e2; color: #991b1b; }
-          .stat-number { font-size: 32px; font-weight: bold; }
-          .module-card { background: #f8fafc; border-radius: 12px; margin-bottom: 24px; overflow: hidden; border: 1px solid #e2e8f0; }
-          .module-header { padding: 16px 20px; background: #f1f5f9; border-bottom: 2px solid #4f46e5; }
-          .error-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-          .error-table th { background: #4f46e5; color: white; padding: 12px; text-align: left; }
-          .error-table td { padding: 12px; border-bottom: 1px solid #e2e8f0; }
-          .wrong-answer { color: #dc2626; font-weight: 500; }
-          .correct-answer { color: #16a34a; font-weight: 500; }
-          .footer { text-align: center; padding: 24px; background: #f8fafc; font-size: 12px; color: #64748b; }
-          @media print { body { padding: 0; background: white; } .report-container { box-shadow: none; } }
-        </style>
-      </head>
-      <body>
-        <div class="report-container">
-          <div class="header"><h1>COHT Training Assessment Report</h1><p>Generated on ${new Date().toLocaleString()}</p></div>
-          <div class="section"><div class="section-title">Trainee Information</div>
+    
+    let htmlContent = `<!DOCTYPE html>
+    <html>
+    <head>
+      <title>Full Assessment Report - ${reportData.user?.name || reportData.user?.email}</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: "Segoe UI", Arial, sans-serif; padding: 40px; max-width: 1200px; margin: 0 auto; background: #f5f5f5; }
+        .report-container { background: white; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #1e293b, #0f172a); color: white; padding: 40px; text-align: center; }
+        .header h1 { font-size: 28px; margin-bottom: 8px; }
+        .header p { opacity: 0.9; font-size: 14px; }
+        .section { padding: 24px 32px; border-bottom: 1px solid #e2e8f0; }
+        .section-title { font-size: 18px; font-weight: bold; color: #1e293b; margin-bottom: 20px; padding-bottom: 8px; border-bottom: 2px solid #4f46e5; display: inline-block; }
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-top: 16px; }
+        .info-card { background: #f8fafc; padding: 16px; border-radius: 12px; }
+        .info-card label { font-size: 12px; color: #64748b; display: block; margin-bottom: 4px; }
+        .info-card value { font-size: 16px; font-weight: 600; color: #1e293b; }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 20px 0; }
+        .stat-card { text-align: center; padding: 20px; border-radius: 12px; }
+        .stat-card.total { background: #e0e7ff; color: #3730a3; }
+        .stat-card.passed { background: #dcfce7; color: #166534; }
+        .stat-card.failed { background: #fee2e2; color: #991b1b; }
+        .stat-card.time { background: #fef3c7; color: #92400e; }
+        .stat-number { font-size: 32px; font-weight: bold; }
+        .module-card { background: #f8fafc; border-radius: 12px; margin-bottom: 24px; overflow: hidden; border: 1px solid #e2e8f0; page-break-inside: avoid; }
+        .module-header { padding: 16px 20px; background: #f1f5f9; border-bottom: 2px solid #4f46e5; }
+        .module-header h3 { font-size: 16px; font-weight: bold; color: #1e293b; }
+        .module-status { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; margin-top: 8px; }
+        .status-passed { background: #dcfce7; color: #166534; }
+        .status-failed { background: #fee2e2; color: #991b1b; }
+        .error-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        .error-table th { background: #4f46e5; color: white; padding: 12px; text-align: left; font-size: 13px; }
+        .error-table td { padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
+        .error-table tr:hover { background: #f8fafc; }
+        .wrong-answer { color: #dc2626; font-weight: 500; }
+        .correct-answer { color: #16a34a; font-weight: 500; }
+        .no-errors { text-align: center; padding: 20px; color: #64748b; }
+        .footer { text-align: center; padding: 24px; background: #f8fafc; font-size: 12px; color: #64748b; }
+        @media print {
+          body { padding: 0; background: white; }
+          .report-container { box-shadow: none; }
+          .no-print { display: none; }
+          .module-card { page-break-inside: avoid; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="report-container">
+        <div class="header">
+          <h1>COHT Training - Full Assessment Report</h1>
+          <p>Official Training Record - Generated on ${new Date().toLocaleString()}</p>
+        </div>
+        
+        <div class="section">
+          <div class="section-title">Trainee Information</div>
           <div class="info-grid">
-            <div class="info-card"><label>Name</label><value>${reportData.user?.name || 'N/A'}</value></div>
-            <div class="info-card"><label>Email</label><value>${reportData.user?.email || 'N/A'}</value></div>
-          </div></div>
-          <div class="section"><div class="section-title">Performance Summary</div>
+            <div class="info-card"><label>Full Name</label><value>${reportData.user?.name || 'N/A'}</value></div>
+            <div class="info-card"><label>Email Address</label><value>${reportData.user?.email || 'N/A'}</value></div>
+            <div class="info-card"><label>Training Route</label><value>${reportData.user?.trainingRoute === 'CUSTOM' ? 'Custom Selection' : 'Full Access'}</value></div>
+            <div class="info-card"><label>Joined Date</label><value>${reportData.user?.joinedAt ? new Date(reportData.user.joinedAt).toLocaleDateString() : 'N/A'}</value></div>
+          </div>
+        </div>
+        
+        <div class="section">
+          <div class="section-title">Performance Summary</div>
           <div class="stats-grid">
             <div class="stat-card total"><div class="stat-number">${reportData.totalAttempts || 0}</div><div class="stat-label">Total Attempts</div></div>
-            <div class="stat-card passed"><div class="stat-number">${reportData.passedModules || 0}</div><div class="stat-label">Passed</div></div>
-            <div class="stat-card failed"><div class="stat-number">${reportData.failedModules || 0}</div><div class="stat-label">Failed</div></div>
-          </div></div>
-          <div class="section"><div class="section-title">Detailed Module Results & Incorrect Answers</div>`);
+            <div class="stat-card passed"><div class="stat-number">${reportData.passedModules || 0}</div><div class="stat-label">Passed Modules</div></div>
+            <div class="stat-card failed"><div class="stat-number">${reportData.failedModules || 0}</div><div class="stat-label">Failed Modules</div></div>
+            <div class="stat-card time"><div class="stat-number">${Math.floor((reportData.totalTimeSpent || 0) / 60)}m ${(reportData.totalTimeSpent || 0) % 60}s</div><div class="stat-label">Total Time Spent</div></div>
+          </div>
+          <div class="info-card" style="text-align: center; margin-top: 16px;">
+            <label>Average Score</label>
+            <value style="font-size: 24px;">${reportData.averageScore ? reportData.averageScore.toFixed(1) : 0}%</value>
+          </div>
+        </div>
+        
+        <div class="section">
+          <div class="section-title">Detailed Module Results & Incorrect Answers</div>`;
     
     for (const attempt of (reportData.attempts || [])) {
-      htmlContent += `<div class="module-card"><div class="module-header"><strong>${attempt.module?.name}</strong> - Score: ${attempt.score}/20 (${attempt.passed ? 'PASSED' : 'FAILED'})</div>`;
+      const moduleName = attempt.module?.name || 'Unknown Module';
+      const scorePercent = ((attempt.score / 20) * 100).toFixed(0);
+      htmlContent += `
+          <div class="module-card">
+            <div class="module-header">
+              <h3>${moduleName}</h3>
+              <div>Score: ${attempt.score}/20 (${scorePercent}%)</div>
+              <span class="module-status ${attempt.passed ? 'status-passed' : 'status-failed'}">${attempt.passed ? 'PASSED' : 'FAILED'}</span>
+              <div style="margin-top: 8px; font-size: 12px; color: #64748b;">Completed: ${new Date(attempt.completedAt).toLocaleString()}</div>
+            </div>`;
+      
       if (attempt.errors && attempt.errors.length > 0) {
-        htmlContent += `<table class="error-table"><thead><tr><th>#</th><th>Question</th><th>Your Answer</th><th>Correct Answer</th></tr></thead><tbody>`;
+        htmlContent += `
+            <div style="padding: 20px;">
+              <h4 style="margin-bottom: 12px; color: #dc2626;">Questions Answered Incorrectly (${attempt.errors.length}):</h4>
+              <table class="error-table">
+                <thead>
+                  <tr><th>#</th><th>Question</th><th>Student's Answer</th><th>Correct Answer</th></tr>
+                </thead>
+                <tbody>`;
         for (const err of attempt.errors) {
-          htmlContent += `<tr><td>${err.questionNumber}</td><td>${err.questionText}</td><td class="wrong-answer">${err.userAnswer}</td><td class="correct-answer">${err.correctAnswer}</td></tr>`;
+          htmlContent += `
+                  <tr>
+                    <td>${err.questionNumber || '?'}</td>
+                    <td>${err.questionText || 'N/A'}</td>
+                    <td class="wrong-answer">${err.userAnswer || 'N/A'}</td>
+                    <td class="correct-answer">${err.correctAnswer || 'N/A'}</td>
+                  </tr>`;
         }
-        htmlContent += `</tbody></table>`;
+        htmlContent += `
+                </tbody>
+              </table>
+            </div>`;
       } else {
-        htmlContent += `<div style="padding: 20px; text-align: center; color: #16a34a;">✅ Perfect! No incorrect answers.</div>`;
+        htmlContent += `
+            <div class="no-errors">
+              Perfect! No incorrect answers in this module.
+            </div>`;
       }
-      htmlContent += `</div>`;
+      htmlContent += `
+          </div>`;
     }
     
-    htmlContent += `<div class="footer"><p>Generated by COHT Training Platform</p></div></div></body></html>`;
+    htmlContent += `
+        </div>
+        
+        <div class="footer">
+          <p>This is an official training record generated by COHT Training Platform.</p>
+          <p>Document ID: ${Math.random().toString(36).substr(2, 8).toUpperCase()}</p>
+          <p>Generated on: ${new Date().toLocaleString()}</p>
+        </div>
+      </div>
+      <div class="no-print" style="text-align: center; margin-top: 20px;">
+        <button onclick="window.print()" style="padding: 12px 24px; background: #4f46e5; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">Print / Save as PDF</button>
+      </div>
+    </body>
+    </html>`;
+    
     printWindow.document.write(htmlContent);
     printWindow.document.close();
   };
 
-  // Filter students
   useEffect(() => {
     if (searchTerm) {
       setFilteredStudents(allStudents.filter(s =>
@@ -632,7 +689,7 @@ function App() {
     setSelectAll(false);
   }, [allStudents]);
 
-  // ============ LOGIN SCREEN with Registration Link ============
+  // ============ LOGIN SCREEN ============
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col">
@@ -705,7 +762,6 @@ function App() {
               </form>
             )}
             
-            {/* VISIBLE REGISTRATION BUTTON - NOT JUST A LINK */}
             <div className="mt-6 pt-6 border-t border-slate-200">
               <div className="text-center mb-3">
                 <span className="text-sm text-slate-500">Don't have an account?</span>
@@ -714,9 +770,6 @@ function App() {
                 className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold transition shadow-md">
                 <UserPlus size={18} /> Register as New Student
               </Link>
-              <p className="text-center text-xs text-slate-400 mt-3">
-                Register now to start your mandatory training
-              </p>
             </div>
           </div>
         </div>
@@ -832,7 +885,6 @@ function App() {
         </div>
         
         <div className="max-w-7xl mx-auto p-6 flex-1">
-          {/* VISIBLE TABS - Clear and Professional */}
           <div className="flex flex-wrap gap-2 mb-6 border-b">
             <button onClick={() => setActiveTab('dashboard')} 
               className={`px-5 py-2.5 rounded-t-lg font-medium transition-all flex items-center gap-2 ${activeTab === 'dashboard' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
@@ -917,7 +969,15 @@ function App() {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b">
-                    <tr><th className="p-4 text-left">Name</th><th className="p-4 text-left">Email</th><th className="p-4 text-left">Phone</th><th className="p-4 text-left">Payment</th><th className="p-4 text-left">Actions</th></tr>
+                    <tr>
+                      <th className="p-4 text-left">Name</th>
+                      <th className="p-4 text-left">Email</th>
+                      <th className="p-4 text-left">Phone</th>
+                      <th className="p-4 text-left">Role</th>
+                      <th className="p-4 text-left">Payment</th>
+                      <th className="p-4 text-left">Login Credentials</th>
+                      <th className="p-4 text-left">Actions</th>
+                    </tr>
                   </thead>
                   <tbody>
                     {filteredStudents.map(student => (
@@ -925,7 +985,19 @@ function App() {
                         <td className="p-4 font-medium">{student.name || '-'}</td>
                         <td className="p-4 text-sm">{student.email}</td>
                         <td className="p-4 text-sm font-mono">{student.phone || '-'}</td>
+                        <td className="p-4 text-sm">{student.role || 'Care Worker'}</td>
                         <td className="p-4"><span className={`px-2 py-1 rounded-full text-xs ${student.paymentConfirmed ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{student.paymentConfirmed ? 'Confirmed' : 'Pending'}</span></td>
+                        <td className="p-4">
+                          {student.loginCodes && student.loginCodes[0] ? (
+                            <div>
+                              <div className="text-xs font-mono text-gray-600">{student.email}</div>
+                              <div className="text-xs font-mono text-indigo-600 font-bold">{student.loginCodes[0].code}</div>
+                              <button onClick={() => resendLoginDetails(student.id)} className="text-xs text-green-600 hover:underline mt-1">Resend via WhatsApp</button>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-400">Not generated</span>
+                          )}
+                        </td>
                         <td className="p-4">
                           <div className="flex flex-wrap gap-2">
                             {!student.paymentConfirmed && (
@@ -1009,7 +1081,6 @@ function App() {
           )}
         </div>
         
-        {/* Modals */}
         {showDeleteConfirm && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl max-w-md w-full p-6"><h3 className="text-xl font-bold mb-4">Delete Student</h3><p>Type DELETE to confirm:</p><input type="text" value={deleteConfirmText} onChange={e => setDeleteConfirmText(e.target.value)} className="w-full border rounded p-2 my-2" placeholder="DELETE" /><div className="flex gap-3"><button onClick={deleteUser} className="bg-red-600 text-white px-4 py-2 rounded">Delete</button><button onClick={() => setShowDeleteConfirm(false)} className="px-4 py-2 border rounded">Cancel</button></div></div>
@@ -1028,18 +1099,39 @@ function App() {
           </div>
         )}
         
-
-        {showDetailsPanel && selectedStudentForDetails && (
-          <StudentDetailsPanel 
-            student={selectedStudentForDetails} 
-            loginDetails={generatedLoginDetails} 
-            onClose={() => { setShowDetailsPanel(false); setSelectedStudentForDetails(null); setGeneratedLoginDetails(null); }} 
-            onRefresh={() => showStudentFullDetails(selectedStudentForDetails)} 
-          />
-        )}
         {showReportModal && reportData && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[85vh] overflow-y-auto p-6"><div className="flex justify-between items-center mb-4"><h3 className="text-xl font-bold">Assessment Report</h3><button onClick={() => setShowReportModal(false)} className="text-gray-500">✕</button></div><div className="bg-gray-50 p-4 rounded-lg mb-4"><p><strong>{reportData.user?.name}</strong><br />{reportData.user?.email}</p></div><div className="grid grid-cols-3 gap-4 mb-6"><div className="text-center p-3 bg-gray-100 rounded"><div className="text-2xl font-bold">{reportData.totalAttempts}</div><div className="text-xs">Attempts</div></div><div className="text-center p-3 bg-green-100 rounded"><div className="text-2xl font-bold text-green-600">{reportData.passedModules}</div><div className="text-xs">Passed</div></div><div className="text-center p-3 bg-red-100 rounded"><div className="text-2xl font-bold text-red-600">{reportData.failedModules}</div><div className="text-xs">Failed</div></div></div><div className="space-y-4">{reportData.attempts?.map(attempt => (<div key={attempt.id} className="border rounded-lg p-4"><div className="flex justify-between items-center mb-2"><h4 className="font-semibold">{attempt.module?.name}</h4><span className={`px-2 py-1 rounded text-xs ${attempt.passed ? 'bg-green-100' : 'bg-red-100'}`}>{attempt.passed ? 'PASSED' : 'FAILED'} {attempt.score}/20</span></div>{attempt.errors?.length > 0 && (<div className="mt-2"><p className="text-sm font-medium text-red-600">Incorrect Questions:</p>{attempt.errors.map((err, i) => (<div key={i} className="text-sm bg-red-50 p-2 rounded mt-1"><p className="font-medium">Q{err.questionNumber}: {err.questionText}</p><p className="text-red-600">Your answer: {err.userAnswer}</p><p className="text-green-600">Correct: {err.correctAnswer}</p></div>))}</div>)}</div>))}</div><div className="flex gap-3 mt-6"><button onClick={printReport} className="flex-1 bg-indigo-600 text-white py-2 rounded-lg">Print Report</button><button onClick={() => setShowReportModal(false)} className="flex-1 bg-gray-200 py-2 rounded-lg">Close</button></div></div>
+            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[85vh] overflow-y-auto p-6">
+              <div className="flex justify-between items-center mb-4"><h3 className="text-xl font-bold">Assessment Report</h3><button onClick={() => setShowReportModal(false)} className="text-gray-500">✕</button></div>
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl mb-4"><p className="font-semibold text-gray-800 text-lg">{reportData.user?.name || '-'}</p><p className="text-sm text-gray-600 font-mono">{reportData.user?.email || '-'}</p></div>
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="text-center p-4 bg-gray-50 rounded-xl"><div className="text-2xl font-bold text-gray-800">{reportData.totalAttempts || 0}</div><div className="text-xs text-gray-500">Total Attempts</div></div>
+                <div className="text-center p-4 bg-green-50 rounded-xl"><div className="text-2xl font-bold text-green-600">{reportData.passedModules || 0}</div><div className="text-xs text-gray-500">Passed</div></div>
+                <div className="text-center p-4 bg-red-50 rounded-xl"><div className="text-2xl font-bold text-red-600">{reportData.failedModules || 0}</div><div className="text-xs text-gray-500">Failed</div></div>
+              </div>
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {(reportData.attempts || []).map(attempt => (
+                  <div key={attempt.id} className="border rounded-lg p-4">
+                    <div className="flex justify-between items-center mb-2"><h4 className="font-semibold">{attempt.module?.name}</h4><span className={`px-2 py-1 rounded text-xs ${attempt.passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{attempt.passed ? 'PASSED' : 'FAILED'} {attempt.score}/20</span></div>
+                    {attempt.errors && attempt.errors.length > 0 && (
+                      <div className="mt-2"><p className="text-sm font-medium text-red-600 mb-1">Incorrect Questions:</p>
+                        {attempt.errors.map((err, i) => (
+                          <div key={i} className="text-sm bg-red-50 p-2 rounded mb-2">
+                            <p className="font-medium">Q{err.questionNumber}: {err.questionText}</p>
+                            <p className="text-red-600">Your answer: {err.userAnswer}</p>
+                            <p className="text-green-600">Correct: {err.correctAnswer}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button onClick={printReport} className="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition flex items-center justify-center gap-2"><Printer size={16} /> Print / PDF</button>
+                <button onClick={() => setShowReportModal(false)} className="flex-1 bg-gray-200 py-2 rounded-lg">Close</button>
+              </div>
+            </div>
           </div>
         )}
         

@@ -460,7 +460,13 @@ app.get('/api/user/:userId/export', async (req, res) => {
     
     const attemptsWithErrors = user.moduleAttempts.map(attempt => {
       let errors = [];
-      try { errors = JSON.parse(attempt.errors || '[]'); } catch(e) { errors = []; }
+      if (attempt.errors) {
+        if (typeof attempt.errors === 'string') {
+          try { errors = JSON.parse(attempt.errors); } catch(e) { errors = []; }
+        } else if (Array.isArray(attempt.errors)) {
+          errors = attempt.errors;
+        }
+      }
       return {
         id: attempt.id,
         module: attempt.module,

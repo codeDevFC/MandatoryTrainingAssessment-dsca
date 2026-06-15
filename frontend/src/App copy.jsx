@@ -298,123 +298,34 @@ function App() {
 
   const printReport = () => {
     if (!reportData) return;
-  
     const printWindow = window.open('', '_blank');
-    const totalDuration = reportData.totalTimeSpent || 0;
-    const hours = Math.floor(totalDuration / 3600);
-    const minutes = Math.floor((totalDuration % 3600) / 60);
-    
-    const passedModules = reportData.passedModules || 0;
-    const failedModules = reportData.failedModules || 0;
-    const totalAttempts = reportData.totalAttempts || 0;
-    const passRate = totalAttempts > 0 ? Math.round((passedModules / totalAttempts) * 100) : 0;
-  
     printWindow.document.write(`
-<!DOCTYPE html>
-<html>
-<head>
-  <title>COHT Training Assessment Report</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; padding: 40px; }
-    .report-container { max-width: 1100px; margin: 0 auto; background: white; border-radius: 20px; overflow: hidden; }
-    .header { background: linear-gradient(135deg, #1e664e 0%, #0f4a38 100%); color: white; padding: 40px; text-align: center; }
-    .header h1 { font-size: 28px; }
-    .section { padding: 28px 32px; border-bottom: 1px solid #e2e8f0; }
-    .section-title { font-size: 18px; font-weight: bold; color: #1e293b; border-bottom: 3px solid #1e664e; display: inline-block; margin-bottom: 20px; padding-bottom: 8px; }
-    .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 20px; }
-    .info-card { background: #f8fafc; padding: 18px 20px; border-radius: 12px; border-left: 4px solid #1e664e; }
-    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 24px 0; }
-    .stat-card { text-align: center; padding: 24px 16px; border-radius: 12px; }
-    .stat-card.total { background: #e0e7ff; color: #3730a3; }
-    .stat-card.passed { background: #d1fae5; color: #065f46; }
-    .stat-card.failed { background: #fee2e2; color: #991b1b; }
-    .stat-number { font-size: 36px; font-weight: bold; }
-    .module-card { background: white; border-radius: 12px; margin-bottom: 24px; border: 1px solid #e2e8f0; }
-    .module-header { padding: 16px 20px; background: #f8fafc; border-bottom: 2px solid #1e664e; display: flex; justify-content: space-between; }
-    .module-name { font-size: 16px; font-weight: bold; }
-    .score-passed { background: #d1fae5; color: #065f46; padding: 4px 12px; border-radius: 20px; }
-    .score-failed { background: #fee2e2; color: #991b1b; padding: 4px 12px; border-radius: 20px; }
-    .error-table { width: calc(100% - 40px); margin: 16px 20px; border-collapse: collapse; }
-    .error-table th { background: #1e664e; color: white; padding: 12px; text-align: left; }
-    .error-table td { padding: 12px; border-bottom: 1px solid #e2e8f0; }
-    .wrong-answer { color: #dc2626; }
-    .correct-answer { color: #16a34a; }
-    .no-errors { padding: 20px; text-align: center; color: #16a34a; background: #f0fdf4; margin: 16px 20px; border-radius: 8px; }
-    .footer { text-align: center; padding: 24px; background: #f8fafc; font-size: 11px; color: #64748b; }
-    @media print { body { background: white; padding: 0; } .no-print { display: none; } }
-  </style>
-</head>
-<body>
-  <div class="report-container">
-<div class="header">
-    <div style="display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 15px; flex-wrap: wrap;">
-      <img src="/logo01.jpg" alt="COHT Logo" style="height: 60px; width: auto; background: white; padding: 8px; border-radius: 12px; object-fit: contain;" onerror="this.style.display='none'" />
-      <div>
-        <h1 style="margin: 0;">COHT Training Assessment Report</h1>
-        <p style="margin: 5px 0 0 0;">Official Training Record - Generated on ${new Date().toLocaleString()}</p>
-      </div>
-    </div>
-  </div>
-    <div class="section">
-      <div class="section-title">📋 Trainee Information</div>
-      <div class="info-grid">
-        <div class="info-card"><label>Full Name</label><div class="value">${reportData.user?.name || 'N/A'}</div></div>
-        <div class="info-card"><label>Email</label><div class="value">${reportData.user?.email || 'N/A'}</div></div>
-        <div class="info-card"><label>Phone</label><div class="value">${reportData.user?.phone || 'N/A'}</div></div>
-      </div>
-    </div>
-    <div class="section">
-      <div class="section-title">📊 Performance Summary</div>
-      <div class="stats-grid">
-        <div class="stat-card total"><div class="stat-number">${totalAttempts}</div><div>Total Attempts</div></div>
-        <div class="stat-card passed"><div class="stat-number">${passedModules}</div><div>✅ Passed</div></div>
-        <div class="stat-card failed"><div class="stat-number">${failedModules}</div><div>❌ Failed</div></div>
-      </div>
-      <div class="info-card" style="text-align:center"><label>📈 Overall Pass Rate</label><div class="value" style="font-size:24px">${passRate}%</div></div>
-    </div>
-    <div class="section">
-      <div class="section-title">📝 Module Results</div>
-      ${(reportData.attempts || []).map(attempt => {
-        const percentage = Math.round((attempt.score / 20) * 100);
-        let errors = [];
-        if (attempt.errors) {
-          if (typeof attempt.errors === 'string') {
-            try { errors = JSON.parse(attempt.errors); } catch(e) { errors = []; }
-          } else if (Array.isArray(attempt.errors)) {
-            errors = attempt.errors;
-          }
-        }
-        return `
-        <div class="module-card">
-          <div class="module-header">
-            <span class="module-name">📘 ${attempt.module?.name || 'Module'}</span>
-            <span class="${attempt.passed ? 'score-passed' : 'score-failed'}">${attempt.score}/20 (${percentage}%) - ${attempt.passed ? 'PASSED' : 'FAILED'}</span>
-          </div>
-          ${errors.length > 0 ? `
-            <table class="error-table">
-              <thead><tr><th>#</th><th>Question</th><th>Your Answer</th><th>Correct Answer</th></tr></thead>
-              <tbody>
-                ${errors.map((err, idx) => `<tr><td>${idx+1}</td><td>${err.questionText || ''}</td><td class="wrong-answer">${err.userAnswer || ''}</td><td class="correct-answer">${err.correctAnswer || ''}</td></tr>`).join('')}
-              </tbody>
-            </table>
-          ` : `<div class="no-errors">✅ Perfect! No incorrect answers.</div>`}
-        </div>
-        `;
-      }).join('')}
-    </div>
-    <div class="footer">
-      <p>© ${new Date().getFullYear()} Centre of Healthcare Training</p>
-    </div>
-  </div>
-  <div class="no-print" style="text-align:center; margin-top:20px">
-    <button onclick="window.print()" style="padding:12px 28px; background:#1e664e; color:white; border:none; border-radius:10px; cursor:pointer;">🖨️ Print / Save as PDF</button>
-    <button onclick="window.close()" style="padding:12px 28px; background:#64748b; color:white; border:none; border-radius:10px; cursor:pointer; margin-left:10px;">✖️ Close</button>
-  </div>
-</body>
-</html>
+      <!DOCTYPE html>
+      <html>
+      <head><title>Assessment Report - ${reportData.user?.name || 'Student'}</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .header { background: #1e293b; color: white; padding: 20px; text-align: center; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #4f46e5; color: white; }
+        .passed { color: green; font-weight: bold; }
+        .failed { color: red; font-weight: bold; }
+      </style>
+      </head>
+      <body>
+        <div class="header"><h1>Assessment Report</h1><p>${new Date().toLocaleString()}</p></div>
+        <h3>Student: ${reportData.user?.name || reportData.user?.email}</h3>
+        <p>Total Attempts: ${reportData.totalAttempts || 0}</p>
+        <p>Passed Modules: ${reportData.passedModules || 0}</p>
+        <p>Failed Modules: ${reportData.failedModules || 0}</p>
+        <table><thead><tr><th>Module</th><th>Score</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody>${(reportData.attempts || []).map(a => `<tr><td>${a.module?.name}</td><td>${a.score}/20</td><td class="${a.passed ? 'passed' : 'failed'}">${a.passed ? 'PASSED' : 'FAILED'}</td><td>${new Date(a.completedAt).toLocaleString()}</td></tr>`).join('')}</tbody>
+        </table>
+      </body>
+      </html>
     `);
     printWindow.document.close();
+    printWindow.print();
   };
 
   const startModule = async (module) => {
@@ -475,13 +386,13 @@ function App() {
   const batchGenerateCodes = async () => {
     const validStudents = studentBatch.filter(s => s.surname.trim() && s.firstName.trim() && s.phone.trim());
     if (validStudents.length === 0) {
-      setError('Please add at least one student');
+      setError('Please add at least one student with surname, first name, and phone number');
       return;
     }
     const phoneRegex = /^\+44\d{10}$/;
     for (const student of validStudents) {
       if (!phoneRegex.test(student.phone)) {
-        setError(`Invalid phone number for ${student.firstName} ${student.surname}. Must start with +44`);
+        setError(`Invalid phone number for ${student.firstName} ${student.surname}. Must start with +44 (e.g., +447123456789)`);
         return;
       }
     }
@@ -556,11 +467,8 @@ function App() {
       <body>
         <h1>Student Login Credentials</h1>
         <p>Generated on ${new Date().toLocaleString()}</p>
-        <table>
-          <thead><tr><th>Name</th><th>Email</th><th>Code</th></tr></thead>
-          <tbody>
-            ${generatedCodes.map(c => `<tr><td>${c.name}</td><td>${c.email}</td><td><code>${c.code}</code></td></tr>`).join('')}
-          </tbody>
+        <table><thead><tr><th>Name</th><th>Email</th><th>Code</th></tr></thead>
+        <tbody>${generatedCodes.map(c => `<tr><td>${c.name}</td><td>${c.email}</td><td><code>${c.code}</code></td></tr>`).join('')}</tbody>
         </table>
       </body>
       </html>
@@ -901,22 +809,8 @@ function App() {
                     </div>
                   </div>
                   <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-slate-50">
-                        <th className="p-2">Name</th>
-                        <th className="p-2">Email</th>
-                        <th className="p-2">Code</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {generatedCodes.map((s, idx) => (
-                        <tr key={idx} className="border-t">
-                          <td className="p-2">{s.name}</td>
-                          <td className="p-2 text-xs">{s.email}</td>
-                          <td className="p-2"><code className="bg-slate-100 px-2 py-1 rounded">{s.code}</code></td>
-                        </tr>
-                      ))}
-                    </tbody>
+                    <thead><tr className="bg-slate-50"><th className="p-2">Name</th><th className="p-2">Email</th><th className="p-2">Code</th></tr></thead>
+                    <tbody>{generatedCodes.map((s, idx) => <tr key={idx} className="border-t"><td className="p-2">{s.name}</td><td className="p-2 text-xs">{s.email}</td><td className="p-2"><code className="bg-slate-100 px-2 py-1 rounded">{s.code}</code></td></tr>)}</tbody>
                   </table>
                 </div>
               )}

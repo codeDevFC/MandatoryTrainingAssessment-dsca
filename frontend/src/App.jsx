@@ -1,15 +1,16 @@
-import StudentDetailsPanel from "./components/StudentDetailsPanel";
 import React, { useState, useEffect } from 'react';
 import { 
   LogOut, BookOpen, FileText, ChevronLeft, ChevronRight, Target, CheckCircle, AlertCircle, 
   Users, TrendingUp, Shield, Mail, Key, Eye, EyeOff, Plus, Trash2, Copy, Printer, Download, 
   Search, GraduationCap, CheckSquare, Square, X, Clock, Award, Calendar, UserCheck, 
   FileSpreadsheet, BarChart3, AlertTriangle, Zap, PlayCircle, Lock, CreditCard, Send, 
-  MessageCircle, UserPlus, Filter, Eye as EyeIcon, RefreshCw, Home, ClipboardList, 
-  UserCog, LayoutDashboard, FileBarChart
+  MessageCircle, UserPlus, Filter, Eye as EyeIcon, RefreshCw, Home, ClipboardList, UserCog, 
+  LayoutDashboard, FileBarChart, Building2, Phone, MapPin, Award as AwardIcon, Calendar as CalendarIcon, 
+  BarChart, PieChart 
 } from 'lucide-react';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import StudentDetailsPanel from './components/StudentDetailsPanel';
 import { Link } from 'react-router-dom';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002';
@@ -33,6 +34,7 @@ function App() {
   const [startTime, setStartTime] = useState(null);
   const [userProgress, setUserProgress] = useState({ progress: [], attempts: [] });
   const [registeredStudents, setRegisteredStudents] = useState([]);
+  const [filteredStudents, setFilteredStudents] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [studentBatch, setStudentBatch] = useState([{ surname: '', firstName: '', phone: '' }]);
@@ -54,6 +56,63 @@ function App() {
   const [showStudentDetails, setShowStudentDetails] = useState(false);
   const [selectedStudentDetails, setSelectedStudentDetails] = useState(null);
   const [generatedLoginDetails, setGeneratedLoginDetails] = useState(null);
+  const [studentRoutes, setStudentRoutes] = useState({});
+  const [studentCustomModules, setStudentCustomModules] = useState({});
+
+  const fetchModules = async (userId = null) => {
+    try {
+      const url = userId ? `${API_URL}/api/modules?userId=${userId}` : `${API_URL}/api/modules`;
+      const res = await fetch(url);
+      const data = await res.json();
+      setModules(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Fetch modules error:', err);
+      setModules([]);
+    }
+  };
+
+  const fetchAllModulesForSelection = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/admin/modules`);
+      const data = await res.json();
+      setAllModulesList(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Fetch modules selection error:', err);
+      setAllModulesList([]);
+    }
+  };
+
+  const fetchRegisteredStudents = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/admin/all-students-with-status`);
+      const data = await res.json();
+      setRegisteredStudents(Array.isArray(data) ? data : []);
+      setFilteredStudents(Array.isArray(data) ? data : []);
+      const routes = {};
+      const customMods = {};
+      data.forEach(student => {
+        routes[student.id] = student.trainingRoute || 'FULL_22';
+        customMods[student.id] = student.selectedModules ? JSON.parse(student.selectedModules || '[]') : [];
+      });
+      setStudentRoutes(routes);
+      setStudentCustomModules(customMods);
+    } catch (err) {
+      console.error('Fetch registered students error:', err);
+      setRegisteredStudents([]);
+      setFilteredStudents([]);
+    }
+  };
+
+  const fetchUserProgress = async (userId) => {
+    try {
+      const res = await fetch(`${API_URL}/api/user/${userId}/progress`);
+      const data = await res.json();
+      setUserProgress({ progress: data.progress || [], attempts: data.attempts || [] });
+    } catch (err) {
+      console.error('Fetch progress error:', err);
+      setUserProgress({ progress: [], attempts: [] });
+    }
+  };
 
   const fetchStudentFullDetails = async (studentId) => {
     setLoading(true);
@@ -96,79 +155,6 @@ function App() {
       setError("Failed to regenerate credentials");
     } finally {
       setLoading(false);
-    }
-  };
-
-
-  const fetchRegisteredStudents = async () => {
-
-
-  const handleRefreshCredentials = async () => {
-    if (!selectedStudentDetails) return;
-    setLoading(true);
-    try {
-      const response = await fetch(`${API_URL}/api/admin/generate-code-with-route/${selectedStudentDetails.id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ trainingRoute: "FULL_22", selectedModules: [] })
-      });
-      const data = await response.json();
-      if (response.ok) {
-        await fetchStudentFullDetails(selectedStudentDetails.id);
-        setSuccess("Credentials regenerated successfully!");
-        setTimeout(() => setSuccess(""), 3000);
-      } else {
-        setError(data.error || "Failed to regenerate credentials");
-      }
-    } catch (err) {
-      setError("Failed to regenerate credentials");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-    try {
-      const res = await fetch(`${API_URL}/api/admin/all-students-with-status`);
-      const data = await res.json();
-      console.log('Fetched students:', data);
-      setRegisteredStudents(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Fetch students error:', err);
-      setRegisteredStudents([]);
-    }
-  };
-
-  const fetchModules = async (userId = null) => {
-    try {
-      const url = userId ? `${API_URL}/api/modules?userId=${userId}` : `${API_URL}/api/modules`;
-      const res = await fetch(url);
-      const data = await res.json();
-      setModules(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Fetch modules error:', err);
-      setModules([]);
-    }
-  };
-
-  const fetchAllModulesForSelection = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/admin/modules`);
-      const data = await res.json();
-      setAllModulesList(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Fetch modules selection error:', err);
-      setAllModulesList([]);
-    }
-  };
-
-  const fetchUserProgress = async (userId) => {
-    try {
-      const res = await fetch(`${API_URL}/api/user/${userId}/progress`);
-      const data = await res.json();
-      setUserProgress({ progress: data.progress || [], attempts: data.attempts || [] });
-    } catch (err) {
-      console.error('Fetch progress error:', err);
-      setUserProgress({ progress: [], attempts: [] });
     }
   };
 
@@ -229,9 +215,12 @@ function App() {
     try {
       const response = await fetch(`${API_URL}/api/admin/confirm-payment/${studentId}`, { method: 'POST' });
       if (response.ok) {
-        setSuccess('Payment confirmed!');
+        setSuccess('Payment confirmed! Student can now receive login credentials.');
         fetchRegisteredStudents();
         setTimeout(() => setSuccess(''), 3000);
+      } else {
+        const data = await response.json();
+        setError(data.error || 'Failed to confirm payment');
       }
     } catch (err) {
       setError('Failed to confirm payment');
@@ -242,18 +231,22 @@ function App() {
 
   const generateCodeForSingleStudent = async (studentId) => {
     setLoading(true);
+    const route = studentRoutes[studentId] || 'FULL_22';
+    const customModules = studentCustomModules[studentId] || [];
     try {
       const response = await fetch(`${API_URL}/api/admin/generate-code-with-route/${studentId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ trainingRoute: 'FULL_22', selectedModules: [] })
+        body: JSON.stringify({ trainingRoute: route, selectedModules: route === 'CUSTOM' ? customModules : [] })
       });
       const data = await response.json();
       if (response.ok) {
-        setSuccess('Code generated!');
+        setSuccess(data.message || 'Login code generated successfully!');
         if (data.whatsappLink) window.open(data.whatsappLink, '_blank');
         fetchRegisteredStudents();
-        setTimeout(() => setSuccess(''), 3000);
+        setTimeout(() => setSuccess(''), 5000);
+      } else {
+        setError(data.error);
       }
     } catch (err) {
       setError('Failed to generate code');
@@ -276,6 +269,11 @@ function App() {
         setShowDeleteConfirm(false);
         setDeleteUserId(null);
         setDeleteConfirmText('');
+        setSelectedStudents([]);
+        setSelectAll(false);
+      } else {
+        const data = await response.json();
+        setError(data.error || 'Failed to delete user');
       }
     } catch (err) {
       setError('Failed to delete user');
@@ -298,320 +296,131 @@ function App() {
     }
   };
 
-
   const printReport = () => {
     if (!reportData) return;
-    
+  
     const printWindow = window.open('', '_blank');
     const totalDuration = reportData.totalTimeSpent || 0;
     const hours = Math.floor(totalDuration / 3600);
     const minutes = Math.floor((totalDuration % 3600) / 60);
-    const seconds = totalDuration % 60;
-    const passRate = reportData.totalAttempts > 0 ? Math.round((reportData.passedModules / reportData.totalAttempts) * 100) : 0;
     
+    const passedModules = reportData.passedModules || 0;
+    const failedModules = reportData.failedModules || 0;
+    const totalAttempts = reportData.totalAttempts || 0;
+    const passRate = totalAttempts > 0 ? Math.round((passedModules / totalAttempts) * 100) : 0;
+  
     printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>COHT Training Assessment Report - ${reportData.user?.name || 'Student'}</title>
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body {
-            font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
-            padding: 40px;
-            max-width: 1200px;
-            margin: 0 auto;
-            background: #f0f2f5;
+<!DOCTYPE html>
+<html>
+<head>
+  <title>COHT Training Assessment Report</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; padding: 40px; }
+    .report-container { max-width: 1100px; margin: 0 auto; background: white; border-radius: 20px; overflow: hidden; }
+    .header { background: linear-gradient(135deg, #1e664e 0%, #0f4a38 100%); color: white; padding: 40px; text-align: center; }
+    .header h1 { font-size: 28px; }
+    .section { padding: 28px 32px; border-bottom: 1px solid #e2e8f0; }
+    .section-title { font-size: 18px; font-weight: bold; color: #1e293b; border-bottom: 3px solid #1e664e; display: inline-block; margin-bottom: 20px; padding-bottom: 8px; }
+    .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 20px; }
+    .info-card { background: #f8fafc; padding: 18px 20px; border-radius: 12px; border-left: 4px solid #1e664e; }
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 24px 0; }
+    .stat-card { text-align: center; padding: 24px 16px; border-radius: 12px; }
+    .stat-card.total { background: #e0e7ff; color: #3730a3; }
+    .stat-card.passed { background: #d1fae5; color: #065f46; }
+    .stat-card.failed { background: #fee2e2; color: #991b1b; }
+    .stat-number { font-size: 36px; font-weight: bold; }
+    .module-card { background: white; border-radius: 12px; margin-bottom: 24px; border: 1px solid #e2e8f0; }
+    .module-header { padding: 16px 20px; background: #f8fafc; border-bottom: 2px solid #1e664e; display: flex; justify-content: space-between; }
+    .module-name { font-size: 16px; font-weight: bold; }
+    .score-passed { background: #d1fae5; color: #065f46; padding: 4px 12px; border-radius: 20px; }
+    .score-failed { background: #fee2e2; color: #991b1b; padding: 4px 12px; border-radius: 20px; }
+    .error-table { width: calc(100% - 40px); margin: 16px 20px; border-collapse: collapse; }
+    .error-table th { background: #1e664e; color: white; padding: 12px; text-align: left; }
+    .error-table td { padding: 12px; border-bottom: 1px solid #e2e8f0; }
+    .wrong-answer { color: #dc2626; }
+    .correct-answer { color: #16a34a; }
+    .no-errors { padding: 20px; text-align: center; color: #16a34a; background: #f0fdf4; margin: 16px 20px; border-radius: 8px; }
+    .footer { text-align: center; padding: 24px; background: #f8fafc; font-size: 11px; color: #64748b; }
+    @media print { body { background: white; padding: 0; } .no-print { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="report-container">
+<div class="header">
+    <div style="display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 15px; flex-wrap: wrap;">
+      <div style="background: white; padding: 8px 20px; border-radius: 12px; display: inline-block;">
+        <span style="font-size: 28px; font-weight: bold; color: #1e664e;">COHT</span>
+      </div>
+      <div>
+        <h1 style="margin: 0;">Training Assessment Report</h1>
+        <p style="margin: 5px 0 0 0;">Official Training Record - Generated on ${new Date().toLocaleString()}</p>
+      </div>
+    </div>
+  </div>
+    </div>
+  </div>
+    <div class="section">
+      <div class="section-title">📋 Trainee Information</div>
+      <div class="info-grid">
+        <div class="info-card"><label>Full Name</label><div class="value">${reportData.user?.name || 'N/A'}</div></div>
+        <div class="info-card"><label>Email</label><div class="value">${reportData.user?.email || 'N/A'}</div></div>
+        <div class="info-card"><label>Phone</label><div class="value">${reportData.user?.phone || 'N/A'}</div></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">📊 Performance Summary</div>
+      <div class="stats-grid">
+        <div class="stat-card total"><div class="stat-number">${totalAttempts}</div><div>Total Attempts</div></div>
+        <div class="stat-card passed"><div class="stat-number">${passedModules}</div><div>✅ Passed</div></div>
+        <div class="stat-card failed"><div class="stat-number">${failedModules}</div><div>❌ Failed</div></div>
+      </div>
+      <div class="info-card" style="text-align:center"><label>📈 Overall Pass Rate</label><div class="value" style="font-size:24px">${passRate}%</div></div>
+    </div>
+    <div class="section">
+      <div class="section-title">📝 Module Results</div>
+      ${(reportData.attempts || []).map(attempt => {
+        const percentage = Math.round((attempt.score / 20) * 100);
+        let errors = [];
+        if (attempt.errors) {
+          if (typeof attempt.errors === 'string') {
+            try { errors = JSON.parse(attempt.errors); } catch(e) { errors = []; }
+          } else if (Array.isArray(attempt.errors)) {
+            errors = attempt.errors;
           }
-          .report-container {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
-          }
-          .header {
-            background: linear-gradient(135deg, #1e293b, #0f172a);
-            color: white;
-            padding: 40px;
-            text-align: center;
-          }
-          .header h1 {
-            font-size: 28px;
-            margin-bottom: 8px;
-            letter-spacing: 1px;
-          }
-          .header p {
-            opacity: 0.9;
-            font-size: 14px;
-          }
-          .section {
-            padding: 24px 32px;
-            border-bottom: 1px solid #e2e8f0;
-          }
-          .section-title {
-            font-size: 18px;
-            font-weight: bold;
-            color: #1e293b;
-            margin-bottom: 20px;
-            padding-bottom: 8px;
-            border-bottom: 3px solid #4f46e5;
-            display: inline-block;
-          }
-          .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-          }
-          .info-card {
-            background: #f8fafc;
-            padding: 16px 20px;
-            border-radius: 12px;
-            border-left: 4px solid #4f46e5;
-          }
-          .info-card label {
-            font-size: 12px;
-            color: #64748b;
-            display: block;
-            margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-weight: 600;
-          }
-          .info-card .value {
-            font-size: 16px;
-            font-weight: 600;
-            color: #1e293b;
-            word-break: break-word;
-          }
-          .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-            margin: 24px 0;
-          }
-          .stat-card {
-            text-align: center;
-            padding: 24px 16px;
-            border-radius: 12px;
-          }
-          .stat-card.total {
-            background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
-            color: #3730a3;
-          }
-          .stat-card.passed {
-            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-            color: #065f46;
-          }
-          .stat-card.failed {
-            background: linear-gradient(135deg, #fee2e2, #fecaca);
-            color: #991b1b;
-          }
-          .stat-card.time {
-            background: linear-gradient(135deg, #fef3c7, #fde68a);
-            color: #92400e;
-          }
-          .stat-number {
-            font-size: 36px;
-            font-weight: bold;
-            margin-bottom: 8px;
-          }
-          .stat-label {
-            font-size: 13px;
-            font-weight: 500;
-          }
-          .module-card {
-            background: #ffffff;
-            border-radius: 12px;
-            margin-bottom: 24px;
-            overflow: hidden;
-            border: 1px solid #e2e8f0;
-          }
-          .module-header {
-            padding: 16px 20px;
-            background: #f8fafc;
-            border-bottom: 2px solid #4f46e5;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-          }
-          .module-name {
-            font-size: 16px;
-            font-weight: bold;
-            color: #1e293b;
-          }
-          .module-score {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 600;
-          }
-          .score-passed {
-            background: #d1fae5;
-            color: #065f46;
-          }
-          .score-failed {
-            background: #fee2e2;
-            color: #991b1b;
-          }
-          .error-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 16px;
-          }
-          .error-table th {
-            background: #4f46e5;
-            color: white;
-            padding: 12px;
-            text-align: left;
-            font-size: 13px;
-            font-weight: 600;
-          }
-          .error-table td {
-            padding: 12px;
-            border-bottom: 1px solid #e2e8f0;
-            font-size: 13px;
-            vertical-align: top;
-          }
-          .wrong-answer {
-            color: #dc2626;
-            font-weight: 500;
-          }
-          .correct-answer {
-            color: #16a34a;
-            font-weight: 500;
-          }
-          .no-errors {
-            padding: 20px;
-            text-align: center;
-            color: #16a34a;
-            background: #f0fdf4;
-            border-radius: 8px;
-            margin-top: 16px;
-          }
-          .footer {
-            text-align: center;
-            padding: 24px;
-            background: #f8fafc;
-            font-size: 12px;
-            color: #64748b;
-            border-top: 1px solid #e2e8f0;
-          }
-          @media print {
-            body { padding: 0; background: white; }
-            .report-container { box-shadow: none; }
-            .no-print { display: none; }
-            .stat-card { break-inside: avoid; }
-            .module-card { break-inside: avoid; }
-          }
-          @media (max-width: 768px) {
-            body { padding: 20px; }
-            .stats-grid { grid-template-columns: repeat(2, 1fr); }
-            .info-grid { grid-template-columns: 1fr; }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="report-container">
-          <div class="header">
-            <h1>COHT Training Assessment Report</h1>
-            <p>Official Training Record - Generated on ${new Date().toLocaleString()}</p>
+        }
+        return `
+        <div class="module-card">
+          <div class="module-header">
+            <span class="module-name">📘 ${attempt.module?.name || 'Module'}</span>
+            <span class="${attempt.passed ? 'score-passed' : 'score-failed'}">${attempt.score}/20 (${percentage}%) - ${attempt.passed ? 'PASSED' : 'FAILED'}</span>
           </div>
-          
-          <div class="section">
-            <div class="section-title">Trainee Information</div>
-            <div class="info-grid">
-              <div class="info-card"><label>Full Name</label><div class="value">${reportData.user?.name || 'N/A'}</div></div>
-              <div class="info-card"><label>Email Address</label><div class="value">${reportData.user?.email || 'N/A'}</div></div>
-              <div class="info-card"><label>Phone Number</label><div class="value">${reportData.user?.phone || 'N/A'}</div></div>
-              <div class="info-card"><label>Training Route</label><div class="value">${reportData.user?.trainingRoute === 'CUSTOM' ? 'Custom Selection' : 'Full Access (All Modules)'}</div></div>
-              <div class="info-card"><label>Joined Date</label><div class="value">${reportData.user?.joinedAt ? new Date(reportData.user.joinedAt).toLocaleDateString() : 'N/A'}</div></div>
-              <div class="info-card"><label>Report ID</label><div class="value">${Math.random().toString(36).substr(2, 8).toUpperCase()}</div></div>
-            </div>
-          </div>
-          
-          <div class="section">
-            <div class="section-title">Performance Summary</div>
-            <div class="stats-grid">
-              <div class="stat-card total"><div class="stat-number">${reportData.totalAttempts || 0}</div><div class="stat-label">Total Attempts</div></div>
-              <div class="stat-card passed"><div class="stat-number">${reportData.passedModules || 0}</div><div class="stat-label">Passed Modules</div></div>
-              <div class="stat-card failed"><div class="stat-number">${reportData.failedModules || 0}</div><div class="stat-label">Failed Modules</div></div>
-              <div class="stat-card time"><div class="stat-number">${hours}h ${minutes}m ${seconds}s</div><div class="stat-label">Total Time Spent</div></div>
-            </div>
-            <div class="info-card" style="margin-top: 16px; text-align: center; background: #f0fdf4;">
-              <label>Overall Pass Rate</label>
-              <div class="value" style="font-size: 24px;">${passRate}%</div>
-            </div>
-          </div>
-          
-          <div class="section">
-            <div class="section-title">Detailed Module Results &amp; Incorrect Answers</div>
-            ${(reportData.attempts || []).map(attempt => {
-              const percentage = Math.round((attempt.score / 20) * 100);
-              const errors = attempt.errors || [];
-              return `
-                <div class="module-card">
-                  <div class="module-header">
-                    <span class="module-name">${attempt.module?.name || 'Unknown Module'}</span>
-                    <span class="module-score ${attempt.passed ? 'score-passed' : 'score-failed'}">${attempt.score}/20 (${percentage}%) - ${attempt.passed ? 'PASSED' : 'FAILED'}</span>
-                  </div>
-                  <div style="padding: 16px 20px;">
-                    <small style="color: #64748b;">Completed: ${new Date(attempt.completedAt).toLocaleString()}</small>
-                    ${errors.length > 0 ? `
-                      <table class="error-table">
-                        <thead>
-                          <tr>
-                            <th style="width: 8%">#</th>
-                            <th style="width: 47%">Question</th>
-                            <th style="width: 20%">Your Answer</th>
-                            <th style="width: 20%">Correct Answer</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          ${errors.map((err, idx) => `
-                            <tr>
-                              <td>${err.questionNumber || idx + 1}</td>
-                              <td>${err.questionText || 'N/A'}</td>
-                              <td class="wrong-answer">${err.userAnswer || 'N/A'}</td>
-                              <td class="correct-answer">${err.correctAnswer || 'N/A'}</td>
-                            </tr>
-                          `).join('')}
-                        </tbody>
-                      </table>
-                    ` : `
-                      <div class="no-errors">
-                        Perfect! No incorrect answers in this module.
-                      </div>
-                    `}
-                  </div>
-                </div>
-              `;
-            }).join('')}
-            ${(!reportData.attempts || reportData.attempts.length === 0) ? `
-              <div style="text-align: center; padding: 40px; color: #64748b;">
-                No module attempts recorded yet.
-              </div>
-            ` : ''}
-          </div>
-          
-          <div class="footer">
-            <p>This is an official training record generated by COHT Training Platform.</p>
-            <p>All Rights Reserved</p>
-            <p style="margin-top: 8px; font-size: 10px;">trainercourses.com</p>
-          </div>
+          ${errors.length > 0 ? `
+            <table class="error-table">
+              <thead><tr><th>#</th><th>Question</th><th>Your Answer</th><th>Correct Answer</th></tr></thead>
+              <tbody>
+                ${errors.map((err, idx) => `<tr><td>${idx+1}</td><td>${err.questionText || ''}</td><td class="wrong-answer">${err.userAnswer || ''}</td><td class="correct-answer">${err.correctAnswer || ''}</td></tr>`).join('')}
+              </tbody>
+            </table>
+          ` : `<div class="no-errors">✅ Perfect! No incorrect answers.</div>`}
         </div>
-        <div class="no-print" style="text-align: center; margin-top: 20px;">
-          <button onclick="window.print()" style="padding: 12px 24px; background: #4f46e5; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; margin-right: 10px;">Print / Save as PDF</button>
-          <button onclick="window.close()" style="padding: 12px 24px; background: #64748b; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">Close</button>
-        </div>
-      </body>
-      </html>
+        `;
+      }).join('')}
+    </div>
+    <div class="footer">
+      <p>© ${new Date().getFullYear()} Centre of Healthcare Training</p>
+    </div>
+  </div>
+  <div class="no-print" style="text-align:center; margin-top:20px">
+    <button onclick="window.print()" style="padding:12px 28px; background:#1e664e; color:white; border:none; border-radius:10px; cursor:pointer;">🖨️ Print / Save as PDF</button>
+    <button onclick="window.close()" style="padding:12px 28px; background:#64748b; color:white; border:none; border-radius:10px; cursor:pointer; margin-left:10px;">✖️ Close</button>
+  </div>
+</body>
+</html>
     `);
     printWindow.document.close();
   };
+
   const startModule = async (module) => {
     try {
       const res = await fetch(`${API_URL}/api/modules/${module.id}`);
@@ -639,7 +448,11 @@ function App() {
       const data = await response.json();
       setResult(data);
       setShowResults(true);
-      if (user.role === 'TRAINEE') fetchUserProgress(user.id);
+      if (user.role === 'TRAINEE') {
+        await fetchUserProgress(user.id);
+      } else {
+        await fetchRegisteredStudents();
+      }
     } catch (err) {
       setError('Submission failed');
     } finally {
@@ -649,14 +462,129 @@ function App() {
 
   const getModuleStatus = (moduleId) => {
     if (user?.role !== 'TRAINEE') return 'available';
+    const isCustomRoute = user?.trainingRoute === 'CUSTOM';
     const progress = userProgress.progress || [];
     const moduleProgress = progress.find(x => x.moduleId === moduleId);
     if (moduleProgress?.status === 'passed') return 'completed';
+    if (isCustomRoute) {
+      const selectedModules = user?.selectedModules || [];
+      if (selectedModules.includes(moduleId)) return 'available';
+      return 'locked';
+    }
     if (moduleId === 1) return 'available';
     const prevProgress = progress.find(x => x.moduleId === moduleId - 1);
     return prevProgress?.status === 'passed' ? 'available' : 'locked';
   };
 
+  const batchGenerateCodes = async () => {
+    const validStudents = studentBatch.filter(s => s.surname.trim() && s.firstName.trim() && s.phone.trim());
+    if (validStudents.length === 0) {
+      setError('Please add at least one student');
+      return;
+    }
+    const phoneRegex = /^\+44\d{10}$/;
+    for (const student of validStudents) {
+      if (!phoneRegex.test(student.phone)) {
+        setError(`Invalid phone number for ${student.firstName} ${student.surname}. Must start with +44`);
+        return;
+      }
+    }
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/admin/batch-generate-codes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ students: validStudents, trainingRoute, selectedModules: trainingRoute === 'CUSTOM' ? selectedCustomModules : [] })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setGeneratedCodes(data.codes);
+        setShowCodes(true);
+        setSuccess(`Successfully generated ${data.count} login codes!`);
+        fetchRegisteredStudents();
+        setStudentBatch([{ surname: '', firstName: '', phone: '' }]);
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        setError(data.error || 'Failed to generate codes');
+      }
+    } catch (err) {
+      setError('Failed to generate codes');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addStudentField = () => {
+    if (studentBatch.length < 20) {
+      setStudentBatch([...studentBatch, { surname: '', firstName: '', phone: '' }]);
+    }
+  };
+
+  const removeStudentField = (index) => {
+    const newBatch = studentBatch.filter((_, i) => i !== index);
+    setStudentBatch(newBatch.length ? newBatch : [{ surname: '', firstName: '', phone: '' }]);
+  };
+
+  const updateStudent = (index, field, value) => {
+    const newBatch = [...studentBatch];
+    newBatch[index][field] = value;
+    setStudentBatch(newBatch);
+  };
+
+  const toggleModuleSelection = (moduleId) => {
+    setSelectedCustomModules(prev =>
+      prev.includes(moduleId) ? prev.filter(id => id !== moduleId) : [...prev, moduleId]
+    );
+  };
+
+  const copyAllCodes = () => {
+    const codesText = generatedCodes.map(c => `${c.name}: ${c.code}`).join('\n');
+    navigator.clipboard.writeText(codesText);
+    setSuccess('All codes copied to clipboard!');
+    setTimeout(() => setSuccess(''), 3000);
+  };
+
+  const printCodes = () => {
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head><title>Student Login Codes</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #4f46e5; color: white; }
+      </style>
+      </head>
+      <body>
+        <h1>Student Login Credentials</h1>
+        <p>Generated on ${new Date().toLocaleString()}</p>
+        <table>
+          <thead><tr><th>Name</th><th>Email</th><th>Code</th></tr></thead>
+          <tbody>
+            ${generatedCodes.map(c => `<tr><td>${c.name}</td><td>${c.email}</td><td><code>${c.code}</code></td></tr>`).join('')}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
+  useEffect(() => {
+    if (searchTerm) {
+      setFilteredStudents(registeredStudents.filter(s =>
+        (s.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        s.email.toLowerCase().includes(searchTerm.toLowerCase())
+      ));
+    } else {
+      setFilteredStudents(registeredStudents);
+    }
+  }, [searchTerm, registeredStudents]);
+
+  // ============ LOGIN SCREEN ============
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col">
@@ -716,20 +644,12 @@ function App() {
             </div>
           </div>
         </div>
-        {showStudentDetails && selectedStudentDetails && (
-          <StudentDetailsPanel 
-            student={selectedStudentDetails} 
-            loginDetails={generatedLoginDetails} 
-            onClose={() => { setShowStudentDetails(false); setSelectedStudentDetails(null); setGeneratedLoginDetails(null); }} 
-            onRefresh={handleRefreshCredentials} 
-          />
-        )}
-
         <Footer />
       </div>
     );
   }
 
+  // ============ ASSESSMENT SCREEN ============
   if (selectedModule && !showResults) {
     const questions = selectedModule.questions || [];
     return (
@@ -759,38 +679,31 @@ function App() {
             </div>
             <div className="space-y-3">
               {questions[currentQuestion]?.options?.map((opt, idx) => (
-                <label key={idx} className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all ${answers[currentQuestion] === idx ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 hover:bg-slate-50'}`}>
+                <label key={idx} className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all ${answers[currentQuestion] === idx ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}>
                   <input type="radio" checked={answers[currentQuestion] === idx} onChange={() => setAnswers({...answers, [currentQuestion]: idx})} className="w-4 h-4 text-indigo-600" />
                   <span className="ml-3 text-slate-700">{opt}</span>
                 </label>
               ))}
             </div>
             <div className="flex justify-between mt-8">
-              <button disabled={currentQuestion === 0} onClick={() => setCurrentQuestion(v => v - 1)} className="px-6 py-2 text-slate-600 disabled:opacity-30">Previous</button>
+              <button disabled={currentQuestion === 0} onClick={() => setCurrentQuestion(v => v - 1)} className="px-6 py-2 text-slate-600 disabled:opacity-30 hover:text-slate-800 transition">Previous</button>
               {currentQuestion < questions.length - 1 ? (
-                <button disabled={answers[currentQuestion] === undefined} onClick={() => setCurrentQuestion(v => v + 1)} className="px-6 py-2 bg-slate-900 text-white rounded-lg">Next</button>
+                <button disabled={answers[currentQuestion] === undefined} onClick={() => setCurrentQuestion(v => v + 1)} className="px-6 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition">Next</button>
               ) : (
-                <button disabled={Object.keys(answers).length < questions.length || loading} onClick={submitAssessment} className="px-6 py-2 bg-green-600 text-white rounded-lg">
-                  {loading ? 'Submitting...' : 'Submit'}
+                <button disabled={Object.keys(answers).length < questions.length || loading} onClick={submitAssessment} 
+                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50">
+                  {loading ? 'Submitting...' : 'Submit Assessment'}
                 </button>
               )}
             </div>
           </div>
         </div>
-        {showStudentDetails && selectedStudentDetails && (
-          <StudentDetailsPanel 
-            student={selectedStudentDetails} 
-            loginDetails={generatedLoginDetails} 
-            onClose={() => { setShowStudentDetails(false); setSelectedStudentDetails(null); setGeneratedLoginDetails(null); }} 
-            onRefresh={handleRefreshCredentials} 
-          />
-        )}
-
         <Footer />
       </div>
     );
   }
 
+  // ============ RESULTS SCREEN ============
   if (showResults && result) {
     return (
       <div className="min-h-screen flex flex-col bg-slate-50">
@@ -801,28 +714,22 @@ function App() {
               {result.passed ? <CheckCircle className="w-12 h-12 text-green-600" /> : <AlertCircle className="w-12 h-12 text-red-600" />}
             </div>
             <h2 className="text-2xl font-bold mb-2">{result.passed ? 'Congratulations! 🎉' : 'Not This Time ❌'}</h2>
-            <p className="text-slate-600 mb-4">You scored <strong>{result.score}</strong> out of <strong>{result.total}</strong></p>
-            <button onClick={() => { setSelectedModule(null); setShowResults(false); fetchUserProgress(user.id); }} className="px-6 py-2 bg-indigo-600 text-white rounded-lg">Return to Dashboard</button>
+            <p className="text-slate-600 mb-4">You scored <strong className="text-2xl">{result.score}</strong> out of <strong>{result.total}</strong></p>
+            <button onClick={() => { setSelectedModule(null); setShowResults(false); fetchUserProgress(user.id); }} 
+              className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">Return to Dashboard</button>
           </div>
         </div>
-        {showStudentDetails && selectedStudentDetails && (
-          <StudentDetailsPanel 
-            student={selectedStudentDetails} 
-            loginDetails={generatedLoginDetails} 
-            onClose={() => { setShowStudentDetails(false); setSelectedStudentDetails(null); setGeneratedLoginDetails(null); }} 
-            onRefresh={handleRefreshCredentials} 
-          />
-        )}
-
         <Footer />
       </div>
     );
   }
 
+  // ============ ADMIN DASHBOARD ============
   if (user.role !== 'TRAINEE') {
     const confirmedCount = registeredStudents.filter(s => s.paymentConfirmed).length;
     const pendingCount = registeredStudents.filter(s => !s.paymentConfirmed).length;
-
+    const totalStudents = registeredStudents.length;
+    
     return (
       <div className="min-h-screen flex flex-col bg-slate-50">
         <Header />
@@ -837,31 +744,44 @@ function App() {
             </button>
           </div>
         </div>
+
         <div className="max-w-7xl mx-auto p-6 flex-1">
           <div className="flex flex-wrap gap-2 mb-6 border-b">
-            <button onClick={() => setActiveTab('students')} className={`px-5 py-2.5 rounded-t-lg font-medium transition-all flex items-center gap-2 ${activeTab === 'students' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-600'}`}>
+            <button onClick={() => setActiveTab('dashboard')} className={`px-5 py-2.5 rounded-t-lg font-medium transition-all flex items-center gap-2 ${activeTab === 'dashboard' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+              <LayoutDashboard size={18} /> Dashboard
+            </button>
+            <button onClick={() => setActiveTab('students')} className={`px-5 py-2.5 rounded-t-lg font-medium transition-all flex items-center gap-2 ${activeTab === 'students' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
               <Users size={18} /> Students
             </button>
-            <button onClick={() => setActiveTab('dashboard')} className={`px-5 py-2.5 rounded-t-lg font-medium transition-all flex items-center gap-2 ${activeTab === 'dashboard' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-600'}`}>
-              <LayoutDashboard size={18} /> Dashboard
+            <button onClick={() => { setActiveTab('generate'); setShowCodes(false); }} className={`px-5 py-2.5 rounded-t-lg font-medium transition-all flex items-center gap-2 ${activeTab === 'generate' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+              <FileBarChart size={18} /> Generate Codes
             </button>
           </div>
 
-          {error && <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg mb-4">{error}</div>}
-          {success && <div className="bg-green-50 border border-green-200 text-green-700 p-3 rounded-lg mb-4">{success}</div>}
+          {error && <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg mb-4 flex items-center gap-2"><AlertCircle size={18} /> {error}</div>}
+          {success && <div className="bg-green-50 border border-green-200 text-green-700 p-3 rounded-lg mb-4 flex items-center gap-2"><CheckCircle size={18} /> {success}</div>}
 
           {activeTab === 'dashboard' && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              <div className="bg-white rounded-xl border p-6 shadow-sm">
-                <div className="text-2xl font-bold">{registeredStudents.length}</div>
+              <div className="bg-white rounded-xl border p-6 shadow-sm hover:shadow-md transition">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center"><Users className="w-6 h-6 text-blue-600" /></div>
+                  <div className="text-2xl font-bold text-gray-800">{totalStudents}</div>
+                </div>
                 <p className="text-sm text-gray-500">Total Students</p>
               </div>
-              <div className="bg-white rounded-xl border p-6 shadow-sm">
-                <div className="text-2xl font-bold">{confirmedCount}</div>
+              <div className="bg-white rounded-xl border p-6 shadow-sm hover:shadow-md transition">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center"><CheckCircle className="w-6 h-6 text-green-600" /></div>
+                  <div className="text-2xl font-bold text-gray-800">{confirmedCount}</div>
+                </div>
                 <p className="text-sm text-gray-500">Payment Confirmed</p>
               </div>
-              <div className="bg-white rounded-xl border p-6 shadow-sm">
-                <div className="text-2xl font-bold">{pendingCount}</div>
+              <div className="bg-white rounded-xl border p-6 shadow-sm hover:shadow-md transition">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center"><Clock className="w-6 h-6 text-yellow-600" /></div>
+                  <div className="text-2xl font-bold text-gray-800">{pendingCount}</div>
+                </div>
                 <p className="text-sm text-gray-500">Awaiting Payment</p>
               </div>
             </div>
@@ -893,11 +813,7 @@ function App() {
                     </tr>
                   </thead>
                   <tbody>
-                    {registeredStudents.filter(s => {
-                      if (!searchTerm) return true;
-                      const term = searchTerm.toLowerCase();
-                      return (s.name || '').toLowerCase().includes(term) || s.email.toLowerCase().includes(term);
-                    }).map(student => (
+                    {filteredStudents.map(student => (
                       <tr key={student.id} className="border-t hover:bg-gray-50">
                         <td className="p-4 font-medium">{student.name || '-'}</td>
                         <td className="p-4 text-sm">{student.email}</td>
@@ -910,7 +826,7 @@ function App() {
                         <td className="p-4">
                           <div className="flex flex-wrap gap-2">
                             {!student.paymentConfirmed && (
-                              <button onClick={() => confirmPayment(student.id)} className="text-green-600 text-sm hover:underline">Confirm</button>
+                              <button onClick={() => confirmPayment(student.id)} className="text-green-600 text-sm hover:underline">Confirm Payment</button>
                             )}
                             {student.paymentConfirmed && (
                               <button onClick={() => generateCodeForSingleStudent(student.id)} className="text-indigo-600 text-sm hover:underline">Generate Code</button>
@@ -924,21 +840,100 @@ function App() {
                     ))}
                   </tbody>
                 </table>
-                {registeredStudents.length === 0 && (
+                {filteredStudents.length === 0 && (
                   <div className="text-center p-8 text-gray-500">No students found</div>
                 )}
               </div>
             </div>
           )}
+
+          {activeTab === 'generate' && (
+            <div className="bg-white rounded-xl border shadow-sm p-6">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">🎟️ Batch Login Code Generation</h2>
+              
+              <div className="mb-6 p-4 bg-slate-50 rounded-lg border">
+                <label className="block font-semibold text-gray-700 mb-3">Access Level:</label>
+                <div className="flex gap-6 mb-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="trainingRoute" value="FULL_22" checked={trainingRoute === 'FULL_22'} onChange={() => { setTrainingRoute('FULL_22'); setSelectedCustomModules([]); }} className="w-4 h-4 text-indigo-600" />
+                    <span className="text-sm font-medium">Full Access (All Modules)</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="trainingRoute" value="CUSTOM" checked={trainingRoute === 'CUSTOM'} onChange={() => setTrainingRoute('CUSTOM')} className="w-4 h-4 text-indigo-600" />
+                    <span className="text-sm font-medium">Custom Selection</span>
+                  </label>
+                </div>
+                
+                {trainingRoute === 'CUSTOM' && (
+                  <div className="mt-4 pt-4 border-t">
+                    <p className="text-sm text-gray-600 mb-2">Select modules for this batch:</p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded-lg bg-white">
+                      {allModulesList.map(module => (
+                        <label key={module.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-slate-50 p-1 rounded">
+                          <input type="checkbox" checked={selectedCustomModules.includes(module.id)} onChange={() => toggleModuleSelection(module.id)} className="w-4 h-4 text-indigo-600 rounded" />
+                          <span>{module.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-3 mb-4">
+                {studentBatch.map((student, idx) => (
+                  <div key={idx} className="flex flex-wrap gap-3">
+                    <input type="text" placeholder="Surname" value={student.surname} onChange={e => updateStudent(idx, 'surname', e.target.value)} className="flex-1 min-w-[120px] px-4 py-2 border rounded-lg" />
+                    <input type="text" placeholder="First Name" value={student.firstName} onChange={e => updateStudent(idx, 'firstName', e.target.value)} className="flex-1 min-w-[120px] px-4 py-2 border rounded-lg" />
+                    <input type="tel" placeholder="Phone (+44...)" value={student.phone} onChange={e => updateStudent(idx, 'phone', e.target.value)} className="flex-1 min-w-[150px] px-4 py-2 border rounded-lg font-mono" />
+                    {studentBatch.length > 1 && <button onClick={() => removeStudentField(idx)} className="p-2 text-red-500">✖</button>}
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-3">
+                <button onClick={addStudentField} disabled={studentBatch.length >= 20} className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50">+ Add Student ({studentBatch.length}/20)</button>
+                <button onClick={batchGenerateCodes} disabled={loading} className="px-6 py-2 bg-slate-900 text-white rounded-lg text-sm">Generate Codes</button>
+              </div>
+
+              {showCodes && generatedCodes.length > 0 && (
+                <div className="mt-6 pt-6 border-t">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-semibold">Generated Credentials</h3>
+                    <div className="flex gap-2">
+                      <button onClick={copyAllCodes} className="px-3 py-1 text-sm border rounded-lg">Copy All</button>
+                      <button onClick={printCodes} className="px-3 py-1 text-sm border rounded-lg">Print</button>
+                    </div>
+                  </div>
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-slate-50">
+                        <th className="p-2">Name</th>
+                        <th className="p-2">Email</th>
+                        <th className="p-2">Code</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {generatedCodes.map((s, idx) => (
+                        <tr key={idx} className="border-t">
+                          <td className="p-2">{s.name}</td>
+                          <td className="p-2 text-xs">{s.email}</td>
+                          <td className="p-2"><code className="bg-slate-100 px-2 py-1 rounded">{s.code}</code></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {showDeleteConfirm && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-md w-full p-6">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowDeleteConfirm(false)}>
+            <div className="bg-white rounded-2xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
               <h3 className="text-xl font-bold mb-4">Delete Student</h3>
-              <p>Type <strong>DELETE</strong> to confirm:</p>
-              <input type="text" value={deleteConfirmText} onChange={e => setDeleteConfirmText(e.target.value)} 
-                className="w-full border rounded p-2 my-2" placeholder="DELETE" />
+              <p>Type <strong className="font-mono bg-slate-100 px-2 py-1 rounded">DELETE</strong> to confirm:</p>
+              <input type="text" value={deleteConfirmText} onChange={e => setDeleteConfirmText(e.target.value)} className="w-full border rounded p-2 my-2" placeholder="DELETE" />
               <div className="flex gap-3 mt-4">
                 <button onClick={deleteUser} className="bg-red-600 text-white px-4 py-2 rounded">Delete</button>
                 <button onClick={() => setShowDeleteConfirm(false)} className="px-4 py-2 border rounded">Cancel</button>
@@ -948,36 +943,25 @@ function App() {
         )}
 
         {showReportModal && reportData && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-6">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowReportModal(false)}>
+            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[85vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-bold">Assessment Report</h3>
-                <button onClick={() => setShowReportModal(false)} className="text-gray-500">✕</button>
+                <button onClick={() => setShowReportModal(false)} className="text-gray-500">×</button>
               </div>
               <div className="bg-gray-50 p-4 rounded-lg mb-4">
                 <p><strong>{reportData.user?.name}</strong></p>
                 <p className="text-sm">{reportData.user?.email}</p>
               </div>
               <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="text-center p-3 bg-gray-100 rounded">
-                  <div className="text-2xl font-bold">{reportData.totalAttempts || 0}</div>
-                  <div className="text-xs">Attempts</div>
-                </div>
-                <div className="text-center p-3 bg-green-100 rounded">
-                  <div className="text-2xl font-bold text-green-600">{reportData.passedModules || 0}</div>
-                  <div className="text-xs">Passed</div>
-                </div>
-                <div className="text-center p-3 bg-red-100 rounded">
-                  <div className="text-2xl font-bold text-red-600">{reportData.failedModules || 0}</div>
-                  <div className="text-xs">Failed</div>
-                </div>
+                <div className="text-center p-3 bg-gray-100 rounded"><div className="text-2xl font-bold">{reportData.totalAttempts || 0}</div><div className="text-xs">Attempts</div></div>
+                <div className="text-center p-3 bg-green-100 rounded"><div className="text-2xl font-bold text-green-600">{reportData.passedModules || 0}</div><div className="text-xs">Passed</div></div>
+                <div className="text-center p-3 bg-red-100 rounded"><div className="text-2xl font-bold text-red-600">{reportData.failedModules || 0}</div><div className="text-xs">Failed</div></div>
               </div>
-              <button onClick={() => {
-                const printWindow = window.open('', '_blank');
-                printWindow.document.write('<pre>' + JSON.stringify(reportData, null, 2) + '</pre>');
-                printWindow.document.close();
-                printWindow.print();
-              }} className="w-full bg-indigo-600 text-white py-2 rounded-lg">Print Report</button>
+              <div className="flex gap-3 mt-6">
+                <button onClick={printReport} className="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition">Print Report</button>
+                <button onClick={() => setShowReportModal(false)} className="flex-1 bg-gray-200 py-2 rounded-lg hover:bg-gray-300 transition">Close</button>
+              </div>
             </div>
           </div>
         )}
@@ -990,12 +974,13 @@ function App() {
             onRefresh={handleRefreshCredentials} 
           />
         )}
-
+        
         <Footer />
       </div>
     );
   }
 
+  // ============ TRAINEE DASHBOARD ============
   const stats = {
     total: modules.length,
     completed: userProgress.progress?.filter(p => p.status === 'passed').length || 0,
@@ -1019,7 +1004,7 @@ function App() {
       </div>
       <div className="flex-1 max-w-7xl mx-auto p-6">
         <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-xl p-6 mb-8 text-white shadow-lg">
-          <h2 className="text-2xl font-bold mb-1">Welcome back, {user.name || 'Trainee'}! 🎓</h2>
+          <h2 className="text-2xl font-bold mb-1">Welcome back, {user.name || 'Trainee'}! 🎉</h2>
           <p className="text-indigo-100">Complete your mandatory training assessments</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
@@ -1035,28 +1020,19 @@ function App() {
             return (
               <div key={m.id} className="bg-white rounded-xl border p-5 hover:shadow-lg transition">
                 <div className="flex justify-between items-start mb-3">
-                  <div><h3 className="font-semibold">{m.name}</h3><p className="text-xs text-slate-500">Pass: {m.passMark}/20</p></div>
+                  <div><h3 className="font-semibold">{m.name}</h3><p className="text-xs text-slate-500">Pass: {m.passMark}/20 (75%)</p></div>
                   {status === 'completed' && <CheckCircle className="text-green-500 w-5 h-5" />}
                   {status === 'available' && <PlayCircle className="text-blue-500 w-5 h-5" />}
                   {status === 'locked' && <Lock className="text-gray-400 w-5 h-5" />}
                 </div>
-                {status === 'available' && <button onClick={() => startModule(m)} className="w-full mt-3 bg-indigo-600 text-white py-2 rounded-lg">Start Module 🚀</button>}
-                {status === 'locked' && <button disabled className="w-full mt-3 bg-gray-100 text-gray-400 py-2 rounded-lg">Complete Previous First</button>}
+                {status === 'available' && <button onClick={() => startModule(m)} className="w-full mt-3 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition">Start Module 🚀</button>}
+                {status === 'locked' && <button disabled className="w-full mt-3 bg-gray-100 text-gray-400 py-2 rounded-lg cursor-not-allowed">Complete Previous First</button>}
                 {status === 'completed' && <div className="w-full mt-3 bg-green-50 text-green-600 py-2 rounded-lg text-center">✅ Completed</div>}
               </div>
             );
           })}
         </div>
       </div>
-        {showStudentDetails && selectedStudentDetails && (
-          <StudentDetailsPanel 
-            student={selectedStudentDetails} 
-            loginDetails={generatedLoginDetails} 
-            onClose={() => { setShowStudentDetails(false); setSelectedStudentDetails(null); setGeneratedLoginDetails(null); }} 
-            onRefresh={handleRefreshCredentials} 
-          />
-        )}
-
       <Footer />
     </div>
   );

@@ -922,24 +922,15 @@ function App() {
         <div class="report-container">
           <!-- HEADER WITH DUAL LOGOS -->
           <div class="header">
-            <div class="header-content">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <img src="/logo01.jpg" class="header-logo" alt="COHT Logo" onerror="this.style.display='none'" />
-                <div style="background: white; padding: 5px 15px; border-radius: 10px;" id="logo-fallback">
-                  <span style="font-size: 20px; font-weight: bold; color: #1e664e;">COHT</span>
-                </div>
+            <div class="header-content" style="display: flex; align-items: center; justify-content: space-between; max-width: 950px; margin: 0 auto;">
+              <img src="${logo01}" style="height: 70px; background: white; padding: 8px; border-radius: 12px;" />
+              <div style="flex: 1; text-align: center;">
+                <h1 style="font-size: 24px; margin: 0;">Training Assessment Report</h1>
+                <p style="opacity: 0.9; font-size: 13px; margin-top: 5px;">Official Training Record - Generated on ${new Date().toLocaleString()}</p>
               </div>
-              <div class="header-text-container">
-                <h1>COHT Training Assessment Report</h1>
-                <p>Official Training Record - Generated on ${new Date().toLocaleString()}</p>
-              </div>
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <img src="/logo2.jpg" class="header-logo" alt="Accredited Logo" onerror="this.style.display='none'" />
-                <div style="background: white; padding: 5px 15px; border-radius: 10px;" id="logo-fallback2">
-                  <span style="font-size: 14px; font-weight: bold; color: #1e664e;">Accredited</span>
-                </div>
-              </div>
+              <img src="${logo2}" style="height: 70px; background: white; padding: 8px; border-radius: 12px;" />
             </div>
+          </div>
           </div>
 
           <!-- TRAINEE INFORMATION -->

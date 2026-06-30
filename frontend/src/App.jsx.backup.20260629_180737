@@ -1,0 +1,247 @@
+import React, { useState, useEffect } from "react";
+import { 
+  LogOut, BookOpen, FileText, ChevronLeft, ChevronRight, Target, CheckCircle, AlertCircle, 
+  Users, TrendingUp, Shield, Mail, Key, Eye, EyeOff, Plus, Trash2, Copy, Printer, Download, 
+  Search, GraduationCap, CheckSquare, Square, X, Clock, Award, Calendar, UserCheck, 
+  FileSpreadsheet, BarChart3, AlertTriangle, Zap, PlayCircle, Lock, CreditCard, Send, 
+  MessageCircle, UserPlus, Filter, RefreshCw, Home, ClipboardList, 
+  UserCog, LayoutDashboard, FileBarChart, Building2, Phone, MapPin, BarChart, PieChart, KeyRound 
+} from "lucide-react";
+import Header from "./components/Header";
+import Footer from "./components/Footer";
+import StudentDetailsPanel from "./components/StudentDetailsPanel";
+import PracticalCodeModal from "./components/PracticalCodeModal";
+import ModulePickerModal from "./components/ModulePickerModal";
+import logo01 from "./assets/logo01.jpg";
+import logo2 from "./assets/logo2.jpg";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3002";
+
+function App() {
+  const [user, setUser] = useState(null);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
+  const [loginType, setLoginType] = useState("trainee");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [modules, setModules] = useState([]);
+  const [selectedModule, setSelectedModule] = useState(null);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [answers, setAnswers] = useState({});
+  const [showResults, setShowResults] = useState(false);
+  const [result, setResult] = useState(null);
+  const [startTime, setStartTime] = useState(null);
+  const [userProgress, setUserProgress] = useState({ progress: [], attempts: [] });
+  const [registeredStudents, setRegisteredStudents] = useState([]);
+  const [filteredStudents, setFilteredStudents] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [studentBatch, setStudentBatch] = useState([{ surname: "", firstName: "", phone: "" }]);
+  const [generatedCodes, setGeneratedCodes] = useState([]);
+  const [showCodes, setShowCodes] = useState(false);
+  const [trainingRoute, setTrainingRoute] = useState("FULL_22");
+  const [selectedCustomModules, setSelectedCustomModules] = useState([]);
+  const [allModulesList, setAllModulesList] = useState([]);
+  const [selectedStudents, setSelectedStudents] = useState([]);
+  const [selectAll, setSelectAll] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteUserId, setDeleteUserId] = useState(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [bulkDeleteConfirmText, setBulkDeleteConfirmText] = useState("");
+  const [reportData, setReportData] = useState(null);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [showStudentDetails, setShowStudentDetails] = useState(false);
+  const [selectedStudentDetails, setSelectedStudentDetails] = useState(null);
+  const [generatedLoginDetails, setGeneratedLoginDetails] = useState(null);
+  const [studentRoutes, setStudentRoutes] = useState({});
+  const [studentCustomModules, setStudentCustomModules] = useState({});
+  const [showPracticalModal, setShowPracticalModal] = useState(false);
+  const [pendingPracticalModule, setPendingPracticalModule] = useState(null);
+  const [practicalModuleName, setPracticalModuleName] = useState("");
+  const [practicalCode, setPracticalCode] = useState("");
+  const [practicalCodeExpiry, setPracticalCodeExpiry] = useState(null);
+  const [generatingPracticalCode, setGeneratingPracticalCode] = useState(false);
+
+  const fetchModules = async (userId = null) => {
+    try {
+      const url = userId ? `${API_URL}/api/modules?userId=${userId}` : `${API_URL}/api/modules`;
+      const res = await fetch(url);
+      const data = await res.json();
+      setModules(Array.isArray(data) ? data : []);
+    } catch (err) { setModules([]); }
+  };
+
+  const fetchUserProgress = async (userId) => {
+    try {
+      const res = await fetch(`${API_URL}/api/user/${userId}/progress`);
+      const data = await res.json();
+      setUserProgress({ progress: data.progress || [], attempts: data.attempts || [] });
+    } catch (err) { setUserProgress({ progress: [], attempts: [] }); }
+  };
+
+  const getModuleStatus = (moduleId) => {
+    if (user?.role !== "TRAINEE") return "available";
+    const progress = userProgress.progress || [];
+    const moduleProgress = progress.find(x => x.moduleId === moduleId);
+    if (moduleProgress?.status === "passed") return "completed";
+
+    const theoryIds = [1,2,3,4,5,6,7,9,10,11,12,13,14,15,16,18,19,20,21,22,23];
+    const isPractical = moduleId === 8 || moduleId === 17;
+
+    if (isPractical) {
+      const passedTheory = progress.filter(p => theoryIds.includes(p.moduleId) && p.status === "passed");
+      if (passedTheory.length < 21) return "locked";
+      let practicalData = {};
+      try { practicalData = typeof user.practicalModules === "string" ? JSON.parse(user.practicalModules) : (user.practicalModules || {}); } catch (e) { practicalData = {}; }
+      return practicalData[moduleId]?.completed ? "available" : "practical_locked";
+    }
+
+    if (moduleId === 1) return "available";
+    let prevId = moduleId - 1;
+    while (prevId > 0 && (prevId === 8 || prevId === 17)) prevId--;
+    const prevProgress = progress.find(x => x.moduleId === prevId);
+    return (prevProgress?.status === "passed") ? "available" : "locked";
+  };
+
+  const printReport = () => {
+    if (!reportData) return;
+    const printWindow = window.open("", "_blank");
+    const totalAttempts = reportData.totalAttempts || 0;
+    const passedModules = reportData.passedModules || 0;
+    const passRate = totalAttempts > 0 ? Math.round((passedModules / totalAttempts) * 100) : 0;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <style>
+            body { font-family: sans-serif; background: #f0f2f5; padding: 40px; }
+            .report-container { max-width: 900px; margin: auto; background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+            .header { background: linear-gradient(135deg, #1e664e, #0f4a38); color: white; padding: 30px; display: flex; align-items: center; justify-content: space-between; }
+            .header-logo { height: 60px; background: white; padding: 5px; border-radius: 8px; }
+            .section { padding: 25px; border-bottom: 1px solid #eee; }
+            .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 20px 0; }
+            .stat-card { padding: 20px; border-radius: 12px; text-align: center; background: #f8fafc; }
+          </style>
+        </head>
+        <body>
+          <div class="report-container">
+            <div class="header">
+              <img src="${logo01}" class="header-logo" />
+              <div style="text-align:center"><h1>Assessment Report</h1><p>Generated: ${new Date().toLocaleString()}</p></div>
+              <img src="${logo2}" class="header-logo" />
+            </div>
+            <div class="section">
+              <h3>Trainee: ${reportData.user?.name || "N/A"}</h3>
+              <div class="stat-grid">
+                <div class="stat-card"><b>${totalAttempts}</b><br/>Attempts</div>
+                <div class="stat-card" style="color:green"><b>${passedModules}</b><br/>Passed</div>
+                <div class="stat-card" style="color:blue"><b>${passRate}%</b><br/>Pass Rate</div>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
+  const startModule = async (m) => {
+    setStartTime(Date.now());
+    setSelectedModule(m);
+  };
+
+  const requestPracticalCode = (m) => {
+    setPendingPracticalModule(m);
+    setPracticalModuleName(m.name);
+    setShowPracticalModal(true);
+  };
+
+  const handlePracticalCodeSuccess = () => {
+    setShowPracticalModal(false);
+    fetchUserProgress(user.id);
+  };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
+        <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
+           <h2 className="text-2xl font-bold text-center mb-6">COHT Training Login</h2>
+           <button onClick={() => setUser({id: "1", name: "Admin User", role: "ADMIN"})} className="w-full bg-slate-800 text-white py-3 rounded-lg mb-2">Login as Admin</button>
+           <button onClick={() => setUser({id: "2", name: "Bella Italia", role: "TRAINEE"})} className="w-full bg-emerald-600 text-white py-3 rounded-lg">Login as Trainee</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col bg-slate-50">
+      <Header />
+      <div className="flex-1 max-w-7xl mx-auto p-6 w-full">
+        {user.role === "TRAINEE" ? (
+          <>
+            <h2 className="text-xl font-bold mb-4">📚 Theory Modules (Part 1)</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-12">
+              {modules.filter(m => m.id !== 8 && m.id !== 17).map(m => {
+                const status = getModuleStatus(m.id);
+                return (
+                  <div key={m.id} className="bg-white rounded-xl border p-5 hover:shadow-lg transition">
+                    <div className="flex justify-between items-start mb-3">
+                      <h3 className="font-semibold">{m.name}</h3>
+                      {status === "completed" ? <CheckCircle className="text-green-500" /> : <Lock className="text-slate-300" />}
+                    </div>
+                    {status === "available" && <button onClick={() => startModule(m)} className="w-full bg-indigo-600 text-white py-2 rounded-lg mt-2">Start Module</button>}
+                    {status === "locked" && <button disabled className="w-full bg-slate-100 text-slate-400 py-2 rounded-lg mt-2">Locked</button>}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6">
+              <h2 className="text-xl font-bold text-amber-900 flex items-center gap-2 mb-2">
+                <Shield className="text-amber-600" /> Final Practical Assessment (Part 2)
+              </h2>
+              <p className="text-amber-700 text-sm mb-6">Requires access code. Available after passing all 21 theory modules.</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {modules.filter(m => m.id === 8 || m.id === 17).map(m => {
+                  const status = getModuleStatus(m.id);
+                  return (
+                    <div key={m.id} className="bg-white rounded-xl border p-5 hover:shadow-lg transition">
+                      <h3 className="font-semibold mb-3">{m.name}</h3>
+                      {status === "practical_locked" && <button onClick={() => requestPracticalCode(m)} className="w-full bg-amber-600 text-white py-2 rounded-lg">Enter Practical Code</button>}
+                      {status === "locked" && <button disabled className="w-full bg-slate-100 text-slate-400 py-2 rounded-lg">Prerequisites Not Met</button>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="bg-white p-6 rounded-xl border shadow-sm">
+            <h2 className="text-xl font-bold mb-4">Admin Management</h2>
+            <div className="flex gap-4 border-b mb-6">
+              <button onClick={() => setActiveTab("students")} className={`pb-2 ${activeTab === "students" ? "border-b-2 border-indigo-600 font-bold" : ""}`}>Students</button>
+              <button onClick={() => setActiveTab("practical")} className={`pb-2 ${activeTab === "practical" ? "border-b-2 border-amber-600 font-bold" : ""}`}>Practical Code</button>
+            </div>
+            {activeTab === "practical" && (
+              <div className="p-4 bg-slate-50 rounded-lg">
+                <h3 className="font-bold mb-2">Current SPECIAL TWO Code</h3>
+                <div className="text-3xl font-mono bg-white p-4 border rounded text-center mb-4">{practicalCode || "NONE GENERATED"}</div>
+                <button onClick={generatePracticalCode} className="bg-amber-600 text-white px-6 py-2 rounded-lg">Regenerate New Code</button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      <Footer />
+      {showPracticalModal && <PracticalCodeModal isOpen={showPracticalModal} onClose={() => setShowPracticalModal(false)} moduleId={pendingPracticalModule.id} moduleName={practicalModuleName} userId={user.id} onSuccess={handlePracticalCodeSuccess} />}
+    </div>
+  );
+}
+
+export default App;

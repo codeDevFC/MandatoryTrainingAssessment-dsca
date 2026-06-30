@@ -22,3 +22,21 @@
       setGeneratedLoginDetails(null);
     }
   };
+
+// ============ PRACTICAL CODE HANDLING ============
+const handlePracticalCodeSuccess = () => {
+  setSuccess('✅ Practical code verified! You can now access the module.');
+  setTimeout(() => setSuccess(''), 5000);
+  fetchModules(user.id);
+};
+
+const handlePracticalCodeError = (error) => {
+  setError(error || 'Failed to verify practical code. Please try again.');
+  setTimeout(() => setError(''), 5000);
+};
+
+const requestPracticalCode = (module) => {
+  setPendingPracticalModule(module);
+  setPracticalModuleName(module.name);
+  setShowPracticalModal(true);
+};

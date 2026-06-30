@@ -5,27 +5,18 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
+    host: true,
     proxy: {
       '/api': {
         target: 'http://localhost:3002',
-        changeOrigin: true
+        changeOrigin: true,
+        secure: false
       }
     }
   },
   build: {
     outDir: 'dist',
     sourcemap: false,
-    minify: 'terser',
-    assetsDir: 'assets',
-    rollupOptions: {
-      output: {
-        assetFileNames: (assetInfo) => {
-          if (assetInfo.name === 'favicon.svg' || assetInfo.name === 'favicon.ico') {
-            return '[name][extname]'
-          }
-          return 'assets/[name]-[hash][extname]'
-        }
-      }
-    }
+    minify: 'terser'
   }
 })

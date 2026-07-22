@@ -4,6 +4,35 @@ const { PrismaClient } = require('@prisma/client');
 const app = express();
 const prisma = new PrismaClient();
 
+// ============ ENSURE ADMIN USERS EXIST ============
+async function ensureAdminUsers() {
+  const admins = [
+    { email: 'admin@careworks.com', name: 'Admin', role: 'ADMIN' },
+    { email: 'director@careworks.com', name: 'Director', role: 'DIRECTOR' },
+    { email: 'supervisor@careworks.com', name: 'Supervisor', role: 'SUPERVISOR' }
+  ];
+  
+  for (const admin of admins) {
+    try {
+      await prisma.user.upsert({
+        where: { email: admin.email },
+        update: { role: admin.role },
+        create: {
+          email: admin.email,
+          name: admin.name,
+          role: admin.role,
+          trainingRoute: 'FULL_ACCESS',
+          paymentConfirmed: true,
+          practicalModules: '{}'
+        }
+      });
+      console.log(`✅ Admin user ensured: ${admin.email}`);
+    } catch (e) {
+      console.error(`❌ Failed to ensure admin ${admin.email}:`, e.message);
+    }
+  }
+}
+
 app.use(cors({
  origin: [
  'http://localhost:5173',
@@ -80,6 +109,108 @@ app.post('/api/auth/register', async (req, res) => {
  }
 });
 
+// ============ ADMIN LOGIN ============
+app.post('/api/auth/admin-login', async (req, res) => {
+ const { email, password } = req.body;
+ console.log('Admin login attempt:', email);
+ 
+ const validAdmins = {
+ 'admin@careworks.com': 'Admin@2025',
+ 'director@careworks.com': 'Director@2025',
+ 'supervisor@careworks.com': 'Supervisor@2025'
+ };
+ 
+ try {
+   // First, ensure admin users exist
+   await ensureAdminUsers();
+   
+   // Check credentials
+   if (validAdmins[email] && validAdmins[email] === password) {
+     let user = await prisma.user.findUnique({ where: { email: email } });
+     if (!user) {
+       let role = 'TRAINEE';
+       if (email === 'admin@careworks.com') role = 'ADMIN';
+       else if (email === 'director@careworks.com') role = 'DIRECTOR';
+       else if (email === 'supervisor@careworks.com') role = 'SUPERVISOR';
+       user = await prisma.user.create({ 
+         data: { 
+           email: email, 
+           name: email.split('@')[0], 
+           role: role,
+           trainingRoute: 'FULL_ACCESS',
+           paymentConfirmed: true,
+           practicalModules: '{}'
+         } 
+       });
+     }
+     console.log('✅ Admin login successful:', email);
+     return res.json({ id: user.id, email: user.email, name: user.name, role: user.role });
+   }
+   console.log('❌ Invalid admin credentials:', email);
+   res.status(401).json({ error: 'Invalid email or password' });
+ } catch (error) {
+   console.error('Admin login error:', error);
+   res.status(500).json({ error: 'Login failed: ' + error.message });
+ }
+});
+
+// ============ GET ALL STUDENTS ============
+app.get('/api/admin/students', async (req, res) => {
+ try {
+ const students = await prisma.user.findMany({
+ where: { role: 'TRAINEE' },
+ include: { moduleAttempts: { include: { module: true } } },
+ orderBy: { createdAt: 'desc' }
+ });
+ res.json(students);
+ } catch (error) {
+ console.error('Get students error:', error);
+ res.status(500).json({ error: 'Failed to fetch students' });
+ }
+});
+
+// ============ GET ALL MODULES ============
+app.get('/api/admin/modules', async (req, res) => {
+ try {
+ const modules = await prisma.module.findMany({
+ orderBy: { id: 'asc' },
+ select: { id: true, name: true, passMark: true, isPractical: true }
+ });
+ res.json(modules);
+ } catch (error) {
+ console.error('Get modules error:', error);
+ res.status(500).json({ error: 'Failed to fetch modules' });
+ }
+});
+
+// ============ GET ALL STUDENTS WITH STATUS ============
+app.get('/api/admin/all-students-with-status', async (req, res) => {
+ try {
+ const students = await prisma.user.findMany({
+ where: { role: 'TRAINEE' },
+ select: {
+ id: true,
+ name: true,
+ email: true,
+ phone: true,
+ address: true,
+ postCode: true,
+ paymentConfirmed: true,
+ paymentConfirmedAt: true,
+ createdAt: true,
+ trainingRoute: true,
+ selectedModules: true,
+ practicalModules: true
+ },
+ orderBy: { createdAt: 'desc' }
+ });
+ res.json(students);
+ } catch (error) {
+ console.error('Fetch students error:', error);
+ res.status(500).json({ error: 'Failed to fetch students' });
+ }
+});
+
 // ============ GET STUDENT WITH LOGIN ============
 app.get('/api/admin/student-with-login/:id', async (req, res) => {
  try {
@@ -117,34 +248,6 @@ app.get('/api/admin/student-with-login/:id', async (req, res) => {
  } catch (error) {
  console.error('Fetch student error:', error);
  res.status(500).json({ error: 'Failed to fetch student details' });
- }
-});
-
-// ============ GET ALL STUDENTS WITH STATUS ============
-app.get('/api/admin/all-students-with-status', async (req, res) => {
- try {
- const students = await prisma.user.findMany({
- where: { role: 'TRAINEE' },
- select: {
- id: true,
- name: true,
- email: true,
- phone: true,
- address: true,
- postCode: true,
- paymentConfirmed: true,
- paymentConfirmedAt: true,
- createdAt: true,
- trainingRoute: true,
- selectedModules: true,
- practicalModules: true
- },
- orderBy: { createdAt: 'desc' }
- });
- res.json(students);
- } catch (error) {
- console.error('Fetch students error:', error);
- res.status(500).json({ error: 'Failed to fetch students' });
  }
 });
 
@@ -201,150 +304,6 @@ app.post('/api/admin/generate-code-with-route/:id', async (req, res) => {
  }
 });
 
-// ============ RESEND LOGIN DETAILS ============
-app.post('/api/admin/resend-login-details/:id', async (req, res) => {
- const { id } = req.params;
- try {
- const user = await prisma.user.findUnique({ where: { id: id } });
- if (!user) return res.status(404).json({ error: 'Student not found' });
- let loginCode = await prisma.loginCode.findFirst({
- where: { email: user.email, expiresAt: { gt: new Date() } },
- orderBy: { createdAt: 'desc' }
- });
- if (!loginCode) {
- const code = generateCode();
- const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
- loginCode = await prisma.loginCode.create({ data: { email: user.email, code: code, expiresAt: expiresAt } });
- }
- const BASE_URL = process.env.FRONTEND_URL || 'https://dsca-mta-quiz01.vercel.app';
- const whatsappMessage = `COHT Training Credentials%0A%0A? Login Email: ${user.email}%0A? Code: ${loginCode.code}%0A%0A? Login: ${BASE_URL}%0A%0A? Code expires in 30 days`;
- const whatsappLink = `https://wa.me/${user.phone.replace('+', '')}?text=${whatsappMessage}`;
- res.json({ success: true, code: loginCode.code, loginEmail: user.email, whatsappLink: whatsappLink });
- } catch (error) {
- console.error('Resend login error:', error);
- res.status(500).json({ error: 'Failed to resend credentials: ' + error.message });
- }
-});
-
-// ============ ADMIN LOGIN ============
-app.post('/api/auth/admin-login', async (req, res) => {
- const { email, password } = req.body;
- const validAdmins = {
- 'admin@careworks.com': 'Admin@2025',
- 'director@careworks.com': 'Director@2025',
- 'supervisor@careworks.com': 'Supervisor@2025'
- };
- try {
- if (validAdmins[email] && validAdmins[email] === password) {
- let user = await prisma.user.findUnique({ where: { email: email } });
- if (!user) {
- let role = 'TRAINEE';
- if (email === 'admin@careworks.com') role = 'ADMIN';
- else if (email === 'director@careworks.com') role = 'DIRECTOR';
- else if (email === 'supervisor@careworks.com') role = 'SUPERVISOR';
- user = await prisma.user.create({ data: { email: email, name: email.split('@')[0], role: role } });
- }
- return res.json({ id: user.id, email: user.email, name: user.name, role: user.role });
- }
- res.status(401).json({ error: 'Invalid email or password' });
- } catch (error) {
- console.error('Admin login error:', error);
- res.status(500).json({ error: 'Login failed' });
- }
-});
-
-// ============ BATCH GENERATE CODES ============
-app.post('/api/admin/batch-generate-codes', async (req, res) => {
- const { students, trainingRoute = 'FULL_ACCESS', selectedModules = [] } = req.body;
- const results = [];
- for (const student of students) {
- try {
- const email = generateEmail(student.surname, student.firstName);
- const selectedModulesJson = trainingRoute === 'CUSTOMIZED_01' ? JSON.stringify(selectedModules) : null;
- await prisma.user.upsert({
- where: { email: email },
- update: { trainingRoute: trainingRoute, selectedModules: selectedModulesJson },
- create: {
- email: email,
- name: student.firstName + " " + student.surname,
- role: 'TRAINEE',
- trainingRoute: trainingRoute,
- selectedModules: selectedModulesJson,
- phone: student.phone || '',
- practicalModules: JSON.stringify({})
- }
- });
- await prisma.loginCode.deleteMany({ where: { email: email } });
- const code = generateCode();
- const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
- await prisma.loginCode.create({ data: { email: email, code: code, expiresAt: expiresAt } });
- results.push({ name: student.firstName + " " + student.surname, email: email, code: code });
- } catch (e) {
- console.error('Error generating code:', e.message);
- }
- }
- res.json({ success: true, codes: results, count: results.length });
-});
-
-// ============ GET ALL STUDENTS ============
-app.get('/api/admin/students', async (req, res) => {
- try {
- const students = await prisma.user.findMany({
- where: { role: 'TRAINEE' },
- include: { moduleAttempts: { include: { module: true } } },
- orderBy: { createdAt: 'desc' }
- });
- res.json(students);
- } catch (error) {
- console.error('Get students error:', error);
- res.status(500).json({ error: 'Failed to fetch students' });
- }
-});
-
-// ============ GET ALL MODULES ============
-app.get('/api/admin/modules', async (req, res) => {
- try {
- const modules = await prisma.module.findMany({
- orderBy: { id: 'asc' },
- select: { id: true, name: true, passMark: true, isPractical: true }
- });
- res.json(modules);
- } catch (error) {
- console.error('Get modules error:', error);
- res.status(500).json({ error: 'Failed to fetch modules' });
- }
-});
-
-// ============ VERIFY TRAINEE CODE ============
-app.post('/api/auth/verify-code', async (req, res) => {
- const { email, code } = req.body;
- try {
- const loginCode = await prisma.loginCode.findFirst({
- where: { email: email, code: code, expiresAt: { gt: new Date() } },
- orderBy: { createdAt: 'desc' }
- });
- if (!loginCode) {
- return res.status(401).json({ error: 'Invalid or expired code' });
- }
- let user = await prisma.user.findUnique({ where: { email: email } });
- if (!user) {
- user = await prisma.user.create({
- data: { 
- email: email, 
- name: email.split('@')[0], 
- role: 'TRAINEE', 
- trainingRoute: 'FULL_ACCESS',
- practicalModules: JSON.stringify({})
- }
- });
- }
- res.json(user);
- } catch (error) {
- console.error('Verify code error:', error);
- res.status(500).json({ error: 'Verification failed' });
- }
-});
-
 // ============ PRACTICAL CODE ENDPOINTS ============
 app.post('/api/admin/generate-practical-code', async (req, res) => {
  try {
@@ -395,7 +354,7 @@ app.get('/api/admin/current-practical-code', async (req, res) => {
 // ============ VERIFY PRACTICAL CODE ============
 app.post('/api/auth/verify-practical-code', async (req, res) => {
  const { userId, moduleId, practicalCode } = req.body;
- console.log(`? Verifying practical code for userId: ${userId}, moduleId: ${moduleId}`);
+ console.log('? Verifying practical code for userId:', userId, 'moduleId:', moduleId);
  try {
  if (![8, 17].includes(moduleId)) {
  return res.status(400).json({ 
@@ -407,7 +366,7 @@ app.post('/api/auth/verify-practical-code', async (req, res) => {
  where: { id: userId } 
  });
  if (!user) {
- console.error(`? User not found: ${userId}`);
+ console.error('? User not found:', userId);
  return res.status(404).json({ error: 'User not found' });
  }
  const activeCode = await prisma.practicalAccessCode.findFirst({
@@ -418,7 +377,7 @@ app.post('/api/auth/verify-practical-code', async (req, res) => {
  }
  });
  if (!activeCode) {
- console.error(`? Invalid or expired code: ${practicalCode}`);
+ console.error('? Invalid or expired code:', practicalCode);
  return res.status(401).json({ 
  success: false, 
  error: 'Invalid or expired practical access code. Please check with your trainer.' 
@@ -433,21 +392,21 @@ app.post('/api/auth/verify-practical-code', async (req, res) => {
  practicalModules[moduleId] = {
  completed: true,
  completedAt: new Date().toISOString(),
- code: practicalCode,
+ code: practicalCode.toUpperCase(),
  verifiedBy: activeCode.generatedBy || 'system'
  };
  await prisma.user.update({
  where: { id: userId },
  data: { practicalModules: JSON.stringify(practicalModules) }
  });
- console.log(`? Practical code verified for module ${moduleId}`);
+ console.log('? Practical code verified for module', moduleId);
  res.json({ 
  success: true, 
  message: `Practical verification successful for Module ${moduleId}!` 
  });
  } catch (error) {
  console.error('Verify practical code error:', error);
- res.status(500).json({ error: 'Failed to verify practical code' });
+ res.status(500).json({ error: 'Failed to verify practical code: ' + error.message });
  }
 });
 
@@ -490,15 +449,9 @@ app.get('/api/modules', async (req, res) => {
  } else {
  modules = await prisma.module.findMany({ orderBy: { id: 'asc' } });
  }
-
- // Define module sections based on original IDs
- // Full-Access (17 modules) - these are mandatory and sequential
  const fullAccessIds = [1,2,3,4,6,7,10,11,12,14,15,16,18,19,21,22,23];
- // Practical modules (2 modules)
  const practicalIds = [8,17];
- // EXTRA-Add-Ons (4 modules) - always available
  const extraAddOnIds = [5,9,13,20];
-
  const modulesWithStatus = modules.map(module => {
  const isPractical = module.isPractical || [8, 17].includes(module.id);
  const isPracticalCompleted = practicalModules[module.id]?.completed || false;
@@ -508,14 +461,12 @@ app.get('/api/modules', async (req, res) => {
  } else if (practicalIds.includes(module.id)) {
  section = 'PRACTICAL';
  }
- // For FULL_ACCESS we keep the original IDs but order them sequentially
  return {
  ...module,
  isPractical,
  isPracticalCompleted,
  practicalAccessCode: isPractical ? practicalAccessCode : null,
  section: section,
- // Display order for Full-Access modules (1-17 in the new sequence)
  displayOrder: fullAccessIds.indexOf(module.id) + 1
  };
  });
@@ -738,11 +689,78 @@ app.delete('/api/admin/bulk-delete-users', async (req, res) => {
  }
 });
 
+// ============ BATCH GENERATE CODES ============
+app.post('/api/admin/batch-generate-codes', async (req, res) => {
+ const { students, trainingRoute = 'FULL_ACCESS', selectedModules = [] } = req.body;
+ const results = [];
+ for (const student of students) {
+ try {
+ const email = generateEmail(student.surname, student.firstName);
+ const selectedModulesJson = trainingRoute === 'CUSTOMIZED_01' ? JSON.stringify(selectedModules) : null;
+ await prisma.user.upsert({
+ where: { email: email },
+ update: { trainingRoute: trainingRoute, selectedModules: selectedModulesJson },
+ create: {
+ email: email,
+ name: student.firstName + " " + student.surname,
+ role: 'TRAINEE',
+ trainingRoute: trainingRoute,
+ selectedModules: selectedModulesJson,
+ phone: student.phone || '',
+ practicalModules: JSON.stringify({})
+ }
+ });
+ await prisma.loginCode.deleteMany({ where: { email: email } });
+ const code = generateCode();
+ const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+ await prisma.loginCode.create({ data: { email: email, code: code, expiresAt: expiresAt } });
+ results.push({ name: student.firstName + " " + student.surname, email: email, code: code });
+ } catch (e) {
+ console.error('Error generating code:', e.message);
+ }
+ }
+ res.json({ success: true, codes: results, count: results.length });
+});
+
+// ============ VERIFY TRAINEE CODE ============
+app.post('/api/auth/verify-code', async (req, res) => {
+ const { email, code } = req.body;
+ try {
+ const loginCode = await prisma.loginCode.findFirst({
+ where: { email: email, code: code, expiresAt: { gt: new Date() } },
+ orderBy: { createdAt: 'desc' }
+ });
+ if (!loginCode) {
+ return res.status(401).json({ error: 'Invalid or expired code' });
+ }
+ let user = await prisma.user.findUnique({ where: { email: email } });
+ if (!user) {
+ user = await prisma.user.create({
+ data: { 
+ email: email, 
+ name: email.split('@')[0], 
+ role: 'TRAINEE', 
+ trainingRoute: 'FULL_ACCESS',
+ practicalModules: JSON.stringify({})
+ }
+ });
+ }
+ res.json(user);
+ } catch (error) {
+ console.error('Verify code error:', error);
+ res.status(500).json({ error: 'Verification failed' });
+ }
+});
+
+// ============ START SERVER ============
 const PORT = 3002;
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, '0.0.0.0', async () => {
  console.log('? Backend running on port ' + PORT);
  console.log('? Routes: FULL_ACCESS, CUSTOMIZED_01, CUSTOMIZED_02');
  console.log('? Full-Access (17 modules): 1,2,3,4,6,7,10,11,12,14,15,16,18,19,21,22,23');
  console.log('? Practical modules: 8 (First Aid), 17 (Moving & Handling)');
  console.log('? EXTRA-Add-Ons (4 modules): 5,9,13,20');
+ 
+ // Ensure admin users exist on startup
+ await ensureAdminUsers();
 });

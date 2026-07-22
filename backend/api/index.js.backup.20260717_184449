@@ -392,62 +392,80 @@ app.get('/api/admin/current-practical-code', async (req, res) => {
  }
 });
 
-// ============ VERIFY PRACTICAL CODE ============
+// ============ VERIFY PRACTICAL CODE - FIXED ============
 app.post('/api/auth/verify-practical-code', async (req, res) => {
  const { userId, moduleId, practicalCode } = req.body;
- console.log(`? Verifying practical code for userId: ${userId}, moduleId: ${moduleId}`);
+ 
+ console.log(`🔐 Verifying practical code for userId: ${userId}, moduleId: ${moduleId}`);
+ 
  try {
- if (![8, 17].includes(moduleId)) {
- return res.status(400).json({ 
- success: false, 
- error: 'This module does not require a practical access code' 
- });
- }
- const user = await prisma.user.findUnique({ 
- where: { id: userId } 
- });
- if (!user) {
- console.error(`? User not found: ${userId}`);
- return res.status(404).json({ error: 'User not found' });
- }
- const activeCode = await prisma.practicalAccessCode.findFirst({
- where: { 
- code: practicalCode.toUpperCase(), 
- isActive: true,
- expiresAt: { gt: new Date() }
- }
- });
- if (!activeCode) {
- console.error(`? Invalid or expired code: ${practicalCode}`);
- return res.status(401).json({ 
- success: false, 
- error: 'Invalid or expired practical access code. Please check with your trainer.' 
- });
- }
- let practicalModules = {};
- try {
- practicalModules = user.practicalModules ? JSON.parse(user.practicalModules) : {};
- } catch (e) {
- practicalModules = {};
- }
- practicalModules[moduleId] = {
- completed: true,
- completedAt: new Date().toISOString(),
- code: practicalCode,
- verifiedBy: activeCode.generatedBy || 'system'
- };
- await prisma.user.update({
- where: { id: userId },
- data: { practicalModules: JSON.stringify(practicalModules) }
- });
- console.log(`? Practical code verified for module ${moduleId}`);
- res.json({ 
- success: true, 
- message: `Practical verification successful for Module ${moduleId}!` 
- });
+   // Check if module is practical
+   if (![8, 17].includes(moduleId)) {
+     return res.status(400).json({ 
+       success: false, 
+       error: 'This module does not require a practical access code' 
+     });
+   }
+
+   // Check if user exists
+   const user = await prisma.user.findUnique({ 
+     where: { id: userId } 
+   });
+   
+   if (!user) {
+     console.error(`❌ User not found: ${userId}`);
+     return res.status(404).json({ error: 'User not found' });
+   }
+
+   // Check if practical code is valid
+   const activeCode = await prisma.practicalAccessCode.findFirst({
+     where: { 
+       code: practicalCode.toUpperCase(), 
+       isActive: true,
+       expiresAt: { gt: new Date() }
+     }
+   });
+
+   if (!activeCode) {
+     console.error(`❌ Invalid or expired code: ${practicalCode}`);
+     return res.status(401).json({ 
+       success: false, 
+       error: 'Invalid or expired practical access code. Please check with your trainer.' 
+     });
+   }
+
+   // Parse existing practical modules
+   let practicalModules = {};
+   try {
+     practicalModules = user.practicalModules ? JSON.parse(user.practicalModules) : {};
+   } catch (e) {
+     practicalModules = {};
+   }
+
+   // Mark the practical module as completed
+   practicalModules[moduleId] = {
+     completed: true,
+     completedAt: new Date().toISOString(),
+     code: practicalCode,
+     verifiedBy: activeCode.generatedBy || 'system'
+   };
+
+   // Update user with practical modules
+   await prisma.user.update({
+     where: { id: userId },
+     data: { practicalModules: JSON.stringify(practicalModules) }
+   });
+
+   console.log(`✅ Practical code verified for module ${moduleId}`);
+   
+   res.json({ 
+     success: true, 
+     message: `Practical verification successful for Module ${moduleId}!` 
+   });
+
  } catch (error) {
- console.error('Verify practical code error:', error);
- res.status(500).json({ error: 'Failed to verify practical code' });
+   console.error('Verify practical code error:', error);
+   res.status(500).json({ error: 'Failed to verify practical code' });
  }
 });
 
@@ -459,70 +477,55 @@ app.get('/api/modules', async (req, res) => {
  let user = null;
  let practicalModules = {};
  let practicalAccessCode = null;
+ 
  if (userId) {
- user = await prisma.user.findUnique({ where: { id: userId } });
- if (user && user.practicalModules) {
- try {
- practicalModules = JSON.parse(user.practicalModules);
- } catch (e) {
- practicalModules = {};
+   user = await prisma.user.findUnique({ where: { id: userId } });
+   if (user && user.practicalModules) {
+     try {
+       practicalModules = JSON.parse(user.practicalModules);
+     } catch (e) {
+       practicalModules = {};
+     }
+   }
+   const activeCode = await prisma.practicalAccessCode.findFirst({
+     where: { isActive: true },
+     orderBy: { generatedAt: 'desc' }
+   });
+   if (activeCode) {
+     practicalAccessCode = activeCode.code;
+   }
  }
- }
- const activeCode = await prisma.practicalAccessCode.findFirst({
- where: { isActive: true },
- orderBy: { generatedAt: 'desc' }
- });
- if (activeCode) {
- practicalAccessCode = activeCode.code;
- }
- }
+ 
  if (userId && user) {
- let selectedModules = [];
- if (user.trainingRoute === 'CUSTOMIZED_01' && user.selectedModules) {
- try { selectedModules = JSON.parse(user.selectedModules); } catch(e) { selectedModules = []; }
- modules = await prisma.module.findMany({ 
- where: { id: { in: selectedModules } }, 
- orderBy: { id: 'asc' } 
- });
+   let selectedModules = [];
+   if (user.trainingRoute === 'CUSTOMIZED_01' && user.selectedModules) {
+     try { selectedModules = JSON.parse(user.selectedModules); } catch(e) { selectedModules = []; }
+     modules = await prisma.module.findMany({ 
+       where: { id: { in: selectedModules } }, 
+       orderBy: { id: 'asc' } 
+     });
+   } else {
+     modules = await prisma.module.findMany({ orderBy: { id: 'asc' } });
+   }
  } else {
- modules = await prisma.module.findMany({ orderBy: { id: 'asc' } });
+   modules = await prisma.module.findMany({ orderBy: { id: 'asc' } });
  }
- } else {
- modules = await prisma.module.findMany({ orderBy: { id: 'asc' } });
- }
-
- // Define module sections based on original IDs
- // Full-Access (17 modules) - these are mandatory and sequential
- const fullAccessIds = [1,2,3,4,6,7,10,11,12,14,15,16,18,19,21,22,23];
- // Practical modules (2 modules)
- const practicalIds = [8,17];
- // EXTRA-Add-Ons (4 modules) - always available
- const extraAddOnIds = [5,9,13,20];
-
+ 
  const modulesWithStatus = modules.map(module => {
- const isPractical = module.isPractical || [8, 17].includes(module.id);
- const isPracticalCompleted = practicalModules[module.id]?.completed || false;
- let section = 'FULL_ACCESS';
- if (extraAddOnIds.includes(module.id)) {
- section = 'EXTRA_ADD_ON';
- } else if (practicalIds.includes(module.id)) {
- section = 'PRACTICAL';
- }
- // For FULL_ACCESS we keep the original IDs but order them sequentially
- return {
- ...module,
- isPractical,
- isPracticalCompleted,
- practicalAccessCode: isPractical ? practicalAccessCode : null,
- section: section,
- // Display order for Full-Access modules (1-17 in the new sequence)
- displayOrder: fullAccessIds.indexOf(module.id) + 1
- };
+   const isPractical = module.isPractical || [8, 17].includes(module.id);
+   const isPracticalCompleted = practicalModules[module.id]?.completed || false;
+   return {
+     ...module,
+     isPractical,
+     isPracticalCompleted,
+     practicalAccessCode: isPractical ? practicalAccessCode : null
+   };
  });
+ 
  res.json(modulesWithStatus);
  } catch (error) {
- console.error('Modules fetch error:', error);
- res.status(500).json({ error: 'Failed to fetch modules' });
+   console.error('Modules fetch error:', error);
+   res.status(500).json({ error: 'Failed to fetch modules' });
  }
 });
 
@@ -540,7 +543,6 @@ app.get('/api/modules/:id', async (req, res) => {
  }
 });
 
-// ============ SUBMIT ASSESSMENT ============
 app.post('/api/modules/:id/submit', async (req, res) => {
  const { userId, answers, timeSpent } = req.body;
  const moduleId = parseInt(req.params.id);
@@ -553,29 +555,18 @@ app.post('/api/modules/:id/submit', async (req, res) => {
  }
  let score = 0;
  const errors = [];
- const detailedAnswers = [];
  questions.forEach((q, i) => {
  const userAnswer = answers[i];
- const isCorrect = userAnswer === q.correct;
- const userAnswerText = q.options ? q.options[userAnswer] : (userAnswer === 0 ? 'True' : 'False');
- const correctAnswerText = q.options ? q.options[q.correct] : (q.correct === 0 ? 'True' : 'False');
- if (isCorrect) {
+ if (userAnswer === q.correct) {
  score++;
  } else {
  errors.push({
  questionNumber: i + 1,
  questionText: q.text,
- userAnswer: userAnswerText,
- correctAnswer: correctAnswerText
+ userAnswer: q.options ? q.options[userAnswer] : (userAnswer === 0 ? 'True' : 'False'),
+ correctAnswer: q.options ? q.options[q.correct] : (q.correct === 0 ? 'True' : 'False')
  });
  }
- detailedAnswers.push({
- questionNumber: i + 1,
- questionText: q.text,
- userAnswer: userAnswerText,
- correctAnswer: correctAnswerText,
- isCorrect: isCorrect
- });
  });
  const passed = score >= moduleData.passMark;
  await prisma.moduleAttempt.create({
@@ -586,7 +577,6 @@ app.post('/api/modules/:id/submit', async (req, res) => {
  passed: passed,
  answers: JSON.stringify(answers),
  errors: JSON.stringify(errors),
- detailedAnswers: JSON.stringify(detailedAnswers),
  timeSpent: timeSpent || 0,
  completedAt: new Date()
  }
@@ -596,14 +586,7 @@ app.post('/api/modules/:id/submit', async (req, res) => {
  update: { status: passed ? 'passed' : 'failed', score: score, attempts: { increment: 1 } },
  create: { userId: userId, moduleId: moduleId, status: passed ? 'passed' : 'failed', score: score, attempts: 1 }
  });
- res.json({ 
- score: score, 
- passed: passed, 
- total: questions.length, 
- passMark: moduleData.passMark, 
- errors: errors,
- detailedAnswers: detailedAnswers
- });
+ res.json({ score: score, passed: passed, total: questions.length, passMark: moduleData.passMark, errors: errors });
  } catch (error) {
  console.error('Submit error:', error);
  res.status(500).json({ error: 'Submit failed' });
@@ -625,7 +608,6 @@ app.get('/api/user/:userId/progress', async (req, res) => {
  }
 });
 
-// ============ EXPORT REPORT ============
 app.get('/api/user/:userId/export', async (req, res) => {
  try {
  const user = await prisma.user.findUnique({
@@ -644,38 +626,13 @@ app.get('/api/user/:userId/export', async (req, res) => {
  } catch (e) {
  practicalModules = {};
  }
- const attemptsWithDetails = user.moduleAttempts.map(attempt => {
+ const attemptsWithErrors = user.moduleAttempts.map(attempt => {
  let errors = [];
- let detailedAnswers = [];
- let parsedAnswers = {};
- if (attempt.answers) {
- try { parsedAnswers = JSON.parse(attempt.answers); } catch(e) {}
- }
  if (attempt.errors) {
  if (typeof attempt.errors === 'string') {
  try { errors = JSON.parse(attempt.errors); } catch(e) { errors = []; }
  } else if (Array.isArray(attempt.errors)) {
  errors = attempt.errors;
- }
- }
- if (attempt.detailedAnswers) {
- if (typeof attempt.detailedAnswers === 'string') {
- try { detailedAnswers = JSON.parse(attempt.detailedAnswers); } catch(e) { detailedAnswers = []; }
- } else if (Array.isArray(attempt.detailedAnswers)) {
- detailedAnswers = attempt.detailedAnswers;
- }
- } else if (attempt.answers && attempt.module) {
- try {
- const questions = JSON.parse(attempt.module.questions || '[]');
- detailedAnswers = questions.map((q, idx) => ({
- questionNumber: idx + 1,
- questionText: q.text,
- userAnswer: q.options ? q.options[parsedAnswers[idx]] : (parsedAnswers[idx] === 0 ? 'True' : 'False'),
- correctAnswer: q.options ? q.options[q.correct] : (q.correct === 0 ? 'True' : 'False'),
- isCorrect: parsedAnswers[idx] === q.correct
- }));
- } catch(e) {
- detailedAnswers = [];
  }
  }
  return {
@@ -685,8 +642,7 @@ app.get('/api/user/:userId/export', async (req, res) => {
  passed: attempt.passed,
  timeSpent: attempt.timeSpent,
  completedAt: attempt.completedAt,
- errors: errors,
- detailedAnswers: detailedAnswers
+ errors: errors
  };
  });
  res.json({
@@ -706,7 +662,7 @@ app.get('/api/user/:userId/export', async (req, res) => {
  failedModules: user.moduleAttempts.filter(a => !a.passed).length,
  averageScore: user.moduleAttempts.length > 0 ? user.moduleAttempts.reduce((acc, a) => acc + a.score, 0) / user.moduleAttempts.length : 0,
  totalTimeSpent: user.moduleAttempts.reduce((acc, a) => acc + (a.timeSpent || 0), 0),
- attempts: attemptsWithDetails
+ attempts: attemptsWithErrors
  });
  } catch (error) {
  console.error('Export error:', error);
@@ -740,9 +696,7 @@ app.delete('/api/admin/bulk-delete-users', async (req, res) => {
 
 const PORT = 3002;
 app.listen(PORT, '0.0.0.0', () => {
- console.log('? Backend running on port ' + PORT);
- console.log('? Routes: FULL_ACCESS, CUSTOMIZED_01, CUSTOMIZED_02');
- console.log('? Full-Access (17 modules): 1,2,3,4,6,7,10,11,12,14,15,16,18,19,21,22,23');
- console.log('? Practical modules: 8 (First Aid), 17 (Moving & Handling)');
- console.log('? EXTRA-Add-Ons (4 modules): 5,9,13,20');
+ console.log('✅ Backend running on port ' + PORT);
+ console.log('📋 Routes: FULL_ACCESS, CUSTOMIZED_01, CUSTOMIZED_02');
+ console.log('🔐 Practical modules: 8 (First Aid), 17 (Moving & Handling)');
 });

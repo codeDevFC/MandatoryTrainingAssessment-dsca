@@ -76,29 +76,13 @@ function App() {
  const [practicalCode, setPracticalCode] = useState('');
  const [practicalCodeExpiry, setPracticalCodeExpiry] = useState(null);
  const [generatingPracticalCode, setGeneratingPracticalCode] = useState(false);
+ // EXTRA-Add-Ons dropdown state
  const [extraAddOnsOpen, setExtraAddOnsOpen] = useState(false);
 
  // ===== FETCH FUNCTIONS =====
  const fetchModules = async (userId = null) => {
  try {
  const url = userId ? `${API_URL}/api/modules?userId=${userId}` : `${API_URL}/api/modules`;
- const fetchUserData = async () => {
-   if (!user) return;
-   try {
-     const response = await fetch(`${API_URL}/api/auth/verify-code`, {
-       method: 'POST',
-       headers: { 'Content-Type': 'application/json' },
-       body: JSON.stringify({ email: user.email, code: code })
-     });
-     const data = await response.json();
-     if (response.ok) {
-       setUser(prev => ({ ...prev, ...data }));
-     }
-   } catch (err) {
-     console.error('Failed to refresh user data:', err);
-   }
- };
-
  const res = await fetch(url);
  const data = await res.json();
  setModules(Array.isArray(data) ? data : []);
@@ -201,7 +185,6 @@ function App() {
  setTimeout(() => setSuccess(''), 5000);
  if (user?.id) {
  fetchModules(user.id);
-    fetchUserData();
  }
  };
 
@@ -358,7 +341,7 @@ function App() {
  }
  };
 
- // ===== GET MODULE STATUS (FIXED - Practical modules now show practical_locked) =====
+ // ===== GET MODULE STATUS (UPDATED) =====
  const getModuleStatus = (moduleId) => {
  if (user?.role !== 'TRAINEE') return 'available';
  
@@ -385,10 +368,12 @@ function App() {
  return 'available';
  }
  
- // CUSTOMIZED_02 or FULL_ACCESS: Handle practical modules
+ // CUSTOMIZED_02: Theory + Practical
+ if (route === 'CUSTOMIZED_02') {
  if (isPractical) {
  // Check ALL 17 Full-Access modules are passed
- const allTheoryPassed = FULL_ACCESS_IDS.every(id => {
+ const theoryModules = FULL_ACCESS_IDS;
+ const allTheoryPassed = theoryModules.every(id => {
  const p = progress.find(x => x.moduleId === id);
  return p?.status === 'passed';
  });
@@ -397,7 +382,6 @@ function App() {
  return 'locked';
  }
  
- // All theory passed - check if practical code is verified
  let practicalModules = {};
  if (user?.practicalModules) {
  try {
@@ -410,16 +394,31 @@ function App() {
  if (practicalModules[moduleId]?.completed) {
  return 'available';
  }
- // SHOW PRACTICAL_LOCKED - this triggers the "Enter Practical Code" button
  return 'practical_locked';
- }
- 
+ } else {
  // Full-Access modules: sequential unlocking
  if (moduleId === 1) return 'available';
  
+ // Find the index of current module in FULL_ACCESS_IDS
  const currentIndex = FULL_ACCESS_IDS.indexOf(moduleId);
  if (currentIndex === 0) return 'available';
  
+ // Get the previous module in the Full-Access sequence
+ const prevFullAccessId = FULL_ACCESS_IDS[currentIndex - 1];
+ const prevProgress = progress.find(x => x.moduleId === prevFullAccessId);
+ if (prevProgress?.status === 'passed') return 'available';
+ return 'locked';
+ }
+ }
+ 
+ // FULL_ACCESS: Sequential unlocking for Full-Access modules only
+ if (moduleId === 1) return 'available';
+ 
+ // Find the index of current module in FULL_ACCESS_IDS
+ const currentIndex = FULL_ACCESS_IDS.indexOf(moduleId);
+ if (currentIndex === 0) return 'available';
+ 
+ // Get the previous module in the Full-Access sequence
  const prevFullAccessId = FULL_ACCESS_IDS[currentIndex - 1];
  const prevProgress = progress.find(x => x.moduleId === prevFullAccessId);
  if (prevProgress?.status === 'passed') return 'available';
@@ -1571,7 +1570,7 @@ function App() {
  userId={user.id}
  onSuccess={handlePracticalCodeSuccess}
  onError={handlePracticalCodeError}
- onRefreshModules={() => { fetchModules(user.id); fetchUserData(); }}
+ onRefreshModules={() => fetchModules(user.id)}
  />
  )}
  </div>

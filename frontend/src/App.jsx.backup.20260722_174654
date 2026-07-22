@@ -6,7 +6,7 @@ import {
  FileSpreadsheet, BarChart3, AlertTriangle, Zap, PlayCircle, Lock, CreditCard, Send, 
  MessageCircle, UserPlus, Filter, Eye as EyeIcon, RefreshCw, Home, ClipboardList, 
  UserCog, LayoutDashboard, FileBarChart, Building2, Phone, MapPin, Award as AwardIcon, 
- Calendar as CalendarIcon, BarChart, PieChart, KeyRound, Star, ChevronDown, ChevronUp 
+ Calendar as CalendarIcon, BarChart, PieChart, KeyRound, Star 
 } from 'lucide-react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -19,7 +19,7 @@ import logo2 from './assets/logo2.jpg';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002';
 
-// Module section definitions (original database IDs)
+// Module section definitions
 const FULL_ACCESS_IDS = [1,2,3,4,6,7,10,11,12,14,15,16,18,19,21,22,23];
 const PRACTICAL_IDS = [8,17];
 const EXTRA_ADD_ON_IDS = [5,9,13,20];
@@ -76,29 +76,11 @@ function App() {
  const [practicalCode, setPracticalCode] = useState('');
  const [practicalCodeExpiry, setPracticalCodeExpiry] = useState(null);
  const [generatingPracticalCode, setGeneratingPracticalCode] = useState(false);
- const [extraAddOnsOpen, setExtraAddOnsOpen] = useState(false);
 
  // ===== FETCH FUNCTIONS =====
  const fetchModules = async (userId = null) => {
  try {
  const url = userId ? `${API_URL}/api/modules?userId=${userId}` : `${API_URL}/api/modules`;
- const fetchUserData = async () => {
-   if (!user) return;
-   try {
-     const response = await fetch(`${API_URL}/api/auth/verify-code`, {
-       method: 'POST',
-       headers: { 'Content-Type': 'application/json' },
-       body: JSON.stringify({ email: user.email, code: code })
-     });
-     const data = await response.json();
-     if (response.ok) {
-       setUser(prev => ({ ...prev, ...data }));
-     }
-   } catch (err) {
-     console.error('Failed to refresh user data:', err);
-   }
- };
-
  const res = await fetch(url);
  const data = await res.json();
  setModules(Array.isArray(data) ? data : []);
@@ -201,7 +183,6 @@ function App() {
  setTimeout(() => setSuccess(''), 5000);
  if (user?.id) {
  fetchModules(user.id);
-    fetchUserData();
  }
  };
 
@@ -358,7 +339,7 @@ function App() {
  }
  };
 
- // ===== GET MODULE STATUS (FIXED - Practical modules now show practical_locked) =====
+ // ===== GET MODULE STATUS (UPDATED WITH SECTIONS) =====
  const getModuleStatus = (moduleId) => {
  if (user?.role !== 'TRAINEE') return 'available';
  
@@ -371,11 +352,6 @@ function App() {
  const isPractical = moduleId === 8 || moduleId === 17;
  const isExtraAddOn = EXTRA_ADD_ON_IDS.includes(moduleId);
  
- // EXTRA-Add-Ons are ALWAYS available (no locks)
- if (isExtraAddOn) {
- return 'available';
- }
- 
  // CUSTOMIZED_01: Only selected modules, all available
  if (route === 'CUSTOMIZED_01') {
  const selectedModules = user?.selectedModules ? JSON.parse(user.selectedModules) : [];
@@ -385,10 +361,11 @@ function App() {
  return 'available';
  }
  
- // CUSTOMIZED_02 or FULL_ACCESS: Handle practical modules
+ // CUSTOMIZED_02: Theory + Practical
+ if (route === 'CUSTOMIZED_02') {
  if (isPractical) {
- // Check ALL 17 Full-Access modules are passed
- const allTheoryPassed = FULL_ACCESS_IDS.every(id => {
+ const theoryModules = [1,2,3,4,6,7,10,11,12,14,15,16,18,19,21,22,23];
+ const allTheoryPassed = theoryModules.every(id => {
  const p = progress.find(x => x.moduleId === id);
  return p?.status === 'passed';
  });
@@ -397,7 +374,6 @@ function App() {
  return 'locked';
  }
  
- // All theory passed - check if practical code is verified
  let practicalModules = {};
  if (user?.practicalModules) {
  try {
@@ -410,18 +386,34 @@ function App() {
  if (practicalModules[moduleId]?.completed) {
  return 'available';
  }
- // SHOW PRACTICAL_LOCKED - this triggers the "Enter Practical Code" button
  return 'practical_locked';
- }
- 
- // Full-Access modules: sequential unlocking
+ } else {
+ // Theory modules: sequential unlocking (skip 8 and 17)
  if (moduleId === 1) return 'available';
  
- const currentIndex = FULL_ACCESS_IDS.indexOf(moduleId);
- if (currentIndex === 0) return 'available';
+ let prevId = moduleId - 1;
+ while (prevId === 8 || prevId === 17) {
+ prevId--;
+ }
+ if (prevId < 1) return 'available';
  
- const prevFullAccessId = FULL_ACCESS_IDS[currentIndex - 1];
- const prevProgress = progress.find(x => x.moduleId === prevFullAccessId);
+ const prevProgress = progress.find(x => x.moduleId === prevId);
+ if (prevProgress?.status === 'passed') return 'available';
+ return 'locked';
+ }
+ }
+ 
+ // FULL_ACCESS: Sequential unlocking (skip 8 and 17)
+ // EXTRA-ADD-ONS follow the same sequential logic
+ if (moduleId === 1) return 'available';
+ 
+ let prevId = moduleId - 1;
+ while (prevId === 8 || prevId === 17) {
+ prevId--;
+ }
+ if (prevId < 1) return 'available';
+ 
+ const prevProgress = progress.find(x => x.moduleId === prevId);
  if (prevProgress?.status === 'passed') return 'available';
  
  return 'locked';
@@ -1349,21 +1341,16 @@ function App() {
 
  // ============ TRAINEE DASHBOARD ============
  const stats = {
- total: modules.filter(m => FULL_ACCESS_IDS.includes(m.id) || PRACTICAL_IDS.includes(m.id)).length,
- completed: userProgress.progress?.filter(p => p.status === 'passed' && (FULL_ACCESS_IDS.includes(p.moduleId) || PRACTICAL_IDS.includes(p.moduleId))).length || 0,
- inProgress: userProgress.progress?.filter(p => p.status === 'failed' && (FULL_ACCESS_IDS.includes(p.moduleId) || PRACTICAL_IDS.includes(p.moduleId))).length || 0,
- locked: modules.filter(m => FULL_ACCESS_IDS.includes(m.id) || PRACTICAL_IDS.includes(m.id)).length - (userProgress.progress?.filter(p => FULL_ACCESS_IDS.includes(p.moduleId) || PRACTICAL_IDS.includes(p.moduleId)).length || 0)
+ total: modules.length,
+ completed: userProgress.progress?.filter(p => p.status === 'passed').length || 0,
+ inProgress: userProgress.progress?.filter(p => p.status === 'failed').length || 0,
+ locked: modules.length - (userProgress.progress?.length || 0)
  };
 
  // Split modules into sections
  const fullAccessModules = modules.filter(m => FULL_ACCESS_IDS.includes(m.id));
  const practicalModules = modules.filter(m => PRACTICAL_IDS.includes(m.id));
  const extraAddOnModules = modules.filter(m => EXTRA_ADD_ON_IDS.includes(m.id));
-
- // Sort Full-Access modules in the correct sequence order
- const sortedFullAccess = [...fullAccessModules].sort((a, b) => {
- return FULL_ACCESS_IDS.indexOf(a.id) - FULL_ACCESS_IDS.indexOf(b.id);
- });
 
  return (
  <div className="min-h-screen flex flex-col bg-slate-50">
@@ -1388,33 +1375,29 @@ function App() {
  <p className="text-indigo-100">Complete your mandatory training assessments</p>
  </div>
  <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
- <div className="bg-white rounded-xl border p-5"><div className="text-2xl font-bold text-indigo-600">{stats.total}</div><p className="text-sm">Mandatory Modules</p></div>
+ <div className="bg-white rounded-xl border p-5"><div className="text-2xl font-bold text-indigo-600">{stats.total}</div><p className="text-sm">Total Modules</p></div>
  <div className="bg-white rounded-xl border p-5"><div className="text-2xl font-bold text-green-600">{stats.completed}</div><p className="text-sm">Completed ?</p></div>
  <div className="bg-white rounded-xl border p-5"><div className="text-2xl font-bold text-yellow-600">{stats.inProgress}</div><p className="text-sm">In Progress</p></div>
  <div className="bg-white rounded-xl border p-5"><div className="text-2xl font-bold text-slate-400">{stats.locked}</div><p className="text-sm">Locked ?</p></div>
  </div>
+ <h2 className="text-xl font-bold text-slate-800 mb-4">? Training Modules</h2>
 
- {/* SECTION 1: Full-Access Modules (Mandatory) */}
+ {/* SECTION 1: Full-Access Modules */}
  <div className="mb-8">
  <div className="flex items-center gap-2 mb-4">
  <div className="w-1 h-6 bg-indigo-600 rounded-full"></div>
- <h3 className="text-lg font-semibold text-slate-800">? Mandatory Training Modules</h3>
- <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">{sortedFullAccess.length} modules</span>
- <span className="text-xs text-slate-400 ml-2">(Complete in order 1-17)</span>
+ <h3 className="text-lg font-semibold text-slate-800">? Full-Access Modules</h3>
+ <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">{fullAccessModules.length} modules</span>
  </div>
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
- {sortedFullAccess.map((m, index) => {
+ {fullAccessModules.map(m => {
  const status = getModuleStatus(m.id);
- const displayNumber = index + 1;
  return (
  <div key={m.id} className="bg-white rounded-xl border p-5 hover:shadow-lg transition">
  <div className="flex justify-between items-start mb-3">
  <div>
- <div className="flex items-center gap-2">
- <span className="text-xs font-mono text-slate-400 bg-slate-100 px-2 py-0.5 rounded">#{displayNumber}</span>
- <h3 className="font-semibold text-slate-800">{m.name}</h3>
- </div>
- <p className="text-xs text-slate-500 mt-1">Pass: {m.passMark}/20 (75%)</p>
+ <h3 className="font-semibold">{m.name}</h3>
+ <p className="text-xs text-slate-500">Pass: {m.passMark}/20 (75%)</p>
  </div>
  {status === 'completed' && <CheckCircle className="text-green-500 w-5 h-5" />}
  {status === 'available' && <PlayCircle className="text-blue-500 w-5 h-5" />}
@@ -1430,7 +1413,7 @@ function App() {
  )}
  {status === 'locked' && (
  <button disabled className="w-full mt-2 bg-gray-100 text-gray-400 py-2 rounded-lg cursor-not-allowed">
- {user?.trainingRoute === 'CUSTOMIZED_01' ? '? Not in your selection' : '? Complete previous module'}
+ {user?.trainingRoute === 'CUSTOMIZED_01' ? '? Not in your selection' : '? Complete Previous First'}
  </button>
  )}
  {status === 'completed' && (
@@ -1453,7 +1436,7 @@ function App() {
  <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-5 mb-4">
  <p className="text-sm text-amber-700">
  <Lock className="w-4 h-4 inline mr-1" /> 
- Available only after completing ALL 17 mandatory modules and entering the practical code.
+ Modules 8 (First Aid) &amp; 17 (Manual Handling) are only accessible after passing all 21 theory modules.
  </p>
  </div>
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-5">
@@ -1464,7 +1447,7 @@ function App() {
  <div className="flex justify-between items-start mb-3">
  <div>
  <h3 className="font-semibold">{m.name}</h3>
- <p className="text-xs text-slate-500 mt-1">Pass: {m.passMark}/20 (75%)</p>
+ <p className="text-xs text-slate-500">Pass: {m.passMark}/20 (75%)</p>
  </div>
  {status === 'completed' && <CheckCircle className="text-green-500 w-5 h-5" />}
  {status === 'available' && <PlayCircle className="text-blue-500 w-5 h-5" />}
@@ -1491,7 +1474,7 @@ function App() {
  )}
  {status === 'locked' && (
  <button disabled className="w-full mt-2 bg-gray-100 text-gray-400 py-2 rounded-lg cursor-not-allowed">
- Complete All 17 Modules First
+ Complete All Theory First
  </button>
  )}
  {status === 'completed' && (
@@ -1504,28 +1487,22 @@ function App() {
  </div>
  )}
 
- {/* SECTION 3: EXTRA-Add-Ons - Collapsible Dropdown */}
+ {/* SECTION 3: EXTRA-Add-Ons */}
  {extraAddOnModules.length > 0 && (
  <div className="mb-8">
- <button 
- onClick={() => setExtraAddOnsOpen(!extraAddOnsOpen)}
- className="w-full flex items-center justify-between p-4 bg-purple-50 border-2 border-purple-200 rounded-xl hover:bg-purple-100 transition"
- >
- <div className="flex items-center gap-3">
- <Star className="w-5 h-5 text-purple-600" />
- <span className="text-lg font-semibold text-purple-800">⭐ EXTRA-Add-Ons</span>
- <span className="text-xs bg-purple-200 text-purple-700 px-2 py-0.5 rounded-full">{extraAddOnModules.length} modules</span>
- <span className="text-xs text-purple-600 ml-2">(Optional - Always Available)</span>
+ <div className="flex items-center gap-2 mb-4">
+ <div className="w-1 h-6 bg-purple-600 rounded-full"></div>
+ <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+ <Star className="w-5 h-5 text-purple-600" /> EXTRA-Add-Ons
+ </h3>
+ <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">{extraAddOnModules.length} modules</span>
  </div>
- {extraAddOnsOpen ? <ChevronUp className="w-5 h-5 text-purple-600" /> : <ChevronDown className="w-5 h-5 text-purple-600" />}
- </button>
- 
- {extraAddOnsOpen && (
- <div className="mt-4 p-4 bg-purple-50/50 border border-purple-200 rounded-xl">
- <p className="text-sm text-purple-700 mb-4 flex items-center gap-2">
+ <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-4 mb-4">
+ <p className="text-sm text-purple-700 flex items-center gap-2">
  <Star className="w-4 h-4" /> 
- These modules are optional and always available. They do not affect mandatory training completion.
+ These modules follow the same sequential unlocking as Full-Access modules.
  </p>
+ </div>
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
  {extraAddOnModules.map(m => {
  const status = getModuleStatus(m.id);
@@ -1534,20 +1511,27 @@ function App() {
  <div className="flex justify-between items-start mb-3">
  <div>
  <div className="flex items-center gap-2">
- <h3 className="font-semibold text-slate-800">{m.name}</h3>
+ <h3 className="font-semibold">{m.name}</h3>
  <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">Add-On</span>
  </div>
- <p className="text-xs text-slate-500 mt-1">Pass: {m.passMark}/20 (75%)</p>
+ <p className="text-xs text-slate-500">Pass: {m.passMark}/20 (75%)</p>
  </div>
  {status === 'completed' && <CheckCircle className="text-green-500 w-5 h-5" />}
  {status === 'available' && <PlayCircle className="text-blue-500 w-5 h-5" />}
+ {status === 'locked' && <Lock className="text-gray-400 w-5 h-5" />}
  </div>
  <div className="mb-3">
  {status === 'completed' && <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">? Completed</span>}
  {status === 'available' && <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">Available</span>}
+ {status === 'locked' && <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-500">? Locked</span>}
  </div>
  {status === 'available' && (
  <button onClick={() => startModule(m)} className="w-full mt-2 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition">Start Module ?</button>
+ )}
+ {status === 'locked' && (
+ <button disabled className="w-full mt-2 bg-gray-100 text-gray-400 py-2 rounded-lg cursor-not-allowed">
+ {user?.trainingRoute === 'CUSTOMIZED_01' ? '? Not in your selection' : '? Complete Previous First'}
+ </button>
  )}
  {status === 'completed' && (
  <div className="w-full mt-2 bg-green-50 text-green-600 py-2 rounded-lg text-center">? Completed</div>
@@ -1556,8 +1540,6 @@ function App() {
  );
  })}
  </div>
- </div>
- )}
  </div>
  )}
  </div>
@@ -1571,7 +1553,7 @@ function App() {
  userId={user.id}
  onSuccess={handlePracticalCodeSuccess}
  onError={handlePracticalCodeError}
- onRefreshModules={() => { fetchModules(user.id); fetchUserData(); }}
+ onRefreshModules={() => fetchModules(user.id)}
  />
  )}
  </div>

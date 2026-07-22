@@ -1,0 +1,80 @@
+// ============ SUBMIT ASSESSMENT - UPDATED WITH FULL ANSWER TRACKING ============
+app.post('/api/modules/:id/submit', async (req, res) => {
+ const { userId, answers, timeSpent } = req.body;
+ const moduleId = parseInt(req.params.id);
+ 
+ try {
+ const moduleData = await prisma.module.findUnique({ where: { id: moduleId } });
+ if (!moduleData) return res.status(404).json({ error: 'Module not found' });
+ 
+ let questions = [];
+ if (moduleData.questions && typeof moduleData.questions === 'string') {
+ try { questions = JSON.parse(moduleData.questions); } catch(e) { questions = []; }
+ }
+ 
+ let score = 0;
+ const errors = [];
+ const detailedAnswers = []; // NEW: Store ALL answers with correctness status
+ 
+ questions.forEach((q, i) => {
+ const userAnswer = answers[i];
+ const isCorrect = userAnswer === q.correct;
+ const userAnswerText = q.options ? q.options[userAnswer] : (userAnswer === 0 ? 'True' : 'False');
+ const correctAnswerText = q.options ? q.options[q.correct] : (q.correct === 0 ? 'True' : 'False');
+ 
+ if (isCorrect) {
+ score++;
+ } else {
+ errors.push({
+ questionNumber: i + 1,
+ questionText: q.text,
+ userAnswer: userAnswerText,
+ correctAnswer: correctAnswerText
+ });
+ }
+ 
+ // Store ALL answers with details
+ detailedAnswers.push({
+ questionNumber: i + 1,
+ questionText: q.text,
+ userAnswer: userAnswerText,
+ correctAnswer: correctAnswerText,
+ isCorrect: isCorrect
+ });
+ });
+ 
+ const passed = score >= moduleData.passMark;
+ 
+ await prisma.moduleAttempt.create({
+ data: {
+ userId: userId,
+ moduleId: moduleId,
+ score: score,
+ passed: passed,
+ answers: JSON.stringify(answers),
+ errors: JSON.stringify(errors),
+ detailedAnswers: JSON.stringify(detailedAnswers), // NEW: Store all answers
+ timeSpent: timeSpent || 0,
+ completedAt: new Date()
+ }
+ });
+ 
+ await prisma.moduleProgress.upsert({
+ where: { userId_moduleId: { userId: userId, moduleId: moduleId } },
+ update: { status: passed ? 'passed' : 'failed', score: score, attempts: { increment: 1 } },
+ create: { userId: userId, moduleId: moduleId, status: passed ? 'passed' : 'failed', score: score, attempts: 1 }
+ });
+ 
+ res.json({ 
+ score: score, 
+ passed: passed, 
+ total: questions.length, 
+ passMark: moduleData.passMark, 
+ errors: errors,
+ detailedAnswers: detailedAnswers // NEW: Return all answers to frontend
+ });
+ } catch (error) {
+ console.error('Submit error:', error);
+ res.status(500).json({ error: 'Submit failed' });
+ }
+});

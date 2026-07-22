@@ -1,0 +1,95 @@
+// ============ EXPORT REPORT - UPDATED TO INCLUDE DETAILED ANSWERS ============
+app.get('/api/user/:userId/export', async (req, res) => {
+ try {
+ const user = await prisma.user.findUnique({
+ where: { id: req.params.userId },
+ include: {
+ moduleAttempts: {
+ include: { module: true },
+ orderBy: { completedAt: 'desc' }
+ }
+ }
+ });
+ if (!user) return res.status(404).json({ error: 'User not found' });
+ 
+ let practicalModules = {};
+ try {
+ practicalModules = user.practicalModules ? JSON.parse(user.practicalModules) : {};
+ } catch (e) {
+ practicalModules = {};
+ }
+ 
+ const attemptsWithDetails = user.moduleAttempts.map(attempt => {
+ let errors = [];
+ let detailedAnswers = [];
+ let parsedAnswers = {};
+ 
+ if (attempt.answers) {
+ try { parsedAnswers = JSON.parse(attempt.answers); } catch(e) {}
+ }
+ if (attempt.errors) {
+ if (typeof attempt.errors === 'string') {
+ try { errors = JSON.parse(attempt.errors); } catch(e) { errors = []; }
+ } else if (Array.isArray(attempt.errors)) {
+ errors = attempt.errors;
+ }
+ }
+ // NEW: Parse detailed answers if available
+ if (attempt.detailedAnswers) {
+ if (typeof attempt.detailedAnswers === 'string') {
+ try { detailedAnswers = JSON.parse(attempt.detailedAnswers); } catch(e) { detailedAnswers = []; }
+ } else if (Array.isArray(attempt.detailedAnswers)) {
+ detailedAnswers = attempt.detailedAnswers;
+ }
+ } else if (attempt.answers && attempt.module) {
+ // Fallback: Build detailed answers from stored answers and module questions
+ try {
+ const questions = JSON.parse(attempt.module.questions || '[]');
+ detailedAnswers = questions.map((q, idx) => ({
+ questionNumber: idx + 1,
+ questionText: q.text,
+ userAnswer: q.options ? q.options[parsedAnswers[idx]] : (parsedAnswers[idx] === 0 ? 'True' : 'False'),
+ correctAnswer: q.options ? q.options[q.correct] : (q.correct === 0 ? 'True' : 'False'),
+ isCorrect: parsedAnswers[idx] === q.correct
+ }));
+ } catch(e) {
+ detailedAnswers = [];
+ }
+ }
+ 
+ return {
+ id: attempt.id,
+ module: attempt.module,
+ score: attempt.score,
+ passed: attempt.passed,
+ timeSpent: attempt.timeSpent,
+ completedAt: attempt.completedAt,
+ errors: errors,
+ detailedAnswers: detailedAnswers // NEW: Include all answers
+ };
+ });
+ 
+ res.json({
+ user: { 
+ name: user.name, 
+ email: user.email, 
+ role: user.role, 
+ joinedAt: user.createdAt, 
+ trainingRoute: user.trainingRoute,
+ address: user.address,
+ postCode: user.postCode,
+ phone: user.phone,
+ practicalModules: practicalModules
+ },
+ totalAttempts: user.moduleAttempts.length,
+ passedModules: user.moduleAttempts.filter(a => a.passed).length,
+ failedModules: user.moduleAttempts.filter(a => !a.passed).length,
+ averageScore: user.moduleAttempts.length > 0 ? user.moduleAttempts.reduce((acc, a) => acc + a.score, 0) / user.moduleAttempts.length : 0,
+ totalTimeSpent: user.moduleAttempts.reduce((acc, a) => acc + (a.timeSpent || 0), 0),
+ attempts: attemptsWithDetails
+ });
+ } catch (error) {
+ console.error('Export error:', error);
+ res.status(500).json({ error: 'Export failed' });
+ }
+});

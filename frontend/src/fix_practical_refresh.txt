@@ -1,0 +1,34 @@
+The issue is that after practical code verification:
+1. The backend updates practicalModules (we confirmed this works ✅)
+2. The frontend calls fetchModules(user.id) to refresh modules
+3. BUT the user state still has the old practicalModules
+4. getModuleStatus checks user?.practicalModules to determine if practical_locked or available
+
+SOLUTION: We need to also refresh the user data after verification.
+
+Add this function in App.jsx:
+const fetchUserData = async () => {
+  try {
+    const response = await fetch(`${API_URL}/api/auth/verify-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: user.email, code: code })
+    });
+    const data = await response.json();
+    if (response.ok) {
+      setUser(prev => ({ ...prev, ...data }));
+    }
+  } catch (err) {
+    console.error('Failed to refresh user data:', err);
+  }
+};
+
+Then update the handlePracticalCodeSuccess function:
+const handlePracticalCodeSuccess = () => {
+  setSuccess('? Practical code verified! You can now access the module.');
+  setTimeout(() => setSuccess(''), 5000);
+  if (user?.id) {
+    fetchModules(user.id);
+    fetchUserData(); // <-- Add this to refresh user data
+  }
+};

@@ -82,23 +82,6 @@ function App() {
  const fetchModules = async (userId = null) => {
  try {
  const url = userId ? `${API_URL}/api/modules?userId=${userId}` : `${API_URL}/api/modules`;
- const fetchUserData = async () => {
-   if (!user) return;
-   try {
-     const response = await fetch(`${API_URL}/api/auth/verify-code`, {
-       method: 'POST',
-       headers: { 'Content-Type': 'application/json' },
-       body: JSON.stringify({ email: user.email, code: code })
-     });
-     const data = await response.json();
-     if (response.ok) {
-       setUser(prev => ({ ...prev, ...data }));
-     }
-   } catch (err) {
-     console.error('Failed to refresh user data:', err);
-   }
- };
-
  const res = await fetch(url);
  const data = await res.json();
  setModules(Array.isArray(data) ? data : []);
@@ -201,7 +184,6 @@ function App() {
  setTimeout(() => setSuccess(''), 5000);
  if (user?.id) {
  fetchModules(user.id);
-    fetchUserData();
  }
  };
 
@@ -1571,7 +1553,7 @@ function App() {
  userId={user.id}
  onSuccess={handlePracticalCodeSuccess}
  onError={handlePracticalCodeError}
- onRefreshModules={() => { fetchModules(user.id); fetchUserData(); }}
+ onRefreshModules={() => fetchModules(user.id)}
  />
  )}
  </div>

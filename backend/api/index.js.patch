@@ -1,0 +1,32 @@
+// Add this at the top of api/index.js after the PrismaClient initialization
+async function ensureAdminUsers() {
+  const admins = [
+    { email: 'admin@careworks.com', name: 'Admin', role: 'ADMIN' },
+    { email: 'director@careworks.com', name: 'Director', role: 'DIRECTOR' },
+    { email: 'supervisor@careworks.com', name: 'Supervisor', role: 'SUPERVISOR' }
+  ];
+  
+  for (const admin of admins) {
+    try {
+      await prisma.user.upsert({
+        where: { email: admin.email },
+        update: { role: admin.role },
+        create: {
+          email: admin.email,
+          name: admin.name,
+          role: admin.role,
+          trainingRoute: 'FULL_ACCESS',
+          paymentConfirmed: true,
+          practicalModules: '{}'
+        }
+      });
+      console.log(`✅ Admin user ensured: ${admin.email}`);
+    } catch (e) {
+      console.error(`❌ Failed to ensure admin ${admin.email}:`, e.message);
+    }
+  }
+}
+
+// Call this right after prisma is initialized, before the server starts
+// Add after: const prisma = new PrismaClient();
+// And before: app.listen(...)

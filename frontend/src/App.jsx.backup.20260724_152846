@@ -104,28 +104,10 @@ function App() {
  }
  };
 
- // ===== FIXED: updateStudentRoute now preserves selected modules =====
  const updateStudentRoute = (studentId, route) => {
  setStudentRoutes(prev => ({ ...prev, [studentId]: route }));
- 
- // If switching to CUSTOMIZED_01 or CUSTOMIZED_02, ensure selectedModules is preserved
- // If the route already has modules selected, keep them
  if (route === 'CUSTOMIZED_01' || route === 'CUSTOMIZED_02') {
-   // Only reset if we're changing FROM a different route type
-   const currentRoute = studentRoutes[studentId] || 'FULL_ACCESS';
-   if (currentRoute !== 'CUSTOMIZED_01' && currentRoute !== 'CUSTOMIZED_02') {
-     // When switching FROM FULL_ACCESS to custom, auto-select all modules
-     // This ensures practical modules (8,17) are included
-     setStudentCustomModules(prev => {
-       const currentModules = prev[studentId] || [];
-       // If no modules selected yet, select ALL modules (including practical ones)
-       if (currentModules.length === 0) {
-         const allModuleIds = allModulesList.map(m => m.id);
-         return { ...prev, [studentId]: allModuleIds };
-       }
-       return { ...prev, [studentId]: currentModules };
-     });
-   }
+ setStudentCustomModules(prev => ({ ...prev, [studentId]: [] }));
  }
  };
 
@@ -360,7 +342,7 @@ function App() {
  }
  };
 
- // ===== GET MODULE STATUS - FIXED =====
+ // ===== GET MODULE STATUS - FIXED FOR CUSTOMIZED_01 =====
  const getModuleStatus = (moduleId) => {
  if (user?.role !== 'TRAINEE') return 'available';
  
@@ -374,35 +356,18 @@ function App() {
  
  // CUSTOMIZED_01: ALL selected modules available immediately (including practical 8 and 17)
  if (route === 'CUSTOMIZED_01') {
-   // Get selected modules - handle both string and array
-   let selectedModules = [];
-   if (user?.selectedModules) {
-     try {
-       selectedModules = typeof user.selectedModules === 'string' 
-         ? JSON.parse(user.selectedModules) 
-         : user.selectedModules;
-     } catch (e) {
-       selectedModules = [];
-     }
-   }
-   
-   // CRITICAL: If no modules selected, default to ALL modules
-   // This handles the case where student was switched from FULL_ACCESS to CUSTOMIZED_01
-   if (selectedModules.length === 0) {
-     // If no modules selected, ALL modules are available (including practical)
-     // This ensures practical modules are available immediately
-     return 'available';
-   }
-   
+   const selectedModules = user?.selectedModules ? JSON.parse(user.selectedModules) : [];
    if (!selectedModules.includes(moduleId)) {
      return 'locked';
    }
+   // Practical modules are available immediately in CUSTOMIZED_01
    return 'available';
  }
  
  // CUSTOMIZED_02: Theory sequential, practical requires all theory passed
  if (route === 'CUSTOMIZED_02') {
    if (isPractical) {
+     // Check all theory modules are passed (excluding 8 and 17)
      const theoryModules = [1,2,3,4,5,6,7,9,10,11,12,13,14,15,16,18,19,20,21,22,23];
      const allTheoryPassed = theoryModules.every(id => {
        const p = progress.find(x => x.moduleId === id);
@@ -413,6 +378,7 @@ function App() {
        return 'locked';
      }
      
+     // Check practical code
      let practicalModules = {};
      if (user?.practicalModules) {
        try {
@@ -427,6 +393,7 @@ function App() {
      }
      return 'practical_locked';
    } else {
+     // Theory modules: sequential unlocking (skip 8 and 17)
      if (moduleId === 1) return 'available';
      
      let prevId = moduleId - 1;
@@ -1498,15 +1465,10 @@ function App() {
  const newRoute = e.target.value;
  setStudentRoutes(prev => ({ ...prev, [student.id]: newRoute }));
  if (newRoute === "CUSTOMIZED_01" || newRoute === "CUSTOMIZED_02") {
-   // When switching to custom, auto-select ALL modules if none selected
-   const currentModules = studentCustomModules[student.id] || [];
-   if (currentModules.length === 0) {
-     const allModuleIds = allModulesList.map(m => m.id);
-     setStudentCustomModules(prev => ({ ...prev, [student.id]: allModuleIds }));
-   }
-   setCurrentPickerStudent(student.id);
-   setPickerRouteType(newRoute);
-   setShowModulePicker(true);
+ setStudentCustomModules(prev => ({ ...prev, [student.id]: [] }));
+ setCurrentPickerStudent(student.id);
+ setPickerRouteType(newRoute);
+ setShowModulePicker(true);
  }
  }} 
  className="text-xs border rounded px-2 py-1 bg-white focus:ring-2 focus:ring-indigo-500 w-32"
@@ -1996,6 +1958,5 @@ function App() {
  )}
  </div>
  );
- }
 }
 export default App;

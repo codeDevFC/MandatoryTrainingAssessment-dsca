@@ -983,14 +983,12 @@ mb-4">
  <div className="flex gap-2 mb-6 bg-slate-100 rounded-xl p-1">
  <button onClick={() => { setLoginType('admin'); setError(''); setCode(''); setEmail('');
 setPassword(''); }} 
- className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${loginType === 'admin' ?
-'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}>
+ className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${loginType === 'admin' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}>
  <Shield size={16} className="inline mr-1" /> Admin
  </button>
  <button onClick={() => { setLoginType('trainee'); setError(''); setCode(''); setEmail('');
 setPassword(''); }} 
- className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${loginType === 'trainee' ?
-'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}>
+ className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${loginType === 'trainee' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}>
  <UserCheck size={16} className="inline mr-1" /> Trainee
  </button>
  </div>
@@ -1080,9 +1078,7 @@ items-center gap-1">
  </div>
  <div className="space-y-3">
  {questions[currentQuestion]?.options?.map((opt, idx) => (
- <label key={idx} className={`flex items-center p-4 border-2 rounded-xl cursor-pointer
-transition-all ${answers[currentQuestion] === idx ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200' :
-'border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}>
+ <label key={idx} className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all ${answers[currentQuestion] === idx ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}>
  <input type="radio" checked={answers[currentQuestion] === idx} onChange={() =>
 setAnswers({...answers, [currentQuestion]: idx})} className="w-4 h-4 text-indigo-600" />
  <span className="ml-3 text-slate-700">{opt}</span>
@@ -1118,13 +1114,11 @@ disabled:opacity-50">
  <Header />
  <div className="flex-1 flex items-center justify-center p-6">
  <div className="bg-white rounded-xl border border-slate-200 p-8 max-w-md text-center shadow-lg">
- <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4
-${result.passed ? 'bg-green-100' : 'bg-red-100'}`}>
+ <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4 ${result.passed ? 'bg-green-100' : 'bg-red-100'}`}>
  {result.passed ? <CheckCircle className="w-12 h-12 text-green-600" /> : <AlertCircle
 className="w-12 h-12 text-red-600" />}
  </div>
- <h2 className="text-2xl font-bold mb-2">{result.passed ? 'Congratulations! ?' : 'Not This Time
-?'}</h2>
+ <h2 className="text-2xl font-bold mb-2">{result.passed ? 'Congratulations! ✔️' : 'Not This Time ❌'}</h2>
  <p className="text-slate-600 mb-4">You scored <strong className="text-2xl">{result.score}</strong>
 out of <strong>{result.total}</strong></p>
  <button onClick={() => { setSelectedModule(null); setShowResults(false);
@@ -1170,24 +1164,16 @@ text-red-600 hover:bg-red-50 rounded-lg transition">
  </div>
  <div className="max-w-7xl mx-auto p-6 flex-1">
  <div className="flex flex-wrap gap-2 mb-6 border-b">
- <button onClick={() => setActiveTab('dashboard')} className={`px-5 py-2.5 rounded-t-lg font-medium
-transition-all flex items-center gap-2 ${activeTab === 'dashboard' ? 'bg-indigo-600 text-white shadow-md' :
-'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+ <button onClick={() => setActiveTab('dashboard')} className={`px-5 py-2.5 rounded-t-lg font-medium transition-all flex items-center gap-2 ${activeTab === 'dashboard' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
  <LayoutDashboard size={18} /> Dashboard
  </button>
- <button onClick={() => setActiveTab('students')} className={`px-5 py-2.5 rounded-t-lg font-medium
-transition-all flex items-center gap-2 ${activeTab === 'students' ? 'bg-indigo-600 text-white shadow-md' :
-'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+ <button onClick={() => setActiveTab('students')} className={`px-5 py-2.5 rounded-t-lg font-medium transition-all flex items-center gap-2 ${activeTab === 'students' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
  <Users size={18} /> Students
  </button>
- <button onClick={() => { setActiveTab('generate'); setShowCodes(false); }} className={`px-5 py-2.5
-rounded-t-lg font-medium transition-all flex items-center gap-2 ${activeTab === 'generate' ? 'bg-indigo-600
-text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+ <button onClick={() => { setActiveTab('generate'); setShowCodes(false); }} className={`px-5 py-2.5 rounded-t-lg font-medium transition-all flex items-center gap-2 ${activeTab === 'generate' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
  <FileBarChart size={18} /> Generate Codes
  </button>
- <button onClick={() => setActiveTab('practical')} className={`px-5 py-2.5 rounded-t-lg font-medium
-transition-all flex items-center gap-2 ${activeTab === 'practical' ? 'bg-amber-600 text-white shadow-md' :
-'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+ <button onClick={() => setActiveTab('practical')} className={`px-5 py-2.5 rounded-t-lg font-medium transition-all flex items-center gap-2 ${activeTab === 'practical' ? 'bg-amber-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
  <KeyRound size={18} /> ? Practical Code
  </button>
  </div>
@@ -1263,8 +1249,7 @@ className="w-4 h-4 text-indigo-600 rounded" /></td>
  <td className="p-4 text-sm">{student.email}</td>
  <td className="p-4 text-sm font-mono">{student.phone || '-'}</td>
  <td className="p-4">
- <span className={`px-2 py-1 rounded-full text-xs ${student.paymentConfirmed ?
-'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+ <span className={`px-2 py-1 rounded-full text-xs ${student.paymentConfirmed ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
  {student.paymentConfirmed ? 'Confirmed' : 'Pending'}
  </span>
  </td>
@@ -1467,8 +1452,7 @@ rounded">Cancel</button>
  {showReportModal && reportData && (
  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() =>
 setShowReportModal(false)}>
- <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[85vh] overflow-y-auto p-6" onClick={e
-=> e.stopPropagation()}>
+ <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[85vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
  <div className="flex justify-between items-center mb-4">
  <h3 className="text-xl font-bold">Assessment Report</h3>
  <button onClick={() => setShowReportModal(false)} className="text-gray-500">×</button>

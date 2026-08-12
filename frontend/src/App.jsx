@@ -333,6 +333,7 @@ function App() {
         await fetchUserProgress(user.id);
             await fetchModules(user.id); // Refresh module statuses
             await fetchModules(user.id); // Refresh module statuses
+            await fetchModules(user.id); // Refresh module statuses
       } else {
         await fetchRegisteredStudents();
       }
@@ -824,9 +825,7 @@ function App() {
             </div>
             <h2 className="text-2xl font-bold mb-2">{result.passed ? 'Congratulations! 🎉' : 'Not This Time ❌'}</h2>
             <p className="text-slate-600 mb-4">You scored <strong className="text-2xl">{result.score}</strong> out of <strong>{result.total}</strong></p>
-            <button onClick={() => { setSelectedModule(null); setShowResults(false); fetchUserProgress(user.id); }} 
-            await fetchModules(user.id); // Refresh module statuses
-              className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">Return to Dashboard</button>
+            <button onClick={() => { setSelectedModule(null); setShowResults(false); fetchUserProgress(user.id); }} className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">Return to Dashboard</button>
           </div>
         </div>
         <Footer />

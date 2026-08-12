@@ -878,11 +878,11 @@ yet.</div>`;
  }
  // Convert errors to detailed format
  detailedAnswers = errors.map(err => ({
- questionNumber: err.questionNumber || 0,
- questionText: err.questionText || 'N/A',
- userAnswer: err.userAnswer || 'N/A',
- correctAnswer: err.correctAnswer || 'N/A',
- isCorrect: err.userAnswer === err.correctAnswer
+ questionNumber: ans.questionNumber || 0,
+ questionText: ans.questionText || 'N/A',
+ userAnswer: ans.userAnswer || 'N/A',
+ correctAnswer: ans.correctAnswer || 'N/A',
+ isCorrect: ans.userAnswer === ans.correctAnswer
  }));
  }
  
@@ -910,7 +910,7 @@ yet.</div>`;
  </thead>
  <tbody>`;
  detailedAnswers.forEach((ans, idx) => {
- const isCorrect = ans.isCorrect !== undefined ? ans.isCorrect : (ans.userAnswer === ans.correctAnswer);
+      const isCorrect = ans.isCorrect !== undefined ? ans.isCorrect : (ans.userAnswer === ans.correctAnswer);
  const userAns = esc(ans.userAnswer || 'N/A');
  const correctAns = esc(ans.correctAnswer || 'N/A');
  const qText = esc(ans.questionText || 'N/A');

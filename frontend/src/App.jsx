@@ -772,7 +772,7 @@ function App() {
           <div className="flex items-center gap-3">
             <Clock size={16} className="text-slate-400" />
             <span className="text-sm text-slate-500">{Math.floor((Date.now() - startTime) / 1000)}s</span>
-            <span className="text-sm font-medium text-slate-700">{user?.name ?? "" || user?.email ?? ""}</span>
+            <span className="text-sm font-medium text-slate-700">{(user?.name ?? "") || (user?.email ?? "")}</span>
           </div>
         </div>
         <div className="flex-1 max-w-3xl mx-auto p-6">
@@ -1150,7 +1150,7 @@ function App() {
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3">
             <BookOpen className="w-6 h-6 text-indigo-600" />
-            <div><h1 className="font-bold text-slate-800">Trainee Dashboard</h1><p className="text-xs text-slate-500">{user?.name ?? "" || user?.email ?? ""}</p></div>
+            <div><h1 className="font-bold text-slate-800">Trainee Dashboard</h1><p className="text-xs text-slate-500">{(user?.name ?? "") || (user?.email ?? "")}</p></div>
           </div>
           <button onClick={() => setUser(null)} className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition">
             <LogOut size={16} /> Logout
@@ -1159,7 +1159,7 @@ function App() {
       </div>
       <div className="flex-1 max-w-7xl mx-auto p-6">
         <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-xl p-6 mb-8 text-white shadow-lg">
-          <h2 className="text-2xl font-bold mb-1">Welcome back, {user?.name ?? "" || 'Trainee'}! 🎉</h2>
+          <h2 className="text-2xl font-bold mb-1">Welcome back, {(user?.name ?? "") || "Trainee"}! 🎉</h2>
           <p className="text-indigo-100">Complete your mandatory training assessments</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">

@@ -236,7 +236,7 @@ function App() {
       });
       const data = await response.json();
       if (response.ok) {
-        setUser({ ...data, role: 'ADMIN' });
+        setUser({ ...data, role: "ADMIN", profile: { name: data.name, email: data.email } });
         await fetchModules();
         await fetchAllModulesForSelection();
         await fetchRegisteredStudents();
@@ -264,7 +264,7 @@ function App() {
       });
       const data = await response.json();
       if (response.ok) {
-        setUser({ ...data, role: 'TRAINEE' });
+        setUser({ ...data, role: "TRAINEE", profile: { name: data.name, email: data.email } });
         await fetchModules(data.id);
         await fetchUserProgress(data.id);
       } else {

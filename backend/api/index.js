@@ -904,6 +904,38 @@ app.post('/api/auth/verify-code', async (req, res) => {
  }
 });
 
+
+// ============ UPDATE STUDENT MODULES ============
+app.post('/api/admin/update-student-modules/:id', async (req, res) => {
+  const { id } = req.params;
+  const { selectedModules } = req.body;
+  
+  try {
+    const user = await prisma.user.findUnique({ where: { id: id } });
+    if (!user) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+    
+    const updatedUser = await prisma.user.update({
+      where: { id: id },
+      data: { 
+        selectedModules: JSON.stringify(selectedModules)
+      }
+    });
+    
+    console.log('✅ Updated modules for student:', user.email, 'Modules:', selectedModules);
+    res.json({ 
+      success: true, 
+      message: 'Modules updated successfully',
+      selectedModules: selectedModules,
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error('Update student modules error:', error);
+    res.status(500).json({ error: 'Failed to update student modules: ' + error.message });
+  }
+});
+
 // ============ START SERVER ============
 const PORT = 3002;
 app.listen(PORT, '0.0.0.0', async () => {

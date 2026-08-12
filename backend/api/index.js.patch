@@ -1,32 +1,31 @@
-// Add this at the top of api/index.js after the PrismaClient initialization
-async function ensureAdminUsers() {
-  const admins = [
-    { email: 'admin@careworks.com', name: 'Admin', role: 'ADMIN' },
-    { email: 'director@careworks.com', name: 'Director', role: 'DIRECTOR' },
-    { email: 'supervisor@careworks.com', name: 'Supervisor', role: 'SUPERVISOR' }
-  ];
+// ============ UPDATE STUDENT MODULES ============
+app.post('/api/admin/update-student-modules/:id', async (req, res) => {
+  const { id } = req.params;
+  const { selectedModules } = req.body;
   
-  for (const admin of admins) {
-    try {
-      await prisma.user.upsert({
-        where: { email: admin.email },
-        update: { role: admin.role },
-        create: {
-          email: admin.email,
-          name: admin.name,
-          role: admin.role,
-          trainingRoute: 'FULL_ACCESS',
-          paymentConfirmed: true,
-          practicalModules: '{}'
-        }
-      });
-      console.log(`✅ Admin user ensured: ${admin.email}`);
-    } catch (e) {
-      console.error(`❌ Failed to ensure admin ${admin.email}:`, e.message);
+  try {
+    const user = await prisma.user.findUnique({ where: { id: id } });
+    if (!user) {
+      return res.status(404).json({ error: 'Student not found' });
     }
+    
+    // Update the selectedModules field
+    const updatedUser = await prisma.user.update({
+      where: { id: id },
+      data: { 
+        selectedModules: JSON.stringify(selectedModules)
+      }
+    });
+    
+    console.log('✅ Updated modules for student:', user.email, 'Modules:', selectedModules);
+    res.json({ 
+      success: true, 
+      message: 'Modules updated successfully',
+      selectedModules: selectedModules,
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error('Update student modules error:', error);
+    res.status(500).json({ error: 'Failed to update student modules: ' + error.message });
   }
-}
-
-// Call this right after prisma is initialized, before the server starts
-// Add after: const prisma = new PrismaClient();
-// And before: app.listen(...)
+});

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Check, BookOpen, Lock, Unlock, Shield, AlertCircle } from 'lucide-react';
+import { X, Check, BookOpen, Lock } from 'lucide-react';
 
 const ModulePickerModal = ({ 
   isOpen, 
@@ -15,8 +15,6 @@ const ModulePickerModal = ({
   const [selectAll, setSelectAll] = useState(false);
 
   if (!isOpen) return null;
-
-  const PRACTICAL_IDS = [8, 17];
 
   const toggleModule = (moduleId) => {
     setTempSelected(prev => 
@@ -35,41 +33,12 @@ const ModulePickerModal = ({
     setSelectAll(!selectAll);
   };
 
-  const selectAllModules = () => {
-    const allIds = availableModules.map(m => m.id);
-    setTempSelected(allIds);
-    setSelectAll(true);
-  };
-
-  const selectTheoryOnly = () => {
-    const theoryIds = availableModules
-      .filter(m => !PRACTICAL_IDS.includes(m.id))
-      .map(m => m.id);
-    setTempSelected(theoryIds);
-    setSelectAll(false);
-  };
-
-  const selectPracticalOnly = () => {
-    const practicalIds = availableModules
-      .filter(m => PRACTICAL_IDS.includes(m.id))
-      .map(m => m.id);
-    setTempSelected(practicalIds);
-    setSelectAll(false);
-  };
-
-  const unlockAllModules = () => {
-    const allIds = availableModules.map(m => m.id);
-    setTempSelected(allIds);
-    setSelectAll(true);
-  };
-
   const handleSave = () => {
-    // Pass the selected modules back to App.jsx
     onSave(studentId, tempSelected);
     onClose();
   };
 
-  const isPractical = (id) => PRACTICAL_IDS.includes(id);
+  const isPractical = (id) => id === 8 || id === 17;
   const isCustomized02 = routeType === 'CUSTOMIZED_02';
 
   return (
@@ -80,7 +49,7 @@ const ModulePickerModal = ({
             <BookOpen className="w-5 h-5 text-white" />
             <div>
               <h3 className="text-xl font-bold text-white">
-                {isCustomized02 ? '🔬 Customized-02 Module Selection' : '🎯 Customized-01 Module Selection'}
+                {isCustomized02 ? '🔐 Customized-02 Module Selection' : '🎯 Customized-01 Module Selection'}
               </h3>
               <p className="text-indigo-200 text-sm">{studentName}</p>
             </div>
@@ -89,56 +58,23 @@ const ModulePickerModal = ({
             <X size={24} />
           </button>
         </div>
-        
+
         <div className="p-6 overflow-y-auto max-h-[55vh]">
-          <div className="flex flex-wrap justify-between items-center mb-4 gap-3">
-            <p className="text-sm text-gray-500 flex-1 min-w-[200px]">
+          <div className="flex justify-between items-center mb-4">
+            <p className="text-sm text-gray-500">
               {isCustomized02 ? (
-                <span>📖 Theory modules are sequential. Practical modules (8, 17) require code after all theory passed.</span>
+                <span>🔐 Theory modules are sequential. Practical modules (8, 17) require code after all theory passed.</span>
               ) : (
-                <span>✅ Select modules to assign. All selected will be available immediately.</span>
+                <span>Select modules to assign to this student. All selected will be available immediately.</span>
               )}
             </p>
+            <button 
+              onClick={toggleAll}
+              className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+            >
+              {selectAll ? 'Deselect All' : 'Select All'}
+            </button>
           </div>
-
-          {/* Quick Action Buttons */}
-          {!isCustomized02 && (
-            <div className="mb-4 p-4 bg-emerald-50 rounded-xl border-2 border-emerald-200">
-              <div className="flex items-center gap-2 mb-3">
-                <Unlock className="w-5 h-5 text-emerald-600" />
-                <span className="font-semibold text-emerald-800">Quick Actions - Unlock All Modules</span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button 
-                  onClick={unlockAllModules}
-                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition text-sm font-medium flex items-center gap-2"
-                >
-                  <Unlock size={16} /> Unlock All Modules
-                </button>
-                <button 
-                  onClick={selectTheoryOnly}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium"
-                >
-                  📚 Theory Only
-                </button>
-                <button 
-                  onClick={selectPracticalOnly}
-                  className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition text-sm font-medium"
-                >
-                  🔑 Practical Only (8,17)
-                </button>
-                <button 
-                  onClick={toggleAll}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-medium"
-                >
-                  {selectAll ? 'Deselect All' : 'Select All'}
-                </button>
-              </div>
-              <p className="text-xs text-emerald-700 mt-2">
-                💡 <strong>Unlock All</strong> - Makes ALL modules (including practical 8 & 17) available immediately
-              </p>
-            </div>
-          )}
 
           {isCustomized02 && (
             <div className="mb-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
@@ -150,10 +86,9 @@ const ModulePickerModal = ({
             </div>
           )}
 
-          {/* Module List */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {availableModules.map(module => {
-              const isPracticalModule = isPractical(module.id);
+              const isPractical = module.id === 8 || module.id === 17;
               const isSelected = tempSelected.includes(module.id);
               
               return (
@@ -161,7 +96,6 @@ const ModulePickerModal = ({
                   key={module.id} 
                   className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all
                     ${isSelected ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'}
-                    ${isPracticalModule ? 'border-l-4 border-l-amber-500' : ''}
                   `}
                 >
                   <input
@@ -174,13 +108,19 @@ const ModulePickerModal = ({
                     <span className="text-sm font-medium text-gray-800">
                       #{module.id} {module.name}
                     </span>
-                    {isPracticalModule ? (
+                    {isPractical && (
                       <span className="ml-2 text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
-                        🔑 Practical
+                        🔐 Practical
                       </span>
-                    ) : (
+                    )}
+                    {!isPractical && (
                       <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-                        📖 Theory
+                        📚 Theory
+                      </span>
+                    )}
+                    {isCustomized02 && isPractical && (
+                      <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                        Final Section
                       </span>
                     )}
                   </div>
@@ -190,15 +130,10 @@ const ModulePickerModal = ({
             })}
           </div>
         </div>
-        
-        <div className="border-t p-4 bg-gray-50 flex flex-wrap justify-between items-center gap-3">
+
+        <div className="border-t p-4 bg-gray-50 flex justify-between items-center">
           <div className="text-sm text-gray-500">
             {tempSelected.length} modules selected
-            {tempSelected.some(id => PRACTICAL_IDS.includes(id)) && (
-              <span className="ml-2 text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
-                🔑 Includes Practical
-              </span>
-            )}
           </div>
           <div className="flex gap-3">
             <button 

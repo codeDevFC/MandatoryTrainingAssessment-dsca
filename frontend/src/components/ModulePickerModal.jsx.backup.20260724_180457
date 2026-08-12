@@ -16,7 +16,11 @@ const ModulePickerModal = ({
 
   if (!isOpen) return null;
 
+  // Get practical module IDs (8 and 17)
   const PRACTICAL_IDS = [8, 17];
+  const THEORY_IDS = availableModules
+    .filter(m => !PRACTICAL_IDS.includes(m.id))
+    .map(m => m.id);
 
   const toggleModule = (moduleId) => {
     setTempSelected(prev => 
@@ -35,12 +39,14 @@ const ModulePickerModal = ({
     setSelectAll(!selectAll);
   };
 
+  // NEW: Unlock/Select ALL modules including practical ones
   const selectAllModules = () => {
     const allIds = availableModules.map(m => m.id);
     setTempSelected(allIds);
     setSelectAll(true);
   };
 
+  // NEW: Select only theory modules (exclude practical 8 and 17)
   const selectTheoryOnly = () => {
     const theoryIds = availableModules
       .filter(m => !PRACTICAL_IDS.includes(m.id))
@@ -49,6 +55,7 @@ const ModulePickerModal = ({
     setSelectAll(false);
   };
 
+  // NEW: Select only practical modules (8 and 17)
   const selectPracticalOnly = () => {
     const practicalIds = availableModules
       .filter(m => PRACTICAL_IDS.includes(m.id))
@@ -57,6 +64,7 @@ const ModulePickerModal = ({
     setSelectAll(false);
   };
 
+  // NEW: Unlock All (select all modules including practical)
   const unlockAllModules = () => {
     const allIds = availableModules.map(m => m.id);
     setTempSelected(allIds);
@@ -64,7 +72,6 @@ const ModulePickerModal = ({
   };
 
   const handleSave = () => {
-    // Pass the selected modules back to App.jsx
     onSave(studentId, tempSelected);
     onClose();
   };
@@ -101,7 +108,7 @@ const ModulePickerModal = ({
             </p>
           </div>
 
-          {/* Quick Action Buttons */}
+          {/* NEW: Quick Action Buttons - Unlock All / Make All Available */}
           {!isCustomized02 && (
             <div className="mb-4 p-4 bg-emerald-50 rounded-xl border-2 border-emerald-200">
               <div className="flex items-center gap-2 mb-3">
@@ -181,6 +188,11 @@ const ModulePickerModal = ({
                     ) : (
                       <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
                         📖 Theory
+                      </span>
+                    )}
+                    {isCustomized02 && isPracticalModule && (
+                      <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                        Final Section
                       </span>
                     )}
                   </div>

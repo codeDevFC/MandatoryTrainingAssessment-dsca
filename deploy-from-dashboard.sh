@@ -1,0 +1,31 @@
+#!/bin/bash
+
+echo "========================================="
+echo "🌐 DEPLOY FROM VERCEL DASHBOARD"
+echo "========================================="
+
+echo "Since the CLI is having issues, deploy from the dashboard:"
+echo ""
+echo "1. Open this URL:"
+echo "   https://vercel.com/felix-cobbinahs-projects/dsca-mta-quiz"
+echo ""
+echo "2. Click on 'Deployments' tab"
+echo ""
+echo "3. Click on the '...' (three dots) menu on the latest deployment"
+echo ""
+echo "4. Select 'Redeploy'"
+echo ""
+echo "5. In the settings that appear, set:"
+echo "   - Build Command: cd frontend && npm install && npm run build"
+echo "   - Output Directory: frontend/dist"
+echo "   - Install Command: npm install"
+echo "   - Root Directory: (leave empty - do not put anything here)"
+echo ""
+echo "6. Click 'Redeploy'"
+echo ""
+echo "Opening the dashboard in your browser..."
+
+open "https://vercel.com/felix-cobbinahs-projects/dsca-mta-quiz" 2>/dev/null || echo "Please open the URL manually"
+
+echo ""
+echo "The build should work now with the correct configuration!"

@@ -1157,5 +1157,3 @@ const printReport = () => {
  printWindow.document.write(html);
  printWindow.document.close();
  };
-
-export default App;

@@ -727,13 +727,13 @@ const printReport = () => {
   const esc = (str) => {
     if (!str) return 'N/A';
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-};
+  };
 
   const studentName = esc(reportData.user?.name || 'N/A');
   const studentEmail = esc(reportData.user?.email || 'N/A');
   const studentPhone = esc(reportData.user?.phone || 'N/A');
   const studentRole = esc(reportData.user?.role || 'Trainee');
-  const reportTrainingRoute = esc(reportData.user?.trainingRoute || 'Full Access');
+  const trainingRoute = esc(reportData.user?.trainingRoute || 'Full Access');
 
   let html = `
     <!DOCTYPE html>
@@ -801,7 +801,7 @@ const printReport = () => {
             <div class="info-card"><label>Email</label><div class="value">${studentEmail}</div></div>
             <div class="info-card"><label>Phone</label><div class="value">${studentPhone}</div></div>
             <div class="info-card"><label>Role</label><div class="value">${studentRole}</div></div>
-            <div class="info-card"><label>Training Route</label><div class="value">${reportTrainingRoute === 'CUSTOM' ? 'Custom Selection' : 'Full Access'}</div></div>
+            <div class="info-card"><label>Training Route</label><div class="value">${trainingRoute === 'CUSTOM' ? 'Custom Selection' : 'Full Access'}</div></div>
             <div class="info-card"><label>Report ID</label><div class="value">${Math.random().toString(36).substr(2, 8).toUpperCase()}</div></div>
           </div>
         </div>
@@ -953,7 +953,7 @@ const printReport = () => {
  const studentEmail = esc(reportData.user?.email || 'N/A');
  const studentPhone = esc(reportData.user?.phone || 'N/A');
  const studentRole = esc(reportData.user?.role || 'Trainee');
- const reportTrainingRoute = esc(reportData.user?.trainingRoute || 'Full Access');
+ const trainingRoute = esc(reportData.user?.trainingRoute || 'Full Access');
  
  let html = `
  <!DOCTYPE html>
@@ -1018,7 +1018,7 @@ const printReport = () => {
  <div class="info-card"><label>Email</label><div class="value">${studentEmail}</div></div>
  <div class="info-card"><label>Phone</label><div class="value">${studentPhone}</div></div>
  <div class="info-card"><label>Role</label><div class="value">${studentRole}</div></div>
- <div class="info-card"><label>Training Route</label><div class="value">${reportTrainingRoute === 'CUSTOM' ? 'Custom Selection' : 'Full Access'}</div></div>
+ <div class="info-card"><label>Training Route</label><div class="value">${trainingRoute === 'CUSTOM' ? 'Custom Selection' : 'Full Access'}</div></div>
  <div class="info-card"><label>Report ID</label><div class="value">${Math.random().toString(36).substr(2, 8).toUpperCase()}</div></div>
  </div>
  </div>
@@ -1157,5 +1157,3 @@ const printReport = () => {
  printWindow.document.write(html);
  printWindow.document.close();
  };
-
-export default App;

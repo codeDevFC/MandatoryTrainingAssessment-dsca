@@ -16,17 +16,11 @@ import ModulePickerModal from './components/ModulePickerModal';
 import { Link } from 'react-router-dom';
 import logo01 from './assets/logo01.jpg';
 import logo2 from './assets/logo2.jpg';
-
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002';
-
-// ===== MODULE DEFINITIONS =====
-// FULL ACCESS: 17 Theory + 2 Practical = 19 Modules
-const THEORY_IDS = [1,2,3,4,6,7,10,11,12,14,15,16,18,19,21,22,23];
+// Module section definitions (original database IDs)
+const FULL_ACCESS_IDS = [1,2,3,4,6,7,8,10,11,12,14,15,16,17,18,19,21,22,23];
 const PRACTICAL_IDS = [8,17];
 const EXTRA_ADD_ON_IDS = [5,9,13,20];
-const FULL_ACCESS_IDS = [...THEORY_IDS, ...PRACTICAL_IDS]; // 19 modules
-const ALL_MODULES_IDS = [...FULL_ACCESS_IDS, ...EXTRA_ADD_ON_IDS]; // 23 modules
-
 function App() {
  const [user, setUser] = useState(null);
  const [email, setEmail] = useState('');
@@ -77,11 +71,10 @@ function App() {
  const [showPracticalModal, setShowPracticalModal] = useState(false);
  const [pendingPracticalModule, setPendingPracticalModule] = useState(null);
  const [practicalModuleName, setPracticalModuleName] = useState('');
- const [practicalCodeInput, setPracticalCodeInput] = useState('');
+ const [practicalCode, setPracticalCode] = useState('');
  const [practicalCodeExpiry, setPracticalCodeExpiry] = useState(null);
  const [generatingPracticalCode, setGeneratingPracticalCode] = useState(false);
  const [extraAddOnsOpen, setExtraAddOnsOpen] = useState(false);
-
  // ===== FETCH FUNCTIONS =====
  const fetchModules = async (userId = null) => {
  try {
@@ -94,7 +87,6 @@ function App() {
  setModules([]);
  }
  };
-
  const fetchAllModulesForSelection = async () => {
  try {
  const res = await fetch(`${API_URL}/api/admin/modules`);
@@ -105,18 +97,15 @@ function App() {
  setAllModulesList([]);
  }
  };
-
  const updateStudentRoute = (studentId, route) => {
  setStudentRoutes(prev => ({ ...prev, [studentId]: route }));
  if (route === 'CUSTOMIZED_01' || route === 'CUSTOMIZED_02') {
  setStudentCustomModules(prev => ({ ...prev, [studentId]: [] }));
  }
  };
-
  const updateStudentCustomModules = (studentId, modules) => {
  setStudentCustomModules(prev => ({ ...prev, [studentId]: modules }));
  };
-
  const fetchRegisteredStudents = async () => {
  try {
  const res = await fetch(`${API_URL}/api/admin/all-students-with-status`);
@@ -137,7 +126,6 @@ function App() {
  setFilteredStudents([]);
  }
  };
-
  const fetchUserProgress = async (userId) => {
  try {
  const res = await fetch(`${API_URL}/api/user/${userId}/progress`);
@@ -148,7 +136,6 @@ function App() {
  setUserProgress({ progress: [], attempts: [] });
  }
  };
-
  const fetchStudentFullDetails = async (studentId) => {
  setLoading(true);
  try {
@@ -168,40 +155,35 @@ function App() {
  setLoading(false);
  }
  };
-
  const fetchCurrentPracticalCode = async () => {
  try {
  const response = await fetch(`${API_URL}/api/admin/current-practical-code`);
  const data = await response.json();
  if (response.ok && data.code) {
- setPracticalCodeInput(data.code);
+ setPracticalCode(data.code);
  setPracticalCodeExpiry(data.expiresAt);
  }
  } catch (err) {
  console.error('Failed to fetch practical code:', err);
  }
  };
-
  // ===== PRACTICAL CODE HANDLERS =====
  const handlePracticalCodeSuccess = () => {
- setSuccess('? Practical code verified! Both practical modules are now unlocked.');
+ setSuccess('? Practical code verified! You can now access the module.');
  setTimeout(() => setSuccess(''), 5000);
  if (user?.id) {
  fetchModules(user.id);
  }
  };
-
  const handlePracticalCodeError = (errorMsg) => {
  setError(errorMsg || 'Failed to verify practical code. Please try again.');
  setTimeout(() => setError(''), 5000);
  };
-
  const requestPracticalCode = (module) => {
  setPendingPracticalModule(module);
  setPracticalModuleName(module.name);
  setShowPracticalModal(true);
  };
-
  const generatePracticalCode = async () => {
  setGeneratingPracticalCode(true);
  try {
@@ -212,7 +194,7 @@ function App() {
  });
  const data = await response.json();
  if (response.ok) {
- setPracticalCodeInput(data.code);
+ setPracticalCode(data.code);
  setPracticalCodeExpiry(data.expiresAt);
  setSuccess(`? New practical code generated: ${data.code}`);
  setTimeout(() => setSuccess(''), 5000);
@@ -225,7 +207,6 @@ function App() {
  setGeneratingPracticalCode(false);
  }
  };
-
  // ===== LOGIN HANDLERS =====
  const handleAdminLogin = async (e) => {
  e.preventDefault();
@@ -254,7 +235,6 @@ function App() {
  setLoading(false);
  }
  };
-
  const handleTraineeLogin = async (e) => {
  e.preventDefault();
  setLoading(true);
@@ -279,7 +259,6 @@ function App() {
  setLoading(false);
  }
  };
-
  const handleRefreshCredentials = async () => {
  if (!selectedStudentDetails) return;
  setLoading(true);
@@ -303,7 +282,6 @@ function App() {
  setLoading(false);
  }
  };
-
  // ===== MODULE ASSESSMENT =====
  const startModule = async (module) => {
  try {
@@ -319,7 +297,6 @@ function App() {
  setError('Failed to load module');
  }
  };
-
  const submitAssessment = async () => {
  const timeSpent = Math.floor((Date.now() - startTime) / 1000);
  setLoading(true);
@@ -334,7 +311,6 @@ function App() {
  setShowResults(true);
  if (user.role === 'TRAINEE') {
  await fetchUserProgress(user.id);
- await fetchModules(user.id);
  } else {
  await fetchRegisteredStudents();
  }
@@ -344,49 +320,33 @@ function App() {
  setLoading(false);
  }
  };
-
- // ===== GET MODULE STATUS - FIXED VERSION =====
+ // ===== GET MODULE STATUS =====
  const getModuleStatus = (moduleId) => {
  if (user?.role !== 'TRAINEE') return 'available';
-
  const route = user?.trainingRoute || 'FULL_ACCESS';
  const progress = userProgress.progress || [];
  const moduleProgress = progress.find(x => x.moduleId === moduleId);
-
- // Already passed
  if (moduleProgress?.status === 'passed') return 'completed';
-
- const isTheory = THEORY_IDS.includes(moduleId);
- const isPractical = PRACTICAL_IDS.includes(moduleId);
+ const isPractical = moduleId === 8 || moduleId === 17;
  const isExtraAddOn = EXTRA_ADD_ON_IDS.includes(moduleId);
-
- // ===== CUSTOMIZED_02: Admin selects modules, ALL available immediately =====
- if (route === 'CUSTOMIZED_02') {
- const selectedModules = user?.selectedModules ? JSON.parse(user.selectedModules) : [];
- if (selectedModules.length > 0 && !selectedModules.includes(moduleId)) {
- return 'locked';
- }
+ if (isExtraAddOn) {
  return 'available';
  }
-
- // ===== CUSTOMIZED_01: 19 modules - Theory ALL available, Practical needs code =====
  if (route === 'CUSTOMIZED_01') {
- // Theory: ALL available immediately (no sequential unlock)
- if (isTheory) {
  const selectedModules = user?.selectedModules ? JSON.parse(user.selectedModules) : [];
- if (selectedModules.length > 0 && !selectedModules.includes(moduleId)) {
+ if (!selectedModules.includes(moduleId)) {
  return 'locked';
  }
  return 'available';
  }
- // Practical: Check theory completion, then code required
  if (isPractical) {
- const allTheoryPassed = THEORY_IDS.every(id => {
+ const allTheoryPassed = FULL_ACCESS_IDS.every(id => {
  const p = progress.find(x => x.moduleId === id);
  return p?.status === 'passed';
  });
- if (!allTheoryPassed) return 'locked';
- // Check if practical code is already entered
+ if (!allTheoryPassed) {
+ return 'locked';
+ }
  let practicalModules = {};
  if (user?.practicalModules) {
  try {
@@ -395,47 +355,19 @@ function App() {
  : user.practicalModules;
  } catch (e) { practicalModules = {}; }
  }
- if (practicalModules[moduleId]?.completed) return 'available';
+ if (practicalModules[moduleId]?.completed) {
+ return 'available';
+ }
  return 'practical_locked';
  }
- return 'locked';
- }
-
- // ===== FULL_ACCESS: Theory sequential → Practical code =====
- if (route === 'FULL_ACCESS') {
- // Theory: Sequential unlock
- if (isTheory) {
- const theoryIndex = THEORY_IDS.indexOf(moduleId);
- if (theoryIndex === 0) return 'available';
- const prevTheoryId = THEORY_IDS[theoryIndex - 1];
- const prevProgress = progress.find(x => x.moduleId === prevTheoryId);
+ if (moduleId === 1) return 'available';
+ const currentIndex = FULL_ACCESS_IDS.indexOf(moduleId);
+ if (currentIndex === 0) return 'available';
+ const prevFullAccessId = FULL_ACCESS_IDS[currentIndex - 1];
+ const prevProgress = progress.find(x => x.moduleId === prevFullAccessId);
  if (prevProgress?.status === 'passed') return 'available';
  return 'locked';
- }
- // Practical: Check all theory passed, then code required
- if (isPractical) {
- const allTheoryPassed = THEORY_IDS.every(id => {
- const p = progress.find(x => x.moduleId === id);
- return p?.status === 'passed';
- });
- if (!allTheoryPassed) return 'locked';
- let practicalModules = {};
- if (user?.practicalModules) {
- try {
- practicalModules = typeof user.practicalModules === 'string' 
- ? JSON.parse(user.practicalModules) 
- : user.practicalModules;
- } catch (e) { practicalModules = {}; }
- }
- if (practicalModules[moduleId]?.completed) return 'available';
- return 'practical_locked';
- }
- return 'locked';
- }
-
- return 'locked';
  };
-
  // ===== ADMIN: BATCH CODE GENERATION =====
  const batchGenerateCodes = async () => {
  const validStudents = studentBatch.filter(s => s.surname.trim() && s.firstName.trim() && s.phone.trim());
@@ -458,7 +390,7 @@ function App() {
  body: JSON.stringify({ 
  students: validStudents, 
  trainingRoute, 
- selectedModules: trainingRoute === 'CUSTOMIZED_02' ? selectedCustomModules : [] 
+ selectedModules: trainingRoute === 'CUSTOMIZED_01' ? selectedCustomModules : [] 
  })
  });
  const data = await response.json();
@@ -478,54 +410,59 @@ function App() {
  setLoading(false);
  }
  };
-
  const addStudentField = () => {
  if (studentBatch.length < 20) {
  setStudentBatch([...studentBatch, { surname: '', firstName: '', phone: '' }]);
  }
  };
-
  const removeStudentField = (index) => {
  const newBatch = studentBatch.filter((_, i) => i !== index);
  setStudentBatch(newBatch.length ? newBatch : [{ surname: '', firstName: '', phone: '' }]);
  };
-
  const updateStudent = (index, field, value) => {
  const newBatch = [...studentBatch];
  newBatch[index][field] = value;
  setStudentBatch(newBatch);
  };
-
  const toggleModuleSelection = (moduleId) => {
  setSelectedCustomModules(prev =>
  prev.includes(moduleId) ? prev.filter(id => id !== moduleId) : [...prev, moduleId]
  );
  };
-
  const copyAllCodes = () => {
  const codesText = generatedCodes.map(c => `${c.name}: ${c.code}`).join('\n');
  navigator.clipboard.writeText(codesText);
  setSuccess('All codes copied to clipboard!');
  setTimeout(() => setSuccess(''), 3000);
  };
-
  const printCodes = () => {
  const printWindow = window.open('', '_blank');
  let html = '';
- html += '<!DOCTYPE html><html><head><title>Student Login Codes</title>';
- html += '<style>body{font-family:Arial,sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ddd;padding:8px;text-align:left;}th{background-color:#4f46e5;color:white;}</style>';
- html += '</head><body><h1>Student Login Credentials</h1>';
+ html += '<!DOCTYPE html>';
+ html += '<html>';
+ html += '<head><title>Student Login Codes</title>';
+ html += '<style>';
+ html += 'body { font-family: Arial, sans-serif; padding: 20px; }';
+ html += 'table { width: 100%; border-collapse: collapse; }';
+ html += 'th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }';
+ html += 'th { background-color: #4f46e5; color: white; }';
+ html += '</style>';
+ html += '</head>';
+ html += '<body>';
+ html += '<h1>Student Login Credentials</h1>';
  html += '<p>Generated on ' + new Date().toLocaleString() + '</p>';
- html += '<table><thead><tr><th>Name</th><th>Email</th><th>Code</th></tr></thead><tbody>';
+ html += '<table><thead><tr><th>Name</th><th>Email</th><th>Code</th></tr></thead>';
+ html += '<tbody>';
  generatedCodes.forEach(c => {
  html += '<tr><td>' + c.name + '</td><td>' + c.email + '</td><td><code>' + c.code + '</code></td></tr>';
  });
- html += '</tbody></table></body></html>';
+ html += '</tbody></table>';
+ html += '</body>';
+ html += '</html>';
  printWindow.document.write(html);
  printWindow.document.close();
  printWindow.print();
  };
-
  const confirmPayment = async (studentId) => {
  setLoading(true);
  try {
@@ -544,7 +481,6 @@ function App() {
  setLoading(false);
  }
  };
-
  const generateCodeForSingleStudent = async (studentId) => {
  setLoading(true);
  const route = studentRoutes[studentId] || 'FULL_ACCESS';
@@ -553,7 +489,7 @@ function App() {
  const response = await fetch(`${API_URL}/api/admin/generate-code-with-route/${studentId}`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({ trainingRoute: route, selectedModules: route === 'CUSTOMIZED_02' ? customModules : [] })
+ body: JSON.stringify({ trainingRoute: route, selectedModules: route === 'CUSTOMIZED_01' ? customModules : [] })
  });
  const data = await response.json();
  if (response.ok) {
@@ -570,7 +506,6 @@ function App() {
  setLoading(false);
  }
  };
-
  // ===== ADMIN: DELETE STUDENTS =====
  const deleteUser = async () => {
  if (deleteConfirmText !== 'DELETE') {
@@ -598,7 +533,6 @@ function App() {
  setLoading(false);
  }
  };
-
  const bulkDeleteUsers = async () => {
  if (bulkDeleteConfirmText !== 'DELETE') {
  setError('Please type DELETE to confirm bulk deletion');
@@ -632,13 +566,11 @@ function App() {
  setLoading(false);
  }
  };
-
  const toggleStudentSelection = (studentId) => {
  setSelectedStudents(prev =>
  prev.includes(studentId) ? prev.filter(id => id !== studentId) : [...prev, studentId]
  );
  };
-
  const toggleSelectAll = () => {
  if (selectAll) {
  setSelectedStudents([]);
@@ -649,7 +581,6 @@ function App() {
  setSelectAll(true);
  }
  };
-
  // ===== ADMIN: SINGLE REPORT GENERATION =====
  const generateFullReport = async (student) => {
  setReportLoading(true);
@@ -664,7 +595,6 @@ function App() {
  setReportLoading(false);
  }
  };
-
  // ===== PROFESSIONAL PRINT REPORT =====
  const printReport = () => {
  if (!reportData) return;
@@ -677,20 +607,19 @@ function App() {
  const totalAttempts = reportData.totalAttempts || 0;
  const passRate = totalAttempts > 0 ? Math.round((passedModules / totalAttempts) * 100) : 0;
  const avgScore = reportData.averageScore ? reportData.averageScore.toFixed(1) : '0';
-
  const esc = (str) => {
  if (str === null || str === undefined) return 'N/A';
  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
  };
-
  const studentName = esc(reportData.user?.name || 'N/A');
  const studentEmail = esc(reportData.user?.email || 'N/A');
  const studentPhone = esc(reportData.user?.phone || 'N/A');
  const studentRole = esc(reportData.user?.role || 'Trainee');
  const reportTrainingRoute = esc(reportData.user?.trainingRoute || 'Full Access');
-
  let html = '';
- html += '<!DOCTYPE html><html><head>';
+ html += '<!DOCTYPE html>';
+ html += '<html>';
+ html += '<head>';
  html += '<title>COHT Training Assessment Report - ' + studentName + '</title>';
  html += '<meta charset="UTF-8">';
  html += '<style>';
@@ -738,22 +667,33 @@ function App() {
  html += '.no-print .close-btn { padding: 12px 30px; background: #64748b; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; }';
  html += '@media print { body { background: white; padding: 0; } .no-print { display: none; } .module-card { break-inside: avoid; page-break-inside: avoid; } }';
  html += '@media (max-width: 768px) { body { padding: 20px; } .stats-grid { grid-template-columns: repeat(2, 1fr); } .info-grid { grid-template-columns: 1fr; } .header-content { flex-direction: column; gap: 15px; } }';
- html += '</style></head><body>';
+ html += '</style>';
+ html += '</head>';
+ html += '<body>';
  html += '<div class="report-container">';
- html += '<div class="header"><div class="header-content">';
+ html += '<div class="header">';
+ html += '<div class="header-content">';
  html += '<img src="' + logo01 + '" class="header-logo" alt="COHT Logo" />';
- html += '<div class="header-text-container"><h1>Training Assessment Report</h1>';
- html += '<p>Official Training Record - Generated on ' + new Date().toLocaleString() + '</p></div>';
+ html += '<div class="header-text-container">';
+ html += '<h1>Training Assessment Report</h1>';
+ html += '<p>Official Training Record - Generated on ' + new Date().toLocaleString() + '</p>';
+ html += '</div>';
  html += '<img src="' + logo2 + '" class="header-logo" alt="Accredited Logo" />';
- html += '</div></div>';
- html += '<div class="section"><div class="section-title">? Trainee Information</div><div class="info-grid">';
+ html += '</div>';
+ html += '</div>';
+ html += '<div class="section">';
+ html += '<div class="section-title">? Trainee Information</div>';
+ html += '<div class="info-grid">';
  html += '<div class="info-card"><label>Full Name</label><div class="value">' + studentName + '</div></div>';
  html += '<div class="info-card"><label>Email Address</label><div class="value">' + studentEmail + '</div></div>';
  html += '<div class="info-card"><label>Phone Number</label><div class="value">' + studentPhone + '</div></div>';
  html += '<div class="info-card"><label>Training Route</label><div class="value">' + (reportTrainingRoute === 'CUSTOM' ? 'Custom Selection' : 'Full Access') + '</div></div>';
  html += '<div class="info-card"><label>Report ID</label><div class="value">' + Math.random().toString(36).substr(2, 9).toUpperCase() + '</div></div>';
- html += '</div></div>';
- html += '<div class="section"><div class="section-title">? Performance Summary</div><div class="stats-grid">';
+ html += '</div>';
+ html += '</div>';
+ html += '<div class="section">';
+ html += '<div class="section-title">? Performance Summary</div>';
+ html += '<div class="stats-grid">';
  html += '<div class="stat-card total"><div class="stat-number">' + totalAttempts + '</div><div class="stat-label">Total Attempts</div></div>';
  html += '<div class="stat-card passed"><div class="stat-number">' + passedModules + '</div><div class="stat-label">? Passed Modules</div></div>';
  html += '<div class="stat-card failed"><div class="stat-number">' + failedModules + '</div><div class="stat-label">? Failed Modules</div></div>';
@@ -762,9 +702,10 @@ function App() {
  html += '<div class="info-card" style="text-align: center; background: #f0fdf4; margin-top: 16px;">';
  html += '<label>Overall Performance</label>';
  html += '<div class="value" style="font-size: 24px;">' + passRate + '% Pass Rate | ' + avgScore + '% Average Score</div>';
- html += '</div></div>';
- html += '<div class="section"><div class="section-title">? Detailed Module Results - Full Question Breakdown</div>';
-
+ html += '</div>';
+ html += '</div>';
+ html += '<div class="section">';
+ html += '<div class="section-title">? Detailed Module Results</div>';
  const attempts = reportData.attempts || [];
  if (attempts.length === 0) {
  html += '<div style="text-align: center; padding: 40px; color: #64748b;">? No module attempts recorded yet.</div>';
@@ -773,7 +714,6 @@ function App() {
  const percentage = Math.round((attempt.score / 20) * 100);
  const isPassed = attempt.passed;
  let allQuestions = [];
-
  if (attempt.detailedAnswers) {
  if (typeof attempt.detailedAnswers === 'string') {
  try { allQuestions = JSON.parse(attempt.detailedAnswers); } catch(e) { allQuestions = []; }
@@ -781,7 +721,6 @@ function App() {
  allQuestions = attempt.detailedAnswers;
  }
  }
-
  if (allQuestions.length === 0 && attempt.errors) {
  let errors = [];
  if (typeof attempt.errors === 'string') {
@@ -797,7 +736,6 @@ function App() {
  isCorrect: err.userAnswer === err.correctAnswer
  }));
  }
-
  if (allQuestions.length === 0 && attempt.module && attempt.answers) {
  try {
  const questions = JSON.parse(attempt.module.questions || '[]');
@@ -811,21 +749,19 @@ function App() {
  }));
  } catch(e) { allQuestions = []; }
  }
-
  const moduleName = attempt.module?.name || 'Unknown Module';
  html += '<div class="module-card">';
  html += '<div class="module-header">';
  html += '<span class="module-name">' + esc(moduleName) + '</span>';
  html += '<span class="module-score ' + (isPassed ? 'score-passed' : 'score-failed') + '">';
- html += attempt.score + '/20 (' + percentage + '%) - ' + (isPassed ? '? PASSED' : '? FAILED');
- html += '</span></div>';
+ html += attempt.score + '/20 (' + percentage + '%) - ' + (isPassed ? 'PASSED' : 'FAILED');
+ html += '</span>';
+ html += '</div>';
  html += '<div class="module-date">Completed: ' + (attempt.completedAt ? new Date(attempt.completedAt).toLocaleString() : 'N/A') + '</div>';
-
  if (allQuestions.length > 0) {
- html += '<table class="question-table"><thead><tr>';
- html += '<th style="width: 6%;">#</th><th style="width: 44%;">Question</th>';
- html += '<th style="width: 20%;">Student Answer</th><th style="width: 20%;">Correct Answer</th>';
- html += '<th style="width: 10%;">Result</th></tr></thead><tbody>';
+ html += '<table class="question-table">';
+ html += '<thead><tr><th style="width: 6%;">#</th><th style="width: 44%;">Question</th><th style="width: 20%;">Student Answer</th><th style="width: 20%;">Correct Answer</th><th style="width: 10%;">Result</th></tr></thead>';
+ html += '<tbody>';
  allQuestions.forEach((q, qIdx) => {
  const isCorrect = q.isCorrect !== undefined ? q.isCorrect : false;
  html += '<tr class="' + (isCorrect ? 'correct' : 'incorrect') + '">';
@@ -833,31 +769,33 @@ function App() {
  html += '<td>' + esc(q.questionText || 'N/A') + '</td>';
  html += '<td class="' + (isCorrect ? 'answer-correct' : 'answer-incorrect') + '">' + esc(q.userAnswer || 'N/A') + '</td>';
  html += '<td class="answer-correct">' + esc(q.correctAnswer || 'N/A') + '</td>';
- html += '<td>' + (isCorrect ? '?' : '?') + '</td></tr>';
+ html += '<td>' + (isCorrect ? '?' : '?') + '</td>';
+ html += '</tr>';
  });
- html += '</tbody></table>';
+ html += '</tbody>';
+ html += '</table>';
  } else {
- html += '<div class="no-errors">? No detailed question data available for this module.</div>';
+ html += '<div class="no-errors">? Perfect! No incorrect answers in this module.</div>';
  }
  html += '</div>';
  });
  }
-
  html += '</div>';
  html += '<div class="footer">';
  html += '<p>This is an official training record generated by COHT Training Platform.</p>';
  html += '<p>© ' + new Date().getFullYear() + ' Centre of Healthcare Training - All Rights Reserved</p>';
  html += '<p style="margin-top: 4px; font-size: 10px;">trainercourses.com</p>';
- html += '</div></div>';
+ html += '</div>';
+ html += '</div>';
  html += '<div class="no-print">';
  html += '<button class="print-btn" onclick="window.print()">?? Print / Save as PDF</button>';
  html += '<button class="close-btn" onclick="window.close()">? Close</button>';
- html += '</div></body></html>';
-
+ html += '</div>';
+ html += '</body>';
+ html += '</html>';
  printWindow.document.write(html);
  printWindow.document.close();
  };
-
  // ===== EFFECTS =====
  useEffect(() => {
  if (searchTerm) {
@@ -869,7 +807,6 @@ function App() {
  setFilteredStudents(registeredStudents);
  }
  }, [searchTerm, registeredStudents]);
-
  // ============ LOGIN SCREEN ============
  if (!user) {
  return (
@@ -950,7 +887,6 @@ function App() {
  </div>
  );
  }
-
  // ============ ASSESSMENT SCREEN ============
  if (selectedModule && !showResults) {
  const questions = selectedModule.questions || [];
@@ -1004,7 +940,6 @@ function App() {
  </div>
  );
  }
-
  // ============ RESULTS SCREEN ============
  if (showResults && result) {
  return (
@@ -1025,13 +960,11 @@ function App() {
  </div>
  );
  }
-
  // ============ ADMIN DASHBOARD ============
  if (user.role !== 'TRAINEE') {
  const confirmedCount = registeredStudents.filter(s => s.paymentConfirmed).length;
  const pendingCount = registeredStudents.filter(s => !s.paymentConfirmed).length;
  const totalStudents = registeredStudents.length;
-
  return (
  <div className="min-h-screen flex flex-col bg-slate-50">
  <Header />
@@ -1047,6 +980,7 @@ function App() {
  </div>
  </div>
  <div className="max-w-7xl mx-auto p-6 flex-1">
+ {/* Tabs */}
  <div className="flex flex-wrap gap-2 mb-6 border-b">
  <button onClick={() => setActiveTab('dashboard')} className={`px-5 py-2.5 rounded-t-lg font-medium transition-all flex items-center gap-2 ${activeTab === 'dashboard' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
  <LayoutDashboard size={18} /> Dashboard
@@ -1063,7 +997,7 @@ function App() {
  </div>
  {error && <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg mb-4 flex items-center gap-2"><AlertCircle size={18} /> {error}</div>}
  {success && <div className="bg-green-50 border border-green-200 text-green-700 p-3 rounded-lg mb-4 flex items-center gap-2"><CheckCircle size={18} /> {success}</div>}
-
+ {/* Dashboard Tab */}
  {activeTab === 'dashboard' && (
  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
  <div className="bg-white rounded-xl border p-6 shadow-sm hover:shadow-md transition">
@@ -1089,9 +1023,10 @@ function App() {
  </div>
  </div>
  )}
-
+ {/* Students Tab - WITH BULK ACTIONS */}
  {activeTab === 'students' && (
  <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+ {/* BULK ACTIONS BAR */}
  {selectedStudents.length > 0 && (
  <div className="bg-indigo-50 border-b border-indigo-200 px-4 py-3 flex flex-wrap justify-between items-center gap-3">
  <div className="flex items-center gap-3">
@@ -1106,6 +1041,7 @@ function App() {
  </div>
  </div>
  )}
+ {/* Search and Filter */}
  <div className="p-4 border-b bg-slate-50">
  <div className="flex flex-wrap justify-between items-center gap-4">
  <div className="relative flex-1 max-w-md">
@@ -1120,11 +1056,14 @@ function App() {
  </div>
  </div>
  </div>
+ {/* Students Table */}
  <div className="overflow-x-auto">
  <table className="w-full">
  <thead className="bg-gray-50 border-b">
  <tr>
- <th className="p-4 w-10"><input type="checkbox" checked={selectAll} onChange={toggleSelectAll} className="w-4 h-4 text-indigo-600 rounded" /></th>
+ <th className="p-4 w-10">
+ <input type="checkbox" checked={selectAll} onChange={toggleSelectAll} className="w-4 h-4 text-indigo-600 rounded" />
+ </th>
  <th className="p-4 text-left">Name</th>
  <th className="p-4 text-left">Email</th>
  <th className="p-4 text-left">Phone</th>
@@ -1136,7 +1075,9 @@ function App() {
  <tbody>
  {filteredStudents.map(student => (
  <tr key={student.id} className="border-t hover:bg-gray-50">
- <td className="p-4"><input type="checkbox" checked={selectedStudents.includes(student.id)} onChange={() => toggleStudentSelection(student.id)} className="w-4 h-4 text-indigo-600 rounded" /></td>
+ <td className="p-4">
+ <input type="checkbox" checked={selectedStudents.includes(student.id)} onChange={() => toggleStudentSelection(student.id)} className="w-4 h-4 text-indigo-600 rounded" />
+ </td>
  <td className="p-4 font-medium">{student.name || '-'}</td>
  <td className="p-4 text-sm">{student.email}</td>
  <td className="p-4 text-sm font-mono">{student.phone || '-'}</td>
@@ -1160,13 +1101,19 @@ function App() {
  }} 
  className="text-xs border rounded px-2 py-1 bg-white focus:ring-2 focus:ring-indigo-500 w-32"
  >
- <option value="FULL_ACCESS">? Full Access (19 - Sequential)</option>
- <option value="CUSTOMIZED_01">? Custom-01 (19 - All Theory Available)</option>
- <option value="CUSTOMIZED_02">? Custom-02 (Admin Selects - All Available)</option>
+ <option value="FULL_ACCESS">? Full Access</option>
+ <option value="CUSTOMIZED_01">? Custom-01</option>
+ <option value="CUSTOMIZED_02">? Custom-02</option>
  </select>
  {(studentRoutes[student.id] === "CUSTOMIZED_01" || studentRoutes[student.id] === "CUSTOMIZED_02") && (
- <button onClick={() => { setCurrentPickerStudent(student.id); setPickerRouteType(studentRoutes[student.id] || "CUSTOMIZED_01"); setShowModulePicker(true); }} 
- className="ml-1 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200">
+ <button 
+ onClick={() => { 
+ setCurrentPickerStudent(student.id); 
+ setPickerRouteType(studentRoutes[student.id] || "CUSTOMIZED_01");
+ setShowModulePicker(true); 
+ }} 
+ className="ml-1 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200"
+ >
  ? Pick
  </button>
  )}
@@ -1188,11 +1135,13 @@ function App() {
  ))}
  </tbody>
  </table>
- {filteredStudents.length === 0 && <div className="text-center p-8 text-gray-500">No students found</div>}
+ {filteredStudents.length === 0 && (
+ <div className="text-center p-8 text-gray-500">No students found</div>
+ )}
  </div>
  </div>
  )}
-
+ {/* Generate Codes Tab */}
  {activeTab === 'generate' && (
  <div className="bg-white rounded-xl border shadow-sm p-6">
  <h2 className="text-xl font-bold text-gray-800 mb-4">Batch Login Code Generation</h2>
@@ -1201,34 +1150,28 @@ function App() {
  <div className="flex gap-6 mb-3">
  <label className="flex items-center gap-2 cursor-pointer">
  <input type="radio" name="trainingRoute" value="FULL_ACCESS" checked={trainingRoute === "FULL_ACCESS"} onChange={() => { setTrainingRoute("FULL_ACCESS"); setSelectedCustomModules([]); }} className="w-4 h-4 text-indigo-600" />
- <span className="text-sm font-medium">? Full Access (19 - Sequential Theory)</span>
+ <span className="text-sm font-medium">? Full Access (Sequential)</span>
  </label>
  <label className="flex items-center gap-2 cursor-pointer">
  <input type="radio" name="trainingRoute" value="CUSTOMIZED_01" checked={trainingRoute === "CUSTOMIZED_01"} onChange={() => setTrainingRoute("CUSTOMIZED_01")} className="w-4 h-4 text-indigo-600" />
- <span className="text-sm font-medium">? Custom-01 (19 - All Theory Available)</span>
+ <span className="text-sm font-medium">? Customized-01 (Admin Selects)</span>
  </label>
  <label className="flex items-center gap-2 cursor-pointer">
  <input type="radio" name="trainingRoute" value="CUSTOMIZED_02" checked={trainingRoute === "CUSTOMIZED_02"} onChange={() => { setTrainingRoute("CUSTOMIZED_02"); setSelectedCustomModules([]); }} className="w-4 h-4 text-indigo-600" />
- <span className="text-sm font-medium">? Custom-02 (Admin Selects - All Available)</span>
+ <span className="text-sm font-medium">? Customized-02 (Theory + Practical)</span>
  </label>
  </div>
  {trainingRoute === 'CUSTOMIZED_01' && (
  <div className="mt-4 pt-4 border-t">
- <p className="text-sm text-gray-600 mb-2">Custom-01: All 19 modules available. Theory modules open immediately. Practical modules require code.</p>
- </div>
- )}
- {trainingRoute === 'CUSTOMIZED_02' && (
- <div className="mt-4 pt-4 border-t">
- <p className="text-sm text-gray-600 mb-2">Custom-02: ALL selected modules available immediately. No practical code required.</p>
+ <p className="text-sm text-gray-600 mb-2">Select modules for this batch:</p>
  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded-lg bg-white">
  {allModulesList.map(module => (
  <label key={module.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-slate-50 p-1 rounded">
  <input type="checkbox" checked={selectedCustomModules.includes(module.id)} onChange={() => toggleModuleSelection(module.id)} className="w-4 h-4 text-indigo-600 rounded" />
- <span>{module.id}. {module.name}</span>
+ <span>{module.name}</span>
  </label>
  ))}
  </div>
- <p className="text-xs text-gray-500 mt-2">? Selected: {selectedCustomModules.length} modules</p>
  </div>
  )}
  </div>
@@ -1263,7 +1206,7 @@ function App() {
  )}
  </div>
  )}
-
+ {/* Practical Code Tab */}
  {activeTab === 'practical' && (
  <div className="bg-white rounded-xl border shadow-sm p-6">
  <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
@@ -1272,24 +1215,25 @@ function App() {
  <div className="mb-6 p-4 bg-amber-50 rounded-lg border border-amber-200">
  <p className="text-sm text-amber-800 mb-3">
  <strong>About Practical Codes:</strong> Modules 8 (First Aid) and 17 (Moving &amp; Handling) 
- require a practical access code. The <strong>SAME CODE</strong> unlocks both modules.
+ require a practical access code. Generate a new code below and share it with trainees.
  </p>
- <p className="text-sm text-amber-800">
- Students must complete all 17 theory modules before the practical modules become available.
- </p>
+ <div className="flex items-center gap-2 text-xs text-amber-700">
+ <Clock size={14} />
+ <span>Code expires in 365 days</span>
+ </div>
  </div>
  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
  <div className="bg-slate-50 rounded-xl p-6 border">
  <h3 className="font-semibold text-gray-700 mb-3">Current Practical Code</h3>
- {practicalCodeInput ? (
+ {practicalCode ? (
  <div className="space-y-3">
  <div className="bg-white rounded-lg p-4 border-2 border-amber-300">
- <code className="text-2xl font-mono tracking-wider text-amber-700 block text-center">{practicalCodeInput}</code>
+ <code className="text-2xl font-mono tracking-wider text-amber-700 block text-center">{practicalCode}</code>
  </div>
  {practicalCodeExpiry && (
  <p className="text-xs text-gray-500">Expires: {new Date(practicalCodeExpiry).toLocaleDateString()}</p>
  )}
- <button onClick={() => navigator.clipboard.writeText(practicalCodeInput)} className="text-sm text-indigo-600 hover:underline flex items-center gap-1">
+ <button onClick={() => navigator.clipboard.writeText(practicalCode)} className="text-sm text-indigo-600 hover:underline flex items-center gap-1">
  <Copy size={14} /> Copy Code
  </button>
  </div>
@@ -1312,6 +1256,7 @@ function App() {
  </div>
  )}
  </div>
+ {/* Modals */}
  {showDeleteConfirm && (
  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowDeleteConfirm(false)}>
  <div className="bg-white rounded-2xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
@@ -1390,35 +1335,17 @@ function App() {
  </div>
  );
  }
-
  // ============ TRAINEE DASHBOARD ============
  const stats = {
- total: modules.length,
- completed: userProgress.progress?.filter(p => p.status === 'passed').length || 0,
- inProgress: userProgress.progress?.filter(p => p.status === 'failed').length || 0,
- locked: modules.length - (userProgress.progress?.length || 0)
+ total: modules.filter(m => FULL_ACCESS_IDS.includes(m.id) || PRACTICAL_IDS.includes(m.id)).length,
+ completed: userProgress.progress?.filter(p => p.status === 'passed' && (FULL_ACCESS_IDS.includes(p.moduleId) || PRACTICAL_IDS.includes(p.moduleId))).length || 0,
+ inProgress: userProgress.progress?.filter(p => p.status === 'failed' && (FULL_ACCESS_IDS.includes(p.moduleId) || PRACTICAL_IDS.includes(p.moduleId))).length || 0,
+ locked: modules.filter(m => FULL_ACCESS_IDS.includes(m.id) || PRACTICAL_IDS.includes(m.id)).length - (userProgress.progress?.filter(p => FULL_ACCESS_IDS.includes(p.moduleId) || PRACTICAL_IDS.includes(p.moduleId)).length || 0)
  };
-
- // Split modules into sections based on route
- const route = user?.trainingRoute || 'FULL_ACCESS';
- let theoryModules = [];
- let practicalModules = [];
- let extraAddOnModules = [];
-
- if (route === 'CUSTOMIZED_02') {
- // Customized-02: All modules are available, no sections
- theoryModules = modules.filter(m => THEORY_IDS.includes(m.id));
- practicalModules = modules.filter(m => PRACTICAL_IDS.includes(m.id));
- extraAddOnModules = modules.filter(m => EXTRA_ADD_ON_IDS.includes(m.id));
- } else {
- // FULL_ACCESS and CUSTOMIZED_01: Only 19 modules
- theoryModules = modules.filter(m => THEORY_IDS.includes(m.id));
- practicalModules = modules.filter(m => PRACTICAL_IDS.includes(m.id));
- // No extra add-ons for these routes
- }
-
- const sortedTheory = [...theoryModules].sort((a, b) => THEORY_IDS.indexOf(a.id) - THEORY_IDS.indexOf(b.id));
-
+ const fullAccessModules = modules.filter(m => FULL_ACCESS_IDS.includes(m.id));
+ const practicalModules = modules.filter(m => PRACTICAL_IDS.includes(m.id));
+ const extraAddOnModules = modules.filter(m => EXTRA_ADD_ON_IDS.includes(m.id));
+ const sortedFullAccess = [...fullAccessModules].sort((a, b) => FULL_ACCESS_IDS.indexOf(a.id) - FULL_ACCESS_IDS.indexOf(b.id));
  return (
  <div className="min-h-screen flex flex-col bg-slate-50">
  <Header />
@@ -1428,11 +1355,7 @@ function App() {
  <BookOpen className="w-6 h-6 text-indigo-600" />
  <div>
  <h1 className="font-bold text-slate-800">Trainee Dashboard</h1>
- <p className="text-xs text-slate-500">
- {route === 'FULL_ACCESS' && 'Full Access (Sequential Theory + Practical Code)'}
- {route === 'CUSTOMIZED_01' && 'Custom-01 (All Theory Available + Practical Code)'}
- {route === 'CUSTOMIZED_02' && 'Custom-02 (Admin Selected - All Available)'}
- </p>
+ <p className="text-xs text-slate-500">{user.name || user.email}</p>
  </div>
  </div>
  <button onClick={() => setUser(null)} className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition">
@@ -1440,42 +1363,37 @@ function App() {
  </button>
  </div>
  </div>
-
  <div className="flex-1 max-w-7xl mx-auto p-6">
  <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-xl p-6 mb-8 text-white shadow-lg">
  <h2 className="text-2xl font-bold mb-1">Welcome back, {user.name || 'Trainee'}! ?</h2>
- <p className="text-indigo-100">
- {route === 'FULL_ACCESS' && 'Complete theory modules in order. Practical modules unlock after all theory is done.'}
- {route === 'CUSTOMIZED_01' && 'All theory modules are available. Practical modules unlock after all theory is done.'}
- {route === 'CUSTOMIZED_02' && 'All selected modules are available immediately.'}
- </p>
+ <p className="text-indigo-100">Complete your mandatory training assessments</p>
  </div>
-
  <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
- <div className="bg-white rounded-xl border p-5"><div className="text-2xl font-bold text-indigo-600">{stats.total}</div><p className="text-sm">Total Modules</p></div>
+ <div className="bg-white rounded-xl border p-5"><div className="text-2xl font-bold text-indigo-600">{stats.total}</div><p className="text-sm">Mandatory Modules</p></div>
  <div className="bg-white rounded-xl border p-5"><div className="text-2xl font-bold text-green-600">{stats.completed}</div><p className="text-sm">Completed ?</p></div>
  <div className="bg-white rounded-xl border p-5"><div className="text-2xl font-bold text-yellow-600">{stats.inProgress}</div><p className="text-sm">In Progress</p></div>
  <div className="bg-white rounded-xl border p-5"><div className="text-2xl font-bold text-slate-400">{stats.locked}</div><p className="text-sm">Locked ?</p></div>
  </div>
-
- {/* SECTION 1: Theory Modules */}
- {sortedTheory.length > 0 && (
+ {/* SECTION 1: Full-Access Modules */}
  <div className="mb-8">
  <div className="flex items-center gap-2 mb-4">
  <div className="w-1 h-6 bg-indigo-600 rounded-full"></div>
- <h3 className="text-lg font-semibold text-slate-800">
- {route === 'FULL_ACCESS' ? '? Theory Modules (Sequential)' : '? Theory Modules (All Available)'}
- </h3>
- <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">{sortedTheory.length} modules</span>
+ <h3 className="text-lg font-semibold text-slate-800">? Mandatory Training Modules</h3>
+ <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">{sortedFullAccess.length} modules</span>
+ <span className="text-xs text-slate-400 ml-2">(Complete in order 1-17)</span>
  </div>
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
- {sortedTheory.map((m) => {
+ {sortedFullAccess.map((m, index) => {
  const status = getModuleStatus(m.id);
+ const displayNumber = index + 1;
  return (
  <div key={m.id} className="bg-white rounded-xl border p-5 hover:shadow-lg transition">
  <div className="flex justify-between items-start mb-3">
  <div>
+ <div className="flex items-center gap-2">
+ <span className="text-xs font-mono text-slate-400 bg-slate-100 px-2 py-0.5 rounded">#{displayNumber}</span>
  <h3 className="font-semibold text-slate-800">{m.name}</h3>
+ </div>
  <p className="text-xs text-slate-500 mt-1">Pass: {m.passMark}/20 (75%)</p>
  </div>
  {status === 'completed' && <CheckCircle className="text-green-500 w-5 h-5" />}
@@ -1492,7 +1410,7 @@ function App() {
  )}
  {status === 'locked' && (
  <button disabled className="w-full mt-2 bg-gray-100 text-gray-400 py-2 rounded-lg cursor-not-allowed">
- {route === 'FULL_ACCESS' ? '? Complete previous module' : '? Not available'}
+ {user?.trainingRoute === 'CUSTOMIZED_01' ? '? Not in your selection' : '? Complete previous module'}
  </button>
  )}
  {status === 'completed' && (
@@ -1503,9 +1421,7 @@ function App() {
  })}
  </div>
  </div>
- )}
-
- {/* SECTION 2: Practical Modules */}
+ {/* SECTION 2: Final Practical Assessment */}
  {practicalModules.length > 0 && (
  <div className="mb-8">
  <div className="flex items-center gap-2 mb-4">
@@ -1516,10 +1432,10 @@ function App() {
  <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-5 mb-4">
  <p className="text-sm text-amber-700">
  <Lock className="w-4 h-4 inline mr-1" /> 
- Available only after completing ALL theory modules and entering the practical code.
+ Available only after completing ALL 17 mandatory modules and entering the practical code.
  </p>
  </div>
- <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+ <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-5">
  {practicalModules.map(m => {
  const status = getModuleStatus(m.id);
  return (
@@ -1554,7 +1470,7 @@ function App() {
  )}
  {status === 'locked' && (
  <button disabled className="w-full mt-2 bg-gray-100 text-gray-400 py-2 rounded-lg cursor-not-allowed">
- Complete All Theory Modules First
+ Complete All 17 Modules First
  </button>
  )}
  {status === 'completed' && (
@@ -1566,9 +1482,8 @@ function App() {
  </div>
  </div>
  )}
-
- {/* SECTION 3: EXTRA-Add-Ons (Only for CUSTOMIZED_02) */}
- {route === 'CUSTOMIZED_02' && extraAddOnModules.length > 0 && (
+ {/* SECTION 3: EXTRA-Add-Ons */}
+ {extraAddOnModules.length > 0 && (
  <div className="mb-8">
  <button 
  onClick={() => setExtraAddOnsOpen(!extraAddOnsOpen)}

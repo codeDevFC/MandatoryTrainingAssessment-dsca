@@ -401,84 +401,6 @@ function App() {
  return 'locked';
  }
 
- // ===== FULL_ACCESS_01: Theory sequential → Practical sequential (NO CODE) =====
- if (route === 'FULL_ACCESS_01') {
-   // Theory: Sequential unlock (must complete in order)
-   if (isTheory) {
-     const theoryIndex = THEORY_IDS.indexOf(moduleId);
-     if (theoryIndex === 0) return 'available';
-     const prevTheoryId = THEORY_IDS[theoryIndex - 1];
-     const prevProgress = progress.find(x => x.moduleId === prevTheoryId);
-     if (prevProgress?.status === 'passed') return 'available';
-     return 'locked';
-   }
-   // Practical: Sequential unlock like theory - NO CODE REQUIRED
-   if (isPractical) {
-     // First, check ALL theory modules are completed
-     const allTheoryPassed = THEORY_IDS.every(id => {
-       const p = progress.find(x => x.moduleId === id);
-       return p?.status === 'passed';
-     });
-     if (!allTheoryPassed) return 'locked';
-     
-     // Then check practical modules sequentially
-     // Module 8 first, then Module 17
-     if (moduleId === 8) {
-       // Module 8 is available after all theory is done
-       return 'available';
-     }
-     if (moduleId === 17) {
-       // Module 17 is available only after Module 8 is completed
-       const module8Progress = progress.find(x => x.moduleId === 8);
-       if (module8Progress?.status === 'passed') {
-         return 'available';
-       }
-       return 'locked';
-     }
-     return 'locked';
-   }
-   return 'locked';
- }
-
- // ===== FULL_ACCESS_01: Theory sequential → Practical sequential (NO CODE) =====
- if (route === 'FULL_ACCESS_01') {
-   // Theory: Sequential unlock (must complete in order)
-   if (isTheory) {
-     const theoryIndex = THEORY_IDS.indexOf(moduleId);
-     if (theoryIndex === 0) return 'available';
-     const prevTheoryId = THEORY_IDS[theoryIndex - 1];
-     const prevProgress = progress.find(x => x.moduleId === prevTheoryId);
-     if (prevProgress?.status === 'passed') return 'available';
-     return 'locked';
-   }
-   // Practical: Sequential unlock like theory - NO CODE REQUIRED
-   if (isPractical) {
-     // First, check ALL theory modules are completed
-     const allTheoryPassed = THEORY_IDS.every(id => {
-       const p = progress.find(x => x.moduleId === id);
-       return p?.status === 'passed';
-     });
-     if (!allTheoryPassed) return 'locked';
-     
-     // Then check practical modules sequentially
-     // Module 8 first, then Module 17
-     if (moduleId === 8) {
-       // Module 8 is available after all theory is done
-       return 'available';
-     }
-     if (moduleId === 17) {
-       // Module 17 is available only after Module 8 is completed
-       const module8Progress = progress.find(x => x.moduleId === 8);
-       if (module8Progress?.status === 'passed') {
-         return 'available';
-       }
-       return 'locked';
-     }
-     return 'locked';
-   }
-   return 'locked';
- }
-
  // ===== FULL_ACCESS: Theory sequential → Practical code =====
  if (route === 'FULL_ACCESS') {
  // Theory: Sequential unlock
@@ -1238,8 +1160,7 @@ function App() {
  }} 
  className="text-xs border rounded px-2 py-1 bg-white focus:ring-2 focus:ring-indigo-500 w-32"
  >
- <option value="FULL_ACCESS_01">? Full Access 01 (19 - Sequential, NO Code)</option>
- <option value="FULL_ACCESS">? Full Access (19 - Sequential + Code)</option>
+ <option value="FULL_ACCESS">? Full Access (19 - Sequential)</option>
  <option value="CUSTOMIZED_01">? Custom-01 (19 - All Theory Available)</option>
  <option value="CUSTOMIZED_02">? Custom-02 (Admin Selects - All Available)</option>
  </select>
@@ -1508,9 +1429,7 @@ function App() {
  <div>
  <h1 className="font-bold text-slate-800">Trainee Dashboard</h1>
  <p className="text-xs text-slate-500">
- {route === 'FULL_ACCESS_01' && 'Full Access 01 (Sequential - NO Code)'}
- {route === 'FULL_ACCESS_01' && 'Full Access 01 (Sequential - NO Code)'}
- {route === 'FULL_ACCESS' && 'Full Access (Sequential Theory + Practical Code)'}}}
+ {route === 'FULL_ACCESS' && 'Full Access (Sequential Theory + Practical Code)'}
  {route === 'CUSTOMIZED_01' && 'Custom-01 (All Theory Available + Practical Code)'}
  {route === 'CUSTOMIZED_02' && 'Custom-02 (Admin Selected - All Available)'}
  </p>
@@ -1526,9 +1445,7 @@ function App() {
  <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-xl p-6 mb-8 text-white shadow-lg">
  <h2 className="text-2xl font-bold mb-1">Welcome back, {user.name || 'Trainee'}! ?</h2>
  <p className="text-indigo-100">
- {route === 'FULL_ACCESS_01' && 'Complete theory modules in order. Practical modules unlock after all theory is done. NO CODE NEEDED.'}
- {route === 'FULL_ACCESS_01' && 'Complete theory modules in order. Practical modules unlock after all theory is done. NO CODE NEEDED.'}
- {route === 'FULL_ACCESS' && 'Complete theory modules in order. Practical modules unlock after all theory is done.'}}}
+ {route === 'FULL_ACCESS' && 'Complete theory modules in order. Practical modules unlock after all theory is done.'}
  {route === 'CUSTOMIZED_01' && 'All theory modules are available. Practical modules unlock after all theory is done.'}
  {route === 'CUSTOMIZED_02' && 'All selected modules are available immediately.'}
  </p>

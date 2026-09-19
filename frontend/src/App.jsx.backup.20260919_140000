@@ -17,12 +17,18 @@ import { Link } from 'react-router-dom';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002';
 
+// ===== MODULE DEFINITIONS =====
+// Theory modules (17 total) - must be completed in sequential order
 const THEORY_IDS = [1, 2, 3, 4, 6, 7, 10, 11, 12, 14, 15, 16, 18, 19, 21, 22, 23];
+// Practical modules (2 total) - unlocked after all theory, act as 18 & 19 in sequence
 const PRACTICAL_IDS = [8, 17];
+// Extra add-ons (4 total) - optional, always available for Custom-02
 const EXTRA_ADD_ON_IDS = [5, 9, 13, 20];
+// Full sequence of 19 modules for Full Access
 const FULL_ACCESS_IDS = [...THEORY_IDS, ...PRACTICAL_IDS];
 
 function App() {
+    // ===== STATE =====
     const [user, setUser] = useState(null);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -33,6 +39,7 @@ function App() {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
+    // Module & Assessment State
     const [modules, setModules] = useState([]);
     const [selectedModule, setSelectedModule] = useState(null);
     const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -42,6 +49,7 @@ function App() {
     const [startTime, setStartTime] = useState(null);
     const [userProgress, setUserProgress] = useState({ progress: [], attempts: [] });
 
+    // Admin State
     const [registeredStudents, setRegisteredStudents] = useState([]);
     const [filteredStudents, setFilteredStudents] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
@@ -50,7 +58,6 @@ function App() {
     const [generatedCodes, setGeneratedCodes] = useState([]);
     const [showCodes, setShowCodes] = useState(false);
     const [trainingRoute, setTrainingRoute] = useState('FULL_ACCESS');
-    const [selectedCustomModules, setSelectedCustomModules] = useState([]);
     const [allModulesList, setAllModulesList] = useState([]);
     const [selectedStudents, setSelectedStudents] = useState([]);
     const [selectAll, setSelectAll] = useState(false);
@@ -69,14 +76,16 @@ function App() {
     const [studentCustomModules, setStudentCustomModules] = useState({});
     const [showModulePicker, setShowModulePicker] = useState(false);
     const [currentPickerStudent, setCurrentPickerStudent] = useState(null);
-    const [pickerRouteType, setPickerRouteType] = useState('CUSTOMIZED_01');
+    const [pickerRouteType, setPickerRouteType] = useState("CUSTOMIZED_01");
     const [showPracticalModal, setShowPracticalModal] = useState(false);
     const [pendingPracticalModule, setPendingPracticalModule] = useState(null);
     const [practicalModuleName, setPracticalModuleName] = useState('');
     const [practicalCodeInput, setPracticalCodeInput] = useState('');
     const [practicalCodeExpiry, setPracticalCodeExpiry] = useState(null);
     const [generatingPracticalCode, setGeneratingPracticalCode] = useState(false);
+    const [extraAddOnsOpen, setExtraAddOnsOpen] = useState(false);
 
+    // ===== FETCH FUNCTIONS =====
     const fetchModules = async (userId = null) => {
         try {
             const url = userId ? `${API_URL}/api/modules?userId=${userId}` : `${API_URL}/api/modules`;
@@ -145,6 +154,7 @@ function App() {
                 setError(data.error || 'Failed to fetch student details');
             }
         } catch (err) {
+            console.error('Fetch student error:', err);
             setError('Failed to fetch student details');
         } finally {
             setLoading(false);
@@ -164,6 +174,7 @@ function App() {
         }
     };
 
+    // ===== LOGIN HANDLERS =====
     const handleAdminLogin = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -217,6 +228,7 @@ function App() {
         }
     };
 
+    // ===== MODULE ASSESSMENT =====
     const startModule = async (module) => {
         try {
             const res = await fetch(`${API_URL}/api/modules/${module.id}`);
@@ -257,37 +269,66 @@ function App() {
         }
     };
 
+    // ===== GET MODULE STATUS (CORE LOGIC) =====
+    // This is the heart of the application logic.
+    // It determines which modules are available, locked, or completed.
     const getModuleStatus = (moduleId) => {
         if (user?.role !== 'TRAINEE') return 'available';
+
         const route = user?.trainingRoute || 'FULL_ACCESS';
         const progress = userProgress.progress || [];
         const moduleProgress = progress.find(x => x.moduleId === moduleId);
+
+        // 1. Already passed -> Completed
         if (moduleProgress?.status === 'passed') return 'completed';
+
         const isPractical = PRACTICAL_IDS.includes(moduleId);
 
+        // 2. Handle FULL_ACCESS (Sequential Theory + Sequential Practical, NO CODE)
         if (route === 'FULL_ACCESS') {
+            // A. Practical Modules (8 and 17)
             if (isPractical) {
+                // Check if ALL theory modules are passed
                 const allTheoryPassed = THEORY_IDS.every(id => {
                     const p = progress.find(x => x.moduleId === id);
                     return p?.status === 'passed';
                 });
+
                 if (!allTheoryPassed) return 'locked';
+
+                // If all theory passed, Practical modules become available
+                // Module 8 is the 18th module in sequence
                 if (moduleId === 8) return 'available';
+
+                // Module 17 is the 19th module in sequence, only available after Module 8 is passed
                 if (moduleId === 17) {
                     const module8Progress = progress.find(x => x.moduleId === 8);
-                    if (module8Progress?.status === 'passed') return 'available';
+                    if (module8Progress?.status === 'passed') {
+                        return 'available';
+                    }
                     return 'locked';
                 }
             }
+
+            // B. Theory Modules (Sequential)
             const theoryIndex = THEORY_IDS.indexOf(moduleId);
-            if (theoryIndex === -1) return 'locked';
+            if (theoryIndex === -1) return 'locked'; // Should not happen for Full Access
+
+            // The first theory module is always available
             if (theoryIndex === 0) return 'available';
+
+            // Check if the previous theory module is passed
             const prevTheoryId = THEORY_IDS[theoryIndex - 1];
             const prevProgress = progress.find(x => x.moduleId === prevTheoryId);
-            if (prevProgress?.status === 'passed') return 'available';
+
+            if (prevProgress?.status === 'passed') {
+                return 'available';
+            }
+
             return 'locked';
         }
 
+        // 3. Handle CUSTOMIZED_01 (All Theory Available, Practical needs code) - Legacy
         if (route === 'CUSTOMIZED_01') {
             if (isPractical) {
                 const allTheoryPassed = THEORY_IDS.every(id => {
@@ -295,6 +336,7 @@ function App() {
                     return p?.status === 'passed';
                 });
                 if (!allTheoryPassed) return 'locked';
+
                 let practicalModules = {};
                 if (user?.practicalModules) {
                     try { practicalModules = typeof user.practicalModules === 'string' ? JSON.parse(user.practicalModules) : user.practicalModules; } catch (e) { practicalModules = {}; }
@@ -302,14 +344,19 @@ function App() {
                 if (practicalModules[moduleId]?.completed) return 'available';
                 return 'practical_locked';
             } else {
+                // Theory modules are all available immediately
                 const selectedModules = user?.selectedModules ? JSON.parse(user.selectedModules) : [];
-                if (selectedModules.length > 0 && !selectedModules.includes(moduleId)) return 'locked';
+                if (selectedModules.length > 0 && !selectedModules.includes(moduleId)) {
+                    return 'locked';
+                }
                 return 'available';
             }
         }
+
         return 'locked';
     };
 
+    // ===== ADMIN: BATCH CODE GENERATION =====
     const batchGenerateCodes = async () => {
         const validStudents = studentBatch.filter(s => s.surname.trim() && s.firstName.trim() && s.phone.trim());
         if (validStudents.length === 0) {
@@ -329,7 +376,8 @@ function App() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    students: validStudents, trainingRoute,
+                    students: validStudents,
+                    trainingRoute,
                     selectedModules: trainingRoute === 'CUSTOMIZED_01' ? selectedCustomModules : []
                 })
             });
@@ -368,12 +416,6 @@ function App() {
         setStudentBatch(newBatch);
     };
 
-    const toggleModuleSelection = (moduleId) => {
-        setSelectedCustomModules(prev =>
-            prev.includes(moduleId) ? prev.filter(id => id !== moduleId) : [...prev, moduleId]
-        );
-    };
-
     const copyAllCodes = () => {
         const codesText = generatedCodes.map(c => `${c.name}: ${c.code}`).join('\n');
         navigator.clipboard.writeText(codesText);
@@ -383,7 +425,8 @@ function App() {
 
     const printCodes = () => {
         const printWindow = window.open('', '_blank');
-        let html = '<!DOCTYPE html><html><head><title>Student Login Codes</title>';
+        let html = '';
+        html += '<!DOCTYPE html><html><head><title>Student Login Codes</title>';
         html += '<style>body{font-family:Arial,sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ddd;padding:8px;text-align:left;}th{background-color:#4f46e5;color:white;}</style>';
         html += '</head><body><h1>Student Login Credentials</h1>';
         html += '<p>Generated on ' + new Date().toLocaleString() + '</p>';
@@ -466,108 +509,6 @@ function App() {
         }
     };
 
-    const deleteUser = async () => {
-        if (deleteConfirmText !== 'DELETE') {
-            setError('Please type DELETE to confirm');
-            return;
-        }
-        setLoading(true);
-        try {
-            const response = await fetch(`${API_URL}/api/admin/delete-user/${deleteUserId}`, { method: 'DELETE' });
-            if (response.ok) {
-                setSuccess('Student deleted successfully');
-                fetchRegisteredStudents();
-                setShowDeleteConfirm(false);
-                setDeleteUserId(null);
-                setDeleteConfirmText('');
-                setSelectedStudents([]);
-                setSelectAll(false);
-            } else {
-                const data = await response.json();
-                setError(data.error || 'Failed to delete user');
-            }
-        } catch (err) {
-            setError('Failed to delete user');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const bulkDeleteUsers = async () => {
-        if (bulkDeleteConfirmText !== 'DELETE') {
-            setError('Please type DELETE to confirm bulk deletion');
-            return;
-        }
-        if (selectedStudents.length === 0) {
-            setError('No students selected');
-            return;
-        }
-        setLoading(true);
-        try {
-            const response = await fetch(`${API_URL}/api/admin/bulk-delete-users`, {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userIds: selectedStudents })
-            });
-            const data = await response.json();
-            if (response.ok) {
-                setSuccess(`Successfully deleted ${data.count} students`);
-                setSelectedStudents([]);
-                setSelectAll(false);
-                fetchRegisteredStudents();
-                setShowBulkDeleteConfirm(false);
-                setBulkDeleteConfirmText('');
-            } else {
-                setError(data.error || 'Failed to delete users');
-            }
-        } catch (err) {
-            setError('Failed to delete users');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const toggleStudentSelection = (studentId) => {
-        setSelectedStudents(prev =>
-            prev.includes(studentId) ? prev.filter(id => id !== studentId) : [...prev, studentId]
-        );
-    };
-
-    const toggleSelectAll = () => {
-        if (selectAll) {
-            setSelectedStudents([]);
-            setSelectAll(false);
-        } else {
-            const allIds = filteredStudents.map(s => s.id);
-            setSelectedStudents(allIds);
-            setSelectAll(true);
-        }
-    };
-
-    const generatePracticalCode = async () => {
-        setGeneratingPracticalCode(true);
-        try {
-            const response = await fetch(`${API_URL}/api/admin/generate-practical-code`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ generatedBy: user?.email || 'admin' })
-            });
-            const data = await response.json();
-            if (response.ok) {
-                setPracticalCodeInput(data.code);
-                setPracticalCodeExpiry(data.expiresAt);
-                setSuccess(`New practical code generated: ${data.code}`);
-                setTimeout(() => setSuccess(''), 5000);
-            } else {
-                setError(data.error || 'Failed to generate practical code');
-            }
-        } catch (err) {
-            setError('Failed to generate practical code');
-        } finally {
-            setGeneratingPracticalCode(false);
-        }
-    };
-
     const generateFullReport = async (student) => {
         setReportLoading(true);
         try {
@@ -598,11 +539,13 @@ function App() {
             if (str === null || str === undefined) return 'N/A';
             return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         };
+
         const studentName = esc(reportData.user?.name || 'N/A');
         const studentEmail = esc(reportData.user?.email || 'N/A');
         const studentPhone = esc(reportData.user?.phone || 'N/A');
 
-        let html = '<!DOCTYPE html><html><head>';
+        let html = '';
+        html += '<!DOCTYPE html><html><head>';
         html += '<title>COHT Training Assessment Report - ' + studentName + '</title>';
         html += '<meta charset="UTF-8">';
         html += '<style>';
@@ -610,7 +553,7 @@ function App() {
         html += 'body { font-family: "Segoe UI", Arial, sans-serif; background: #f0f2f5; padding: 40px; margin: 0 auto; }';
         html += '.report-container { max-width: 1100px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); overflow: hidden; }';
         html += '.header { background: linear-gradient(135deg, #1e664e 0%, #0f4a38 100%); color: white; padding: 30px 20px; text-align: center; }';
-        html += '.header h1 { font-size: 24px; margin: 0; }';
+        html += '.header h1 { font-size: 24px; margin: 0; letter-spacing: 0.5px; }';
         html += '.header p { opacity: 0.9; font-size: 13px; margin-top: 5px; }';
         html += '.section { padding: 28px 32px; border-bottom: 1px solid #e2e8f0; }';
         html += '.section-title { font-size: 18px; font-weight: bold; color: #1e293b; margin-bottom: 20px; padding-bottom: 8px; border-bottom: 3px solid #1e664e; display: inline-block; }';
@@ -732,7 +675,7 @@ function App() {
                         html += '<td>' + esc(q.questionText || 'N/A') + '</td>';
                         html += '<td class="' + (isCorrect ? 'answer-correct' : 'answer-incorrect') + '">' + esc(q.userAnswer || 'N/A') + '</td>';
                         html += '<td class="answer-correct">' + esc(q.correctAnswer || 'N/A') + '</td>';
-                        html += '<td>' + (isCorrect ? 'OK' : 'X') + '</td></tr>';
+                        html += '<td>' + (isCorrect ? '✔' : '✘') + '</td></tr>';
                     });
                     html += '</tbody></table>';
                 } else {
@@ -744,7 +687,7 @@ function App() {
         html += '</div>';
         html += '<div class="footer">';
         html += '<p>This is an official training record generated by COHT Training Platform.</p>';
-        html += '<p>' + new Date().getFullYear() + ' Centre of Healthcare Training - All Rights Reserved</p>';
+        html += '<p>© ' + new Date().getFullYear() + ' Centre of Healthcare Training - All Rights Reserved</p>';
         html += '</div></div>';
         html += '<div class="no-print">';
         html += '<button class="print-btn" onclick="window.print()">Print / Save as PDF</button>';
@@ -754,6 +697,109 @@ function App() {
         printWindow.document.close();
     };
 
+    const deleteUser = async () => {
+        if (deleteConfirmText !== 'DELETE') {
+            setError('Please type DELETE to confirm');
+            return;
+        }
+        setLoading(true);
+        try {
+            const response = await fetch(`${API_URL}/api/admin/delete-user/${deleteUserId}`, { method: 'DELETE' });
+            if (response.ok) {
+                setSuccess('Student deleted successfully');
+                fetchRegisteredStudents();
+                setShowDeleteConfirm(false);
+                setDeleteUserId(null);
+                setDeleteConfirmText('');
+                setSelectedStudents([]);
+                setSelectAll(false);
+            } else {
+                const data = await response.json();
+                setError(data.error || 'Failed to delete user');
+            }
+        } catch (err) {
+            setError('Failed to delete user');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const bulkDeleteUsers = async () => {
+        if (bulkDeleteConfirmText !== 'DELETE') {
+            setError('Please type DELETE to confirm bulk deletion');
+            return;
+        }
+        if (selectedStudents.length === 0) {
+            setError('No students selected');
+            return;
+        }
+        setLoading(true);
+        try {
+            const response = await fetch(`${API_URL}/api/admin/bulk-delete-users`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userIds: selectedStudents })
+            });
+            const data = await response.json();
+            if (response.ok) {
+                setSuccess(`Successfully deleted ${data.count} students`);
+                setSelectedStudents([]);
+                setSelectAll(false);
+                fetchRegisteredStudents();
+                setShowBulkDeleteConfirm(false);
+                setBulkDeleteConfirmText('');
+            } else {
+                setError(data.error || 'Failed to delete users');
+            }
+        } catch (err) {
+            setError('Failed to delete users');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const toggleStudentSelection = (studentId) => {
+        setSelectedStudents(prev =>
+            prev.includes(studentId) ? prev.filter(id => id !== studentId) : [...prev, studentId]
+        );
+    };
+
+    const toggleSelectAll = () => {
+        if (selectAll) {
+            setSelectedStudents([]);
+            setSelectAll(false);
+        } else {
+            const allIds = filteredStudents.map(s => s.id);
+            setSelectedStudents(allIds);
+            setSelectAll(true);
+        }
+    };
+
+    const generatePracticalCode = async () => {
+        setGeneratingPracticalCode(true);
+        try {
+            const response = await fetch(`${API_URL}/api/admin/generate-practical-code`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ generatedBy: user?.email || 'admin' })
+            });
+            const data = await response.json();
+            if (response.ok) {
+                setPracticalCodeInput(data.code);
+                setPracticalCodeExpiry(data.expiresAt);
+                setSuccess(`New practical code generated: ${data.code}`);
+                setTimeout(() => setSuccess(''), 5000);
+            } else {
+                setError(data.error || 'Failed to generate practical code');
+            }
+        } catch (err) {
+            setError('Failed to generate practical code');
+        } finally {
+            setGeneratingPracticalCode(false);
+        }
+    };
+
+    // ===== EFFECTS =====
     useEffect(() => {
         if (searchTerm) {
             setFilteredStudents(registeredStudents.filter(s =>
@@ -862,7 +908,7 @@ function App() {
                         <span className="text-sm font-medium text-slate-700 hidden sm:inline">{user.name || user.email}</span>
                     </div>
                 </div>
-                <div className="flex-1 max-w-3xl mx-auto p-4 sm:p-6 w-full">
+                <div className="flex-1 max-w-3xl mx-auto p-4 sm:p-6">
                     <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-8 shadow-sm">
                         <div className="mb-6">
                             <div className="flex justify-between items-center mb-2">
@@ -942,6 +988,7 @@ function App() {
                     </div>
                 </div>
                 <div className="max-w-7xl mx-auto p-4 sm:p-6 flex-1 w-full">
+                    {/* Tabs - Mobile Scrollable */}
                     <div className="flex gap-2 mb-6 border-b overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0">
                         <button onClick={() => setActiveTab('dashboard')} className={`flex-shrink-0 px-4 py-2.5 rounded-t-lg font-medium transition-all flex items-center gap-2 ${activeTab === 'dashboard' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
                             <LayoutDashboard size={18} /> Dashboard
@@ -960,6 +1007,7 @@ function App() {
                     {error && <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg mb-4 flex items-center gap-2"><AlertCircle size={18} /> {error}</div>}
                     {success && <div className="bg-green-50 border border-green-200 text-green-700 p-3 rounded-lg mb-4 flex items-center gap-2"><CheckCircle size={18} /> {success}</div>}
 
+                    {/* Dashboard Tab */}
                     {activeTab === 'dashboard' && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                             <div className="bg-white rounded-xl border p-6 shadow-sm hover:shadow-md transition">
@@ -986,6 +1034,7 @@ function App() {
                         </div>
                     )}
 
+                    {/* Students Tab */}
                     {activeTab === 'students' && (
                         <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
                             {selectedStudents.length > 0 && (
@@ -994,9 +1043,11 @@ function App() {
                                         <CheckSquare className="w-5 h-5 text-indigo-600" />
                                         <span className="text-sm text-indigo-800 font-medium">{selectedStudents.length} student(s) selected</span>
                                     </div>
-                                    <button onClick={() => setShowBulkDeleteConfirm(true)} className="flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm shadow-sm">
-                                        <Trash2 size={16} /> Delete Selected
-                                    </button>
+                                    <div className="flex flex-wrap gap-2">
+                                        <button onClick={() => setShowBulkDeleteConfirm(true)} className="flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm shadow-sm">
+                                            <Trash2 size={16} /> Delete Selected
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                             <div className="p-4 border-b bg-slate-50">
@@ -1012,6 +1063,7 @@ function App() {
                                 </div>
                             </div>
 
+                            {/* Desktop Table */}
                             <div className="hidden md:block overflow-x-auto">
                                 <table className="w-full">
                                     <thead className="bg-gray-50 border-b">
@@ -1039,7 +1091,7 @@ function App() {
                                                 </td>
                                                 <td className="p-4">
                                                     <select
-                                                        value={studentRoutes[student.id] || 'FULL_ACCESS'}
+                                                        value={studentRoutes[student.id] || "FULL_ACCESS"}
                                                         onChange={(e) => {
                                                             const newRoute = e.target.value;
                                                             setStudentRoutes(prev => ({ ...prev, [student.id]: newRoute }));
@@ -1070,6 +1122,7 @@ function App() {
                                 {filteredStudents.length === 0 && <div className="text-center p-8 text-gray-500">No students found</div>}
                             </div>
 
+                            {/* Mobile Card List */}
                             <div className="md:hidden divide-y divide-slate-200">
                                 {filteredStudents.map(student => (
                                     <div key={student.id} className="p-4 bg-white">
@@ -1101,6 +1154,7 @@ function App() {
                         </div>
                     )}
 
+                    {/* Generate Codes Tab */}
                     {activeTab === 'generate' && (
                         <div className="bg-white rounded-xl border shadow-sm p-4 sm:p-6">
                             <h2 className="text-xl font-bold text-gray-800 mb-4">Batch Login Code Generation</h2>
@@ -1108,13 +1162,13 @@ function App() {
                                 <label className="block font-semibold text-gray-700 mb-3">Access Level:</label>
                                 <div className="flex flex-col sm:flex-row gap-4">
                                     <label className="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" name="trainingRoute" value="FULL_ACCESS" checked={trainingRoute === 'FULL_ACCESS'}
-                                            onChange={() => setTrainingRoute('FULL_ACCESS')} className="w-4 h-4 text-indigo-600" />
+                                        <input type="radio" name="trainingRoute" value="FULL_ACCESS" checked={trainingRoute === "FULL_ACCESS"}
+                                            onChange={() => setTrainingRoute("FULL_ACCESS")} className="w-4 h-4 text-indigo-600" />
                                         <span className="text-sm font-medium">Full Access (Sequential - Theory &amp; Practical)</span>
                                     </label>
                                     <label className="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" name="trainingRoute" value="CUSTOMIZED_01" checked={trainingRoute === 'CUSTOMIZED_01'}
-                                            onChange={() => setTrainingRoute('CUSTOMIZED_01')} className="w-4 h-4 text-indigo-600" />
+                                        <input type="radio" name="trainingRoute" value="CUSTOMIZED_01" checked={trainingRoute === "CUSTOMIZED_01"}
+                                            onChange={() => setTrainingRoute("CUSTOMIZED_01")} className="w-4 h-4 text-indigo-600" />
                                         <span className="text-sm font-medium">Custom-01 (All Theory Available)</span>
                                     </label>
                                 </div>
@@ -1153,6 +1207,7 @@ function App() {
                         </div>
                     )}
 
+                    {/* Practical Code Tab */}
                     {activeTab === 'practical' && (
                         <div className="bg-white rounded-xl border shadow-sm p-4 sm:p-6">
                             <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
@@ -1192,7 +1247,7 @@ function App() {
                                         <span className="text-amber-600 font-medium"> This will invalidate the current code.</span>
                                     </p>
                                     <button onClick={generatePracticalCode} disabled={generatingPracticalCode} className="w-full bg-amber-600 text-white py-3 rounded-lg font-semibold hover:bg-amber-700 transition disabled:opacity-50 flex items-center justify-center gap-2">
-                                        {generatingPracticalCode ? 'Generating...' : <><KeyRound size={18} /> Generate New Practical Code</>}
+                                        {generatingPracticalCode ? <>Generating...</> : <><KeyRound size={18} /> Generate New Practical Code</>}
                                     </button>
                                     <p className="text-xs text-gray-400 mt-2 text-center">Modules 8 (First Aid) and 17 (Moving &amp; Handling)</p>
                                 </div>
@@ -1201,6 +1256,7 @@ function App() {
                     )}
                 </div>
 
+                {/* Modals */}
                 {showDeleteConfirm && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowDeleteConfirm(false)}>
                         <div className="bg-white rounded-2xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
@@ -1272,12 +1328,21 @@ function App() {
         locked: modules.length - (userProgress.progress?.length || 0)
     };
 
+    // Split modules into sections based on route
     const route = user?.trainingRoute || 'FULL_ACCESS';
     let theoryModules = [];
     let practicalModules = [];
+    let extraAddOnModules = [];
 
-    theoryModules = modules.filter(m => THEORY_IDS.includes(m.id));
-    practicalModules = modules.filter(m => PRACTICAL_IDS.includes(m.id));
+    if (route === 'CUSTOMIZED_01') {
+        theoryModules = modules.filter(m => THEORY_IDS.includes(m.id));
+        practicalModules = modules.filter(m => PRACTICAL_IDS.includes(m.id));
+        extraAddOnModules = modules.filter(m => EXTRA_ADD_ON_IDS.includes(m.id));
+    } else {
+        // FULL_ACCESS: Only 19 modules
+        theoryModules = modules.filter(m => THEORY_IDS.includes(m.id));
+        practicalModules = modules.filter(m => PRACTICAL_IDS.includes(m.id));
+    }
 
     const sortedTheory = [...theoryModules].sort((a, b) => THEORY_IDS.indexOf(a.id) - THEORY_IDS.indexOf(b.id));
 
@@ -1316,6 +1381,7 @@ function App() {
                     <div className="bg-white rounded-xl border p-4 sm:p-5"><div className="text-xl sm:text-2xl font-bold text-slate-400">{stats.locked}</div><p className="text-xs sm:text-sm">Locked</p></div>
                 </div>
 
+                {/* SECTION 1: Theory Modules */}
                 {sortedTheory.length > 0 && (
                     <div className="mb-8">
                         <div className="flex items-center gap-2 mb-4">
@@ -1360,6 +1426,7 @@ function App() {
                     </div>
                 )}
 
+                {/* SECTION 2: Practical Modules */}
                 {practicalModules.length > 0 && (
                     <div className="mb-8">
                         <div className="flex items-center gap-2 mb-4">

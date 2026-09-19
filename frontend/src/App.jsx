@@ -76,6 +76,7 @@ function App() {
     const [practicalCodeInput, setPracticalCodeInput] = useState('');
     const [practicalCodeExpiry, setPracticalCodeExpiry] = useState(null);
     const [generatingPracticalCode, setGeneratingPracticalCode] = useState(false);
+    const [extraAddOnsOpen, setExtraAddOnsOpen] = useState(false);
 
     const fetchModules = async (userId = null) => {
         try {
@@ -263,6 +264,11 @@ function App() {
         const progress = userProgress.progress || [];
         const moduleProgress = progress.find(x => x.moduleId === moduleId);
         if (moduleProgress?.status === 'passed') return 'completed';
+
+        // EXTRA Add-Ons are always available (optional modules)
+        if (EXTRA_ADD_ON_IDS.includes(moduleId)) {
+            return 'available';
+        }
         const isPractical = PRACTICAL_IDS.includes(moduleId);
 
         if (route === 'FULL_ACCESS') {
@@ -1275,9 +1281,11 @@ function App() {
     const route = user?.trainingRoute || 'FULL_ACCESS';
     let theoryModules = [];
     let practicalModules = [];
+    let extraAddOnModules = [];
 
     theoryModules = modules.filter(m => THEORY_IDS.includes(m.id));
     practicalModules = modules.filter(m => PRACTICAL_IDS.includes(m.id));
+    extraAddOnModules = modules.filter(m => EXTRA_ADD_ON_IDS.includes(m.id));
 
     const sortedTheory = [...theoryModules].sort((a, b) => THEORY_IDS.indexOf(a.id) - THEORY_IDS.indexOf(b.id));
 
@@ -1409,6 +1417,66 @@ function App() {
                         </div>
                     </div>
                 )}
+            
+                {/* SECTION 3: EXTRA-Add-Ons (Optional, Always Available) */}
+                {extraAddOnModules.length > 0 && (
+                    <div className="mb-8">
+                        <button
+                            onClick={() => setExtraAddOnsOpen(!extraAddOnsOpen)}
+                            className="w-full flex items-center justify-between p-4 bg-purple-50 border-2 border-purple-200 rounded-xl hover:bg-purple-100 transition"
+                        >
+                            <div className="flex items-center gap-3 flex-wrap">
+                                <Star className="w-5 h-5 text-purple-600" />
+                                <span className="text-lg font-semibold text-purple-800">EXTRA Add-Ons</span>
+                                <span className="text-xs bg-purple-200 text-purple-700 px-2 py-0.5 rounded-full">
+                                    {extraAddOnModules.length} modules
+                                </span>
+                                <span className="text-xs text-purple-600">(Optional - Always Available)</span>
+                            </div>
+                            {extraAddOnsOpen ? <ChevronUp className="w-5 h-5 text-purple-600" /> : <ChevronDown className="w-5 h-5 text-purple-600" />}
+                        </button>
+
+                        {extraAddOnsOpen && (
+                            <div className="mt-4 p-4 bg-purple-50/50 border border-purple-200 rounded-xl">
+                                <p className="text-sm text-purple-700 mb-4 flex items-center gap-2">
+                                    <Star className="w-4 h-4" />
+                                    These modules are optional and always available. They do not affect mandatory training completion.
+                                </p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                                    {extraAddOnModules.map(m => {
+                                        const progressEntry = userProgress.progress?.find(p => p.moduleId === m.id);
+                                        const isCompleted = progressEntry?.status === 'passed';
+                                        return (
+                                            <div key={m.id} className="bg-white rounded-xl border-2 border-purple-200 p-4 sm:p-5 hover:shadow-lg transition">
+                                                <div className="flex justify-between items-start mb-3">
+                                                    <div>
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <h3 className="font-semibold text-slate-800">{m.name}</h3>
+                                                            <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">Add-On</span>
+                                                        </div>
+                                                        <p className="text-xs text-slate-500 mt-1">Pass: {m.passMark}/20 (75%)</p>
+                                                    </div>
+                                                    {isCompleted && <CheckCircle className="text-green-500 w-5 h-5 flex-shrink-0" />}
+                                                </div>
+                                                {isCompleted ? (
+                                                    <div className="w-full mt-2 bg-green-50 text-green-600 py-2 rounded-lg text-center text-sm font-medium">Completed</div>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => startModule(m)}
+                                                        className="w-full mt-2 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition text-sm font-medium"
+                                                    >
+                                                        Start Module
+                                                    </button>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
             </div>
             <Footer />
         </div>

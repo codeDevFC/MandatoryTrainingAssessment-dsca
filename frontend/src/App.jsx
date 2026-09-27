@@ -62,6 +62,7 @@ function App() {
     const [reportData, setReportData] = useState(null);
     const [showReportModal, setShowReportModal] = useState(false);
     const [reportLoading, setReportLoading] = useState(false);
+    const [bulkPrintLoading, setBulkPrintLoading] = useState(false);
     const [showStudentDetails, setShowStudentDetails] = useState(false);
     const [selectedStudentDetails, setSelectedStudentDetails] = useState(null);
     const [generatedLoginDetails, setGeneratedLoginDetails] = useState(null);
@@ -574,6 +575,223 @@ function App() {
         }
     };
 
+    const bulkPrintReports = async () => {
+        if (selectedStudents.length === 0) {
+            setError('Please select at least one student');
+            return;
+        }
+        setBulkPrintLoading(true);
+        setError('');
+        try {
+            // Fetch all reports in parallel
+            const reports = await Promise.all(
+                selectedStudents.map(async (studentId) => {
+                    try {
+                        const res = await fetch(`${API_URL}/api/user/${studentId}/export`);
+                        if (!res.ok) return null;
+                        return await res.json();
+                    } catch (err) {
+                        console.error('Failed to fetch report for', studentId, err);
+                        return null;
+                    }
+                })
+            );
+
+            const validReports = reports.filter(r => r && r.user);
+            if (validReports.length === 0) {
+                setError('No valid reports to print');
+                setBulkPrintLoading(false);
+                return;
+            }
+
+            // Helper: escape HTML
+            const esc = (str) => {
+                if (str === null || str === undefined) return 'N/A';
+                return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            };
+
+            // Build combined HTML
+            let html = '<!DOCTYPE html><html><head>';
+            html += '<title>Bulk Assessment Reports - ' + validReports.length + ' Students</title>';
+            html += '<meta charset="UTF-8">';
+            html += '<style>';
+            html += '* { margin: 0; padding: 0; box-sizing: border-box; }';
+            html += 'body { font-family: "Segoe UI", Arial, sans-serif; background: #f0f2f5; padding: 20px; margin: 0 auto; }';
+            html += '.student-report { max-width: 1100px; margin: 0 auto 40px auto; background: white; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); overflow: hidden; page-break-after: always; break-after: page; }';
+            html += '.student-report:last-child { page-break-after: auto; break-after: auto; }';
+            html += '.header { background: linear-gradient(135deg, #1e664e 0%, #0f4a38 100%); color: white; padding: 30px 20px; text-align: center; }';
+            html += '.header h1 { font-size: 24px; margin: 0; }';
+            html += '.header p { opacity: 0.9; font-size: 13px; margin-top: 5px; }';
+            html += '.section { padding: 28px 32px; border-bottom: 1px solid #e2e8f0; }';
+            html += '.section-title { font-size: 18px; font-weight: bold; color: #1e293b; margin-bottom: 20px; padding-bottom: 8px; border-bottom: 3px solid #1e664e; display: inline-block; }';
+            html += '.info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 20px; }';
+            html += '.info-card { background: #f8fafc; padding: 18px 20px; border-radius: 12px; border-left: 4px solid #1e664e; }';
+            html += '.info-card label { font-size: 11px; color: #64748b; display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }';
+            html += '.info-card .value { font-size: 15px; font-weight: 600; color: #1e293b; }';
+            html += '.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 24px 0; }';
+            html += '.stat-card { text-align: center; padding: 24px 16px; border-radius: 12px; }';
+            html += '.stat-card.total { background: linear-gradient(135deg, #e0e7ff, #c7d2fe); color: #3730a3; }';
+            html += '.stat-card.passed { background: linear-gradient(135deg, #d1fae5, #a7f3d0); color: #065f46; }';
+            html += '.stat-card.failed { background: linear-gradient(135deg, #fee2e2, #fecaca); color: #991b1b; }';
+            html += '.stat-card.time { background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; }';
+            html += '.stat-number { font-size: 36px; font-weight: bold; margin-bottom: 8px; }';
+            html += '.stat-label { font-size: 13px; font-weight: 500; }';
+            html += '.module-card { background: #ffffff; border-radius: 12px; margin-bottom: 24px; overflow: hidden; border: 1px solid #e2e8f0; page-break-inside: avoid; break-inside: avoid; }';
+            html += '.module-header { padding: 16px 20px; background: #f8fafc; border-bottom: 2px solid #1e664e; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }';
+            html += '.module-name { font-size: 16px; font-weight: bold; color: #1e293b; }';
+            html += '.module-score { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; }';
+            html += '.score-passed { background: #d1fae5; color: #065f46; }';
+            html += '.score-failed { background: #fee2e2; color: #991b1b; }';
+            html += '.module-date { padding: 8px 20px; background: #fafbfc; font-size: 12px; color: #64748b; border-bottom: 1px solid #e2e8f0; }';
+            html += '.question-table { width: calc(100% - 40px); border-collapse: collapse; margin: 16px 20px; }';
+            html += '.question-table th { background: #1e664e; color: white; padding: 12px; text-align: left; font-size: 12px; font-weight: 600; }';
+            html += '.question-table td { padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 12px; vertical-align: top; }';
+            html += '.answer-correct { color: #16a34a; font-weight: 600; }';
+            html += '.answer-incorrect { color: #dc2626; font-weight: 600; }';
+            html += '.no-errors { padding: 20px; text-align: center; color: #16a34a; background: #f0fdf4; border-radius: 8px; margin: 16px 20px; }';
+            html += '.footer { text-align: center; padding: 24px; background: #f8fafc; font-size: 11px; color: #64748b; border-top: 1px solid #e2e8f0; }';
+            html += '.no-print { text-align: center; margin-top: 20px; padding-bottom: 40px; }';
+            html += '.no-print .print-btn { padding: 12px 30px; background: #1e664e; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; margin-right: 10px; }';
+            html += '.no-print .close-btn { padding: 12px 30px; background: #64748b; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; }';
+            html += '@media print { body { background: white; padding: 0; } .no-print { display: none; } .student-report { box-shadow: none; border-radius: 0; margin-bottom: 0; } }';
+            html += '</style></head><body>';
+
+            // Render each student's report
+            validReports.forEach((reportData, index) => {
+                const totalDuration = reportData.totalTimeSpent || 0;
+                const hours = Math.floor(totalDuration / 3600);
+                const minutes = Math.floor((totalDuration % 3600) / 60);
+                const passedModules = reportData.passedModules || 0;
+                const failedModules = reportData.failedModules || 0;
+                const totalAttempts = reportData.totalAttempts || 0;
+                const passRate = totalAttempts > 0 ? Math.round((passedModules / totalAttempts) * 100) : 0;
+                const avgScore = reportData.averageScore ? reportData.averageScore.toFixed(1) : '0';
+
+                const studentName = esc(reportData.user?.name || 'N/A');
+                const studentEmail = esc(reportData.user?.email || 'N/A');
+                const studentPhone = esc(reportData.user?.phone || 'N/A');
+
+                html += '<div class="student-report">';
+                html += '<div class="header"><h1>COHT Training Assessment Report</h1>';
+                html += '<p>Official Training Record - Generated on ' + new Date().toLocaleString() + '</p></div>';
+                html += '<div class="section"><div class="section-title">Trainee Information</div><div class="info-grid">';
+                html += '<div class="info-card"><label>Full Name</label><div class="value">' + studentName + '</div></div>';
+                html += '<div class="info-card"><label>Email Address</label><div class="value">' + studentEmail + '</div></div>';
+                html += '<div class="info-card"><label>Phone Number</label><div class="value">' + studentPhone + '</div></div>';
+                html += '<div class="info-card"><label>Training Route</label><div class="value">Full Access (Sequential)</div></div>';
+                html += '<div class="info-card"><label>Report ID</label><div class="value">' + Math.random().toString(36).substr(2, 9).toUpperCase() + '</div></div>';
+                html += '</div></div>';
+                html += '<div class="section"><div class="section-title">Performance Summary</div><div class="stats-grid">';
+                html += '<div class="stat-card total"><div class="stat-number">' + totalAttempts + '</div><div class="stat-label">Total Attempts</div></div>';
+                html += '<div class="stat-card passed"><div class="stat-number">' + passedModules + '</div><div class="stat-label">Passed Modules</div></div>';
+                html += '<div class="stat-card failed"><div class="stat-number">' + failedModules + '</div><div class="stat-label">Failed Modules</div></div>';
+                html += '<div class="stat-card time"><div class="stat-number">' + hours + 'h ' + minutes + 'm</div><div class="stat-label">Total Time Spent</div></div>';
+                html += '</div>';
+                html += '<div class="info-card" style="text-align: center; background: #f0fdf4; margin-top: 16px;">';
+                html += '<label>Overall Performance</label>';
+                html += '<div class="value" style="font-size: 24px;">' + passRate + '% Pass Rate | ' + avgScore + '% Average Score</div>';
+                html += '</div></div>';
+                html += '<div class="section"><div class="section-title">Detailed Module Results</div>';
+
+                const attempts = reportData.attempts || [];
+                if (attempts.length === 0) {
+                    html += '<div style="text-align: center; padding: 40px; color: #64748b;">No module attempts recorded yet.</div>';
+                } else {
+                    attempts.forEach(attempt => {
+                        const percentage = Math.round((attempt.score / 20) * 100);
+                        const isPassed = attempt.passed;
+                        let allQuestions = [];
+                        if (attempt.detailedAnswers) {
+                            if (typeof attempt.detailedAnswers === 'string') {
+                                try { allQuestions = JSON.parse(attempt.detailedAnswers); } catch(e) { allQuestions = []; }
+                            } else if (Array.isArray(attempt.detailedAnswers)) {
+                                allQuestions = attempt.detailedAnswers;
+                            }
+                        }
+                        if (allQuestions.length === 0 && attempt.errors) {
+                            let errors = [];
+                            if (typeof attempt.errors === 'string') {
+                                try { errors = JSON.parse(attempt.errors); } catch(e) { errors = []; }
+                            } else if (Array.isArray(attempt.errors)) {
+                                errors = attempt.errors;
+                            }
+                            allQuestions = errors.map(err => ({
+                                questionNumber: err.questionNumber || 0,
+                                questionText: err.questionText || 'N/A',
+                                userAnswer: err.userAnswer || 'N/A',
+                                correctAnswer: err.correctAnswer || 'N/A',
+                                isCorrect: err.userAnswer === err.correctAnswer
+                            }));
+                        }
+                        if (allQuestions.length === 0 && attempt.module && attempt.answers) {
+                            try {
+                                const questions = JSON.parse(attempt.module.questions || '[]');
+                                const parsedAnswers = JSON.parse(attempt.answers || '{}');
+                                allQuestions = questions.map((q, idx) => ({
+                                    questionNumber: idx + 1,
+                                    questionText: q.text,
+                                    userAnswer: q.options ? q.options[parsedAnswers[idx]] : (parsedAnswers[idx] === 0 ? 'True' : 'False'),
+                                    correctAnswer: q.options ? q.options[q.correct] : (q.correct === 0 ? 'True' : 'False'),
+                                    isCorrect: parsedAnswers[idx] === q.correct
+                                }));
+                            } catch(e) { allQuestions = []; }
+                        }
+                        const moduleName = attempt.module?.name || 'Unknown Module';
+                        html += '<div class="module-card">';
+                        html += '<div class="module-header">';
+                        html += '<span class="module-name">' + esc(moduleName) + '</span>';
+                        html += '<span class="module-score ' + (isPassed ? 'score-passed' : 'score-failed') + '">';
+                        html += attempt.score + '/20 (' + percentage + '%) - ' + (isPassed ? 'PASSED' : 'FAILED');
+                        html += '</span></div>';
+                        html += '<div class="module-date">Completed: ' + (attempt.completedAt ? new Date(attempt.completedAt).toLocaleString() : 'N/A') + '</div>';
+                        if (allQuestions.length > 0) {
+                            html += '<table class="question-table"><thead><tr>';
+                            html += '<th style="width: 6%;">#</th><th style="width: 44%;">Question</th>';
+                            html += '<th style="width: 20%;">Student Answer</th><th style="width: 20%;">Correct Answer</th>';
+                            html += '<th style="width: 10%;">Result</th></tr></thead><tbody>';
+                            allQuestions.forEach((q, qIdx) => {
+                                const isCorrect = q.isCorrect !== undefined ? q.isCorrect : false;
+                                html += '<tr>';
+                                html += '<td>' + (qIdx + 1) + '</td>';
+                                html += '<td>' + esc(q.questionText || 'N/A') + '</td>';
+                                html += '<td class="' + (isCorrect ? 'answer-correct' : 'answer-incorrect') + '">' + esc(q.userAnswer || 'N/A') + '</td>';
+                                html += '<td class="answer-correct">' + esc(q.correctAnswer || 'N/A') + '</td>';
+                                html += '<td>' + (isCorrect ? 'OK' : 'X') + '</td></tr>';
+                            });
+                            html += '</tbody></table>';
+                        } else {
+                            html += '<div class="no-errors">No detailed question data available for this module.</div>';
+                        }
+                        html += '</div>';
+                    });
+                }
+                html += '</div>';
+                html += '<div class="footer">';
+                html += '<p>This is an official training record generated by COHT Training Platform.</p>';
+                html += '<p>' + new Date().getFullYear() + ' Centre of Healthcare Training - All Rights Reserved</p>';
+                html += '</div>';
+                html += '</div>';
+            });
+
+            html += '<div class="no-print">';
+            html += '<button class="print-btn" onclick="window.print()">Print All (' + validReports.length + ' Reports)</button>';
+            html += '<button class="close-btn" onclick="window.close()">Close</button>';
+            html += '</div></body></html>';
+
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(html);
+            printWindow.document.close();
+
+            setSuccess(`Loaded ${validReports.length} report(s) for printing`);
+            setTimeout(() => setSuccess(''), 5000);
+        } catch (err) {
+            console.error('Bulk print error:', err);
+            setError('Failed to prepare bulk reports: ' + err.message);
+        } finally {
+            setBulkPrintLoading(false);
+        }
+    };
+
     const generateFullReport = async (student) => {
         setReportLoading(true);
         try {
@@ -1000,9 +1218,14 @@ function App() {
                                         <CheckSquare className="w-5 h-5 text-indigo-600" />
                                         <span className="text-sm text-indigo-800 font-medium">{selectedStudents.length} student(s) selected</span>
                                     </div>
-                                    <button onClick={() => setShowBulkDeleteConfirm(true)} className="flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm shadow-sm">
-                                        <Trash2 size={16} /> Delete Selected
-                                    </button>
+                                    <div className="flex flex-wrap gap-2">
+                                        <button onClick={bulkPrintReports} disabled={bulkPrintLoading} className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm shadow-sm disabled:opacity-50">
+                                            <Printer size={16} /> {bulkPrintLoading ? 'Preparing...' : `Print Selected (${selectedStudents.length})`}
+                                        </button>
+                                        <button onClick={() => setShowBulkDeleteConfirm(true)} className="flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm shadow-sm">
+                                            <Trash2 size={16} /> Delete Selected
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                             <div className="p-4 border-b bg-slate-50">

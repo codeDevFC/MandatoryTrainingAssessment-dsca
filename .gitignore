@@ -12,3 +12,13 @@ backend/node_modules/
 *.tmp
 *.temp
 *.backup.*
+.env
+.env.*
+!.env.example
+vercel-backup.json
+*.backup
+*.backup.*
+*.before-discovery
+.env.local-sqlite-backup
+*.step0
+*.bak

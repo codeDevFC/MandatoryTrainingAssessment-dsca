@@ -73,9 +73,9 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/admin-login', async (req, res) => {
     const { email, password } = req.body;
     const validAdmins = {
-        'admin@careworks.com': 'Admin@2025',
-        'director@careworks.com': 'Director@2025',
-        'supervisor@careworks.com': 'Supervisor@2025'
+        [process.env.ADMIN_EMAIL || 'admin@careworks.com']: process.env.ADMIN_PASSWORD,
+        [process.env.DIRECTOR_EMAIL || 'director@careworks.com']: process.env.DIRECTOR_PASSWORD,
+        [process.env.SUPERVISOR_EMAIL || 'supervisor@careworks.com']: process.env.SUPERVISOR_PASSWORD,
     };
     try {
         if (validAdmins[email] && validAdmins[email] === password) {
@@ -572,6 +572,279 @@ app.post('/api/admin/update-student-modules/:id', async (req, res) => {
         res.status(500).json({ error: 'Failed to update student modules: ' + error.message });
     }
 });
+
+
+// ═══════════════════════════════════════════════════════════════════
+// Discovery Form — public intake + admin view + CSV export
+// ═══════════════════════════════════════════════════════════════════
+
+app.post('/api/discovery', async (req, res) => {
+    const {
+        firstName, lastName, phone, email, addressTown, country,
+        courseAppliedFor, firstCourse, sourceChannel, bookingMethod,
+        reasonForChoice, priorExperience, experienceRating, futurePlans,
+        comments, consentGiven
+    } = req.body;
+
+    if (!firstName || !lastName || !phone) {
+        return res.status(400).json({ error: 'First name, last name, and phone are required' });
+    }
+    if (!consentGiven) {
+        return res.status(400).json({ error: 'Consent is required to submit this form' });
+    }
+    if (!/^\+44\d{10}$/.test(phone)) {
+        return res.status(400).json({ error: 'Phone must start with +44 and have 10 digits' });
+    }
+
+    try {
+        const year = new Date().getFullYear();
+        const result = await prisma.$queryRaw`
+            INSERT INTO "DiscoveryForm" (
+                id, "learnerId", "firstName", "lastName", phone, email,
+                "addressTown", country, "courseAppliedFor", "firstCourse",
+                "sourceChannel", "bookingMethod", "reasonForChoice",
+                "priorExperience", "experienceRating", "futurePlans", comments,
+                "consentGiven", "consentDate", "submittedVia", "updatedAt"
+            ) VALUES (
+                gen_random_uuid()::text,
+                'COHT-' || ${year}::text || '-' || LPAD((
+                    SELECT COALESCE(MAX(
+                        CASE WHEN "learnerId" LIKE 'COHT-' || ${year}::text || '-%'
+                             THEN SUBSTRING("learnerId" FROM 11)::int ELSE 0 END
+                    ), 0) + 1
+                    FROM "DiscoveryForm"
+                )::text, 4, '0'),
+                ${firstName}, ${lastName}, ${phone}, ${email || null},
+                ${addressTown || null}, ${country || 'UK'},
+                ${courseAppliedFor || null}, ${firstCourse || false},
+                ${sourceChannel || null}, ${bookingMethod || null},
+                ${reasonForChoice || null}, ${priorExperience || null},
+                ${experienceRating || null}, ${futurePlans || null},
+                ${comments || null}, ${consentGiven}, NOW(), 'digital', NOW()
+            )
+            RETURNING "learnerId"
+        `;
+        res.json({ success: true, learnerId: result[0].learnerId });
+    } catch (err) {
+        console.error('Discovery form submission error:', err);
+        res.status(500).json({ error: 'Submission failed. Please try again.' });
+    }
+});
+
+app.get('/api/admin/discovery', async (req, res) => {
+    try {
+        const rows = await prisma.discoveryForm.findMany({
+            orderBy: { createdAt: 'desc' },
+        });
+        res.json(rows);
+    } catch (err) {
+        console.error('Discovery form fetch error:', err);
+        res.status(500).json({ error: 'Failed to fetch discovery forms' });
+    }
+});
+
+app.get('/api/admin/discovery/export', async (req, res) => {
+    try {
+        const rows = await prisma.discoveryForm.findMany({
+            orderBy: { createdAt: 'asc' },
+        });
+        const headers = [
+            'learner_id', 'first_name', 'last_name', 'phone', 'email', 'address_town',
+            'country', 'course_applied_for', 'first_course', 'source_channel',
+            'booking_method', 'reason_for_choice', 'prior_experience',
+            'experience_rating', 'future_plans', 'comments', 'consent_given',
+            'consent_date', 'submitted_via', 'created_at'
+        ];
+        const escape = v => v == null ? '' : `"${String(v).replace(/"/g, '""')}"`;
+        const csv = [
+            headers.join(','),
+            ...rows.map(r => [
+                r.learnerId, r.firstName, r.lastName, r.phone, r.email,
+                r.addressTown, r.country, r.courseAppliedFor, r.firstCourse,
+                r.sourceChannel, r.bookingMethod, r.reasonForChoice,
+                r.priorExperience, r.experienceRating, r.futurePlans, r.comments,
+                r.consentGiven, r.consentDate ? r.consentDate.toISOString() : '',
+                r.submittedVia, r.createdAt.toISOString()
+            ].map(escape).join(','))
+        ].join('\n');
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition',
+            `attachment; filename="discovery-${new Date().toISOString().slice(0,10)}.csv"`);
+        res.send(csv);
+    } catch (err) {
+        console.error('Discovery CSV export error:', err);
+        res.status(500).json({ error: 'Export failed' });
+    }
+});
+
+
+
+// ═══════════════════════════════════════════════════════════════════
+// Risk Log — public submission + admin view + CSV export
+// ═══════════════════════════════════════════════════════════════════
+
+app.post('/api/risk-log', async (req, res) => {
+    const { area, description, likelihood, impact, owner, mitigation } = req.body;
+
+    if (!area || !description || !likelihood || !impact || !owner) {
+        return res.status(400).json({ error: 'Area, description, likelihood, impact, and owner are required' });
+    }
+
+    try {
+        // Atomic Risk ID: RISK-NNN
+        const result = await prisma.$queryRaw`
+            INSERT INTO "RiskLog" (
+                id, "riskId", "area", description, likelihood, impact, owner, mitigation, status, "updatedAt"
+            ) VALUES (
+                gen_random_uuid()::text,
+                'RISK-' || LPAD((
+                    SELECT COALESCE(MAX(
+                        CASE WHEN "riskId" LIKE 'RISK-%'
+                             THEN SUBSTRING("riskId" FROM 6)::int ELSE 0 END
+                    ), 0) + 1
+                    FROM "RiskLog"
+                )::text, 3, '0'),
+                ${area}, ${description}, ${likelihood}, ${impact}, ${owner}, ${mitigation || null}, 'Open', NOW()
+            )
+            RETURNING "riskId"
+        `;
+        res.json({ success: true, riskId: result[0].riskId });
+    } catch (err) {
+        console.error('Risk log submission error:', err);
+        res.status(500).json({ error: 'Submission failed. Please try again.' });
+    }
+});
+
+app.get('/api/admin/risk-log', async (req, res) => {
+    try {
+        const rows = await prisma.riskLog.findMany({ orderBy: { dateRaised: 'desc' } });
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch risk log' });
+    }
+});
+
+app.get('/api/admin/risk-log/export', async (req, res) => {
+    try {
+        const rows = await prisma.riskLog.findMany({ orderBy: { dateRaised: 'asc' } });
+        const headers = ['risk_id','date_raised','area','description','likelihood','impact','owner','mitigation','status','date_closed','resolution_notes'];
+        const escape = v => v == null ? '' : `"${String(v).replace(/"/g, '""')}"`;
+        const csv = [
+            headers.join(','),
+            ...rows.map(r => [
+                r.riskId, r.dateRaised.toISOString(), r.area, r.description,
+                r.likelihood, r.impact, r.owner, r.mitigation, r.status,
+                r.dateClosed ? r.dateClosed.toISOString() : '', r.resolutionNotes
+            ].map(escape).join(','))
+        ].join('\n');
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="risk-log-${new Date().toISOString().slice(0,10)}.csv"`);
+        res.send(csv);
+    } catch (err) {
+        res.status(500).json({ error: 'Export failed' });
+    }
+});
+
+
+
+// ═══════════════════════════════════════════════════════════════════
+// Attendance Record
+// ═══════════════════════════════════════════════════════════════════
+
+app.post('/api/attendance', async (req, res) => {
+    const { enrollmentId, learnerId, sessionDate, arrivalTime, departureTime, lateFlag, lateReason, noShowFlag, trainerNotes } = req.body;
+    if (!enrollmentId || !learnerId || !sessionDate) {
+        return res.status(400).json({ error: 'Enrollment ID, Learner ID, and Session Date are required' });
+    }
+    try {
+        const result = await prisma.$queryRaw`
+            INSERT INTO "AttendanceRecord" (
+                id, "attendanceId", "enrollmentId", "learnerId", "sessionDate", "arrivalTime", "departureTime",
+                "lateFlag", "lateReason", "noShowFlag", "trainerNotes", "updatedAt"
+            ) VALUES (
+                gen_random_uuid()::text,
+                'ATT-' || LPAD((
+                    SELECT COALESCE(MAX(CASE WHEN "attendanceId" LIKE 'ATT-%' THEN SUBSTRING("attendanceId" FROM 5)::int ELSE 0 END), 0) + 1 FROM "AttendanceRecord"
+                )::text, 4, '0'),
+                ${enrollmentId}, ${learnerId}, ${new Date(sessionDate)}, ${arrivalTime || null}, ${departureTime || null},
+                ${lateFlag || false}, ${lateReason || null}, ${noShowFlag || false}, ${trainerNotes || null}, NOW()
+            )
+            RETURNING "attendanceId"
+        `;
+        res.json({ success: true, attendanceId: result[0].attendanceId });
+    } catch (err) {
+        console.error('Attendance error:', err);
+        res.status(500).json({ error: 'Failed to save attendance' });
+    }
+});
+
+app.get('/api/admin/attendance/export', async (req, res) => {
+    try {
+        const rows = await prisma.attendanceRecord.findMany({ orderBy: { sessionDate: 'desc' } });
+        const headers = ['attendance_id','enrollment_id','learner_id','session_date','arrival_time','departure_time','hours_attended','late_flag','late_reason','no_show_flag','trainer_notes'];
+        const escape = v => v == null ? '' : `"${String(v).replace(/"/g, '""')}"`;
+        const csv = [
+            headers.join(','),
+            ...rows.map(r => [
+                r.attendanceId, r.enrollmentId, r.learnerId, r.sessionDate.toISOString().slice(0,10),
+                r.arrivalTime, r.departureTime, r.hoursAttended, r.lateFlag, r.lateReason, r.noShowFlag, r.trainerNotes
+            ].map(escape).join(','))
+        ].join('\n');
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="attendance-${new Date().toISOString().slice(0,10)}.csv"`);
+        res.send(csv);
+    } catch (err) {
+        res.status(500).json({ error: 'Export failed' });
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// FAQ Entry
+// ═══════════════════════════════════════════════════════════════════
+
+app.post('/api/faq', async (req, res) => {
+    const { question, courseId, frequency, answer, addedBy } = req.body;
+    if (!question || !answer || !addedBy) {
+        return res.status(400).json({ error: 'Question, Answer, and Added By are required' });
+    }
+    try {
+        const result = await prisma.$queryRaw`
+            INSERT INTO "FAQEntry" (
+                id, "faqId", question, "courseId", frequency, answer, "addedBy", "updatedAt"
+            ) VALUES (
+                gen_random_uuid()::text,
+                'FAQ-' || LPAD((
+                    SELECT COALESCE(MAX(CASE WHEN "faqId" LIKE 'FAQ-%' THEN SUBSTRING("faqId" FROM 5)::int ELSE 0 END), 0) + 1 FROM "FAQEntry"
+                )::text, 4, '0'),
+                ${question}, ${courseId || null}, ${frequency || 'Occasional'}, ${answer}, ${addedBy}, NOW()
+            )
+            RETURNING "faqId"
+        `;
+        res.json({ success: true, faqId: result[0].faqId });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to save FAQ' });
+    }
+});
+
+app.get('/api/admin/faq/export', async (req, res) => {
+    try {
+        const rows = await prisma.fAQEntry.findMany({ orderBy: { createdAt: 'desc' } });
+        const headers = ['faq_id','question','course_id','frequency','answer','added_by','publish_ready','created_at'];
+        const escape = v => v == null ? '' : `"${String(v).replace(/"/g, '""')}"`;
+        const csv = [
+            headers.join(','),
+            ...rows.map(r => [
+                r.faqId, r.question, r.courseId, r.frequency, r.answer, r.addedBy, r.publishReady, r.createdAt.toISOString()
+            ].map(escape).join(','))
+        ].join('\n');
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="faq-${new Date().toISOString().slice(0,10)}.csv"`);
+        res.send(csv);
+    } catch (err) {
+        res.status(500).json({ error: 'Export failed' });
+    }
+});
+
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log('Backend running on port ' + PORT);

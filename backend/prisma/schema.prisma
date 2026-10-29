@@ -98,3 +98,91 @@ model PracticalAccessCode {
  expiresAt DateTime
  generatedBy String?
 }
+
+model DiscoveryForm {
+  id               String   @id @default(cuid())
+  learnerId        String   @unique
+  firstName        String
+  lastName         String
+  phone            String
+  email            String?
+  addressTown      String?
+  country          String?  @default("UK")
+  courseAppliedFor String?
+  firstCourse      Boolean  @default(false)
+  sourceChannel    String?
+  bookingMethod    String?
+  reasonForChoice  String?
+  priorExperience  String?
+  experienceRating Int?
+  futurePlans      String?
+  comments         String?
+  consentGiven     Boolean  @default(false)
+  consentDate      DateTime?
+  submittedVia     String?  @default("digital")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([learnerId])
+  @@index([email])
+  @@index([createdAt])
+}
+
+model RiskLog {
+  id               String   @id @default(cuid())
+  riskId           String   @unique
+  dateRaised       DateTime @default(now())
+  area             String
+  description      String
+  likelihood       String
+  impact           String
+  owner            String
+  mitigation       String?
+  status           String   @default("Open")
+  dateClosed       DateTime?
+  resolutionNotes  String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([riskId])
+  @@index([area])
+  @@index([status])
+  @@index([dateRaised])
+}
+
+model AttendanceRecord {
+  id               String   @id @default(cuid())
+  attendanceId     String   @unique
+  enrollmentId     String
+  learnerId        String
+  sessionDate      DateTime
+  arrivalTime      String?
+  departureTime    String?
+  hoursAttended    Float?
+  lateFlag         Boolean  @default(false)
+  lateReason       String?
+  noShowFlag       Boolean  @default(false)
+  trainerNotes     String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([attendanceId])
+  @@index([learnerId])
+  @@index([sessionDate])
+}
+
+model FAQEntry {
+  id               String   @id @default(cuid())
+  faqId            String   @unique
+  question         String
+  courseId         String?
+  frequency        String   @default("Occasional")
+  answer           String
+  addedBy          String
+  publishReady     Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([faqId])
+  @@index([courseId])
+}

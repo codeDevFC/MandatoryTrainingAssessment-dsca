@@ -748,25 +748,36 @@ app.get('/api/admin/risk-log/export', async (req, res) => {
 
 
 // ═══════════════════════════════════════════════════════════════════
-// Attendance Record
+// Attendance Record (v2 - trainer friendly)
 // ═══════════════════════════════════════════════════════════════════
 
 app.post('/api/attendance', async (req, res) => {
-    const { enrollmentId, learnerId, sessionDate, arrivalTime, departureTime, lateFlag, lateReason, noShowFlag, trainerNotes } = req.body;
-    if (!enrollmentId || !learnerId || !sessionDate) {
-        return res.status(400).json({ error: 'Enrollment ID, Learner ID, and Session Date are required' });
+    const { learnerName, learnerPhone, courseName, trainerName, sessionDate, arrivalTime, departureTime, lateFlag, lateReason, noShowFlag, trainerNotes } = req.body;
+    
+    if (!learnerName || !courseName || !sessionDate) {
+        return res.status(400).json({ error: 'Learner Name, Course Name, and Session Date are required' });
     }
+
     try {
+        let hoursAttended = null;
+        if (arrivalTime && departureTime) {
+            const arr = new Date(`1970-01-01T${arrivalTime}:00`);
+            const dep = new Date(`1970-01-01T${departureTime}:00`);
+            if (dep > arr) hoursAttended = (dep - arr) / (1000 * 60 * 60);
+        }
+
         const result = await prisma.$queryRaw`
             INSERT INTO "AttendanceRecord" (
-                id, "attendanceId", "enrollmentId", "learnerId", "sessionDate", "arrivalTime", "departureTime",
+                id, "attendanceId", "learnerName", "learnerPhone", "courseName", "trainerName", 
+                "sessionDate", "arrivalTime", "departureTime", "hoursAttended", 
                 "lateFlag", "lateReason", "noShowFlag", "trainerNotes", "updatedAt"
             ) VALUES (
                 gen_random_uuid()::text,
                 'ATT-' || LPAD((
                     SELECT COALESCE(MAX(CASE WHEN "attendanceId" LIKE 'ATT-%' THEN SUBSTRING("attendanceId" FROM 5)::int ELSE 0 END), 0) + 1 FROM "AttendanceRecord"
                 )::text, 4, '0'),
-                ${enrollmentId}, ${learnerId}, ${new Date(sessionDate)}, ${arrivalTime || null}, ${departureTime || null},
+                ${learnerName}, ${learnerPhone || ''}, ${courseName}, ${trainerName || ''},
+                ${new Date(sessionDate)}, ${arrivalTime || null}, ${departureTime || null}, ${hoursAttended},
                 ${lateFlag || false}, ${lateReason || null}, ${noShowFlag || false}, ${trainerNotes || null}, NOW()
             )
             RETURNING "attendanceId"
@@ -778,20 +789,40 @@ app.post('/api/attendance', async (req, res) => {
     }
 });
 
-app.get('/api/admin/attendance/export', async (req, res) => {
+app.get('/api/admin/attendance', async (req, res) => {
+    const { start, end, course } = req.query;
     try {
-        const rows = await prisma.attendanceRecord.findMany({ orderBy: { sessionDate: 'desc' } });
-        const headers = ['attendance_id','enrollment_id','learner_id','session_date','arrival_time','departure_time','hours_attended','late_flag','late_reason','no_show_flag','trainer_notes'];
+        let where = {};
+        if (start && end) where.sessionDate = { gte: new Date(start), lte: new Date(end) };
+        if (course) where.courseName = course;
+        
+        const rows = await prisma.attendanceRecord.findMany({ where, orderBy: { sessionDate: 'desc' } });
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch attendance' });
+    }
+});
+
+app.get('/api/admin/attendance/export', async (req, res) => {
+    const { start, end } = req.query;
+    try {
+        let where = {};
+        if (start && end) where.sessionDate = { gte: new Date(start), lte: new Date(end) };
+        
+        const rows = await prisma.attendanceRecord.findMany({ where, orderBy: { sessionDate: 'desc' } });
+        const headers = ['attendance_id','learner_name','learner_phone','course_name','trainer_name','session_date','arrival_time','departure_time','hours_attended','late_flag','late_reason','no_show_flag','trainer_notes'];
         const escape = v => v == null ? '' : `"${String(v).replace(/"/g, '""')}"`;
+        
         const csv = [
             headers.join(','),
             ...rows.map(r => [
-                r.attendanceId, r.enrollmentId, r.learnerId, r.sessionDate.toISOString().slice(0,10),
+                r.attendanceId, r.learnerName, r.learnerPhone, r.courseName, r.trainerName, r.sessionDate.toISOString().slice(0,10),
                 r.arrivalTime, r.departureTime, r.hoursAttended, r.lateFlag, r.lateReason, r.noShowFlag, r.trainerNotes
             ].map(escape).join(','))
         ].join('\n');
+        
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-        res.setHeader('Content-Disposition', `attachment; filename="attendance-${new Date().toISOString().slice(0,10)}.csv"`);
+        res.setHeader('Content-Disposition', `attachment; filename="attendance-${start || 'all'}.csv"`);
         res.send(csv);
     } catch (err) {
         res.status(500).json({ error: 'Export failed' });
@@ -842,6 +873,56 @@ app.get('/api/admin/faq/export', async (req, res) => {
         res.send(csv);
     } catch (err) {
         res.status(500).json({ error: 'Export failed' });
+    }
+});
+
+
+
+// ═══════════════════════════════════════════════════════════════════
+// Courses (CRUD)
+// ═══════════════════════════════════════════════════════════════════
+
+app.get('/api/courses', async (req, res) => {
+    try {
+        const courses = await prisma.course.findMany({
+            where: { active: true },
+            orderBy: { title: 'asc' }
+        });
+        res.json(courses);
+    } catch (err) {
+        console.error('Course fetch error:', err);
+        res.status(500).json({ error: 'Failed to fetch courses' });
+    }
+});
+
+app.post('/api/admin/courses', async (req, res) => {
+    const { title, type, description } = req.body;
+    if (!title) return res.status(400).json({ error: 'Title is required' });
+    try {
+        const result = await prisma.$queryRaw`
+            INSERT INTO "Course" (id, "courseId", title, type, description, "updatedAt")
+            VALUES (
+                gen_random_uuid()::text,
+                'CRS-' || LPAD((
+                    SELECT COALESCE(MAX(CASE WHEN "courseId" LIKE 'CRS-%' THEN SUBSTRING("courseId" FROM 5)::int ELSE 0 END), 0) + 1 FROM "Course"
+                )::text, 3, '0'),
+                ${title}, ${type || 'Short Course'}, ${description || null}, NOW()
+            )
+            RETURNING "courseId"
+        `;
+        res.json({ success: true, courseId: result[0].courseId });
+    } catch (err) {
+        console.error('Course create error:', err);
+        res.status(500).json({ error: 'Failed to save course' });
+    }
+});
+
+app.delete('/api/admin/courses/:id', async (req, res) => {
+    try {
+        await prisma.course.update({ where: { id: req.params.id }, data: { active: false } });
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to delete course' });
     }
 });
 

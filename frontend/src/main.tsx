@@ -8,6 +8,8 @@ import DiscoveryForm from './DiscoveryForm'
 import RiskLogForm from './RiskLogForm'
 import AttendanceForm from './AttendanceForm'
 import FAQForm from './FAQForm'
+import AdminDashboard from './AdminDashboard'
+import CourseManager from './CourseManager'
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -19,6 +21,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <Route path="/risk-log" element={<RiskLogForm />} />
         <Route path="/attendance" element={<AttendanceForm />} />
         <Route path="/faq" element={<FAQForm />} />
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/courses" element={<CourseManager />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>

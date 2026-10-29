@@ -150,26 +150,6 @@ model RiskLog {
   @@index([dateRaised])
 }
 
-model AttendanceRecord {
-  id               String   @id @default(cuid())
-  attendanceId     String   @unique
-  enrollmentId     String
-  learnerId        String
-  sessionDate      DateTime
-  arrivalTime      String?
-  departureTime    String?
-  hoursAttended    Float?
-  lateFlag         Boolean  @default(false)
-  lateReason       String?
-  noShowFlag       Boolean  @default(false)
-  trainerNotes     String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  @@index([attendanceId])
-  @@index([learnerId])
-  @@index([sessionDate])
-}
 
 model FAQEntry {
   id               String   @id @default(cuid())
@@ -185,4 +165,43 @@ model FAQEntry {
 
   @@index([faqId])
   @@index([courseId])
+}
+
+
+model AttendanceRecord {
+  id               String   @id @default(cuid())
+  attendanceId     String   @unique
+  learnerName      String
+  learnerPhone     String
+  courseName       String
+  trainerName      String
+  sessionDate      DateTime
+  arrivalTime      String?
+  departureTime    String?
+  hoursAttended    Float?
+  lateFlag         Boolean  @default(false)
+  lateReason       String?
+  noShowFlag       Boolean  @default(false)
+  trainerNotes     String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([attendanceId])
+  @@index([sessionDate])
+  @@index([learnerName])
+  @@index([courseName])
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  courseId    String   @unique
+  title       String
+  type        String   @default("Short Course")
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([courseId])
+  @@index([type])
 }

@@ -22,3 +22,13 @@ vercel-backup.json
 .env.local-sqlite-backup
 *.step0
 *.bak
+.before-*
+*.before-*
+*.step0
+*.bak
+.env
+.env.*
+!.env.example
+vercel-backup.json
+*.backup
+*.backup.*

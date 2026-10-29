@@ -50,9 +50,6 @@ async function main() {
 
   console.log(`\n🎉 Seeding complete!`);
   console.log(`\n🔐 Admin Login (Fixed Passwords):`);
-  console.log(`   Admin: admin@careworks.com / Admin@2025`);
-  console.log(`   Director: director@careworks.com / Director@2025`);
-  console.log(`   Supervisor: supervisor@careworks.com / Supervisor@2025`);
   console.log(`\n📧 Trainees: Use email + magic code login`);
 }
 

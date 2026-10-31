@@ -72,6 +72,8 @@ app.post('/api/auth/register', async (req, res) => {
 
 app.post('/api/auth/admin-login', async (req, res) => {
     const { email, password } = req.body;
+    console.log('[DEBUG] Login attempt:', email, 'password:', password);
+    console.log('[DEBUG] Expected admin password:', process.env.ADMIN_PASSWORD);
     const validAdmins = {
         [process.env.ADMIN_EMAIL || 'admin@careworks.com']: process.env.ADMIN_PASSWORD,
         [process.env.DIRECTOR_EMAIL || 'director@careworks.com']: process.env.DIRECTOR_PASSWORD,

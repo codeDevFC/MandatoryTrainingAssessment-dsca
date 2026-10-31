@@ -55,7 +55,12 @@ export default function AdminDashboard() {
                         <h1 className="text-2xl font-bold text-[#1E664E]">Attendance Dashboard</h1>
                         <p className="text-sm text-slate-500">Filter, view, and export records for inspections</p>
                     </div>
-                    <Link to="/" className="text-sm text-slate-500 hover:underline">Back to Forms</Link>
+                    <div className="flex flex-wrap gap-2">
+                        <Link to="/discovery" className="bg-[#1E664E] text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-[#0F4A38] transition shadow-sm">Discovery Form</Link>
+                        <Link to="/attendance" className="bg-[#1E664E] text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-[#0F4A38] transition shadow-sm">Attendance</Link>
+                        <Link to="/risk-log" className="bg-[#1E664E] text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-[#0F4A38] transition shadow-sm">Risk Log</Link>
+                        <Link to="/faq" className="bg-[#1E664E] text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-[#0F4A38] transition shadow-sm">FAQ</Link>
+                    </div>
                 </div>
 
                 <div className="bg-slate-50 p-4 rounded-xl mb-6 print:hidden flex flex-wrap gap-4 items-end">

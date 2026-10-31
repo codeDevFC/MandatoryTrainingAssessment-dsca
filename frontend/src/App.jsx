@@ -1160,9 +1160,16 @@ function App() {
                             <Shield className="w-6 h-6 text-indigo-600" />
                             <div><h1 className="font-bold text-slate-800">Admin Portal</h1><p className="text-xs text-slate-500 hidden sm:block">{user.email}</p></div>
                         </div>
-                        <button onClick={() => setUser(null)} className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition">
-                            <LogOut size={16} /> <span className="hidden sm:inline">Logout</span>
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <Link to="/discovery" className="bg-[#1E664E] text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-[#0F4A38] transition shadow-sm">Discovery Form</Link>
+                            <Link to="/attendance" className="bg-[#1E664E] text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-[#0F4A38] transition shadow-sm">Attendance</Link>
+                            <Link to="/risk-log" className="bg-[#1E664E] text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-[#0F4A38] transition shadow-sm">Risk Log</Link>
+                            <Link to="/faq" className="bg-[#1E664E] text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-[#0F4A38] transition shadow-sm">FAQ</Link>
+                            
+                            <button onClick={() => setUser(null)} className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition border-l border-slate-200 pl-4 ml-2">
+                                <LogOut size={16} /> Logout
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div className="max-w-7xl mx-auto p-4 sm:p-6 flex-1 w-full">
@@ -1527,9 +1534,9 @@ function App() {
                             </p>
                         </div>
                     </div>
-                    <button onClick={() => setUser(null)} className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition">
-                        <LogOut size={16} /> <span className="hidden sm:inline">Logout</span>
-                    </button>
+                    <button onClick={() => setUser(null)} className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition border-l border-slate-200 pl-4 ml-2">
+                                <LogOut size={16} /> Logout
+                            </button>
                 </div>
             </div>
             <div className="flex-1 max-w-7xl mx-auto p-4 sm:p-6 w-full">

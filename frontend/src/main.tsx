@@ -23,6 +23,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <Route path="/faq" element={<FAQForm />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/courses" element={<CourseManager />} />
+      
+        <Route path="/admin/discovery" element={<DiscoveryForm />} />
+        <Route path="/admin/attendance" element={<AttendanceForm />} />
+        <Route path="/admin/risk-log" element={<RiskLogForm />} />
+        <Route path="/admin/faq" element={<FAQForm />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>

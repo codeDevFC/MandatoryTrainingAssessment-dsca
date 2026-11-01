@@ -222,6 +222,17 @@ export default function AdminDashboard() {
 
     return (
         <div className="min-h-screen bg-slate-50 p-6">
+            {/* Floating Data Hub Button */}
+            <div className="fixed top-20 left-4 z-50 print:hidden">
+                <button
+                    onClick={() => window.history.back()}
+                    className="flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-slate-700 transition font-medium text-sm"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                    Back to Data Hub
+                </button>
+            </div>
+            
             <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-lg p-6 print:shadow-none print:p-0">
                 <div className="flex justify-between items-center mb-6 print:hidden">
                     <div>

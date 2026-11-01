@@ -1177,6 +1177,7 @@ function App() {
                             <Link to="/attendance" className="bg-[#1E664E] text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-[#0F4A38] transition hidden sm:inline-block">Attendance</Link>
                             <Link to="/risk-log" className="bg-[#1E664E] text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-[#0F4A38] transition hidden sm:inline-block">Risk Log</Link>
                             <Link to="/faq" className="bg-[#1E664E] text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-[#0F4A38] transition hidden sm:inline-block">FAQ</Link>
+                            <Link to="/admin" className="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-indigo-700 transition hidden sm:inline-block">Data Hub</Link>
                             <button onClick={() => setUser(null)} className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition">
                                 <LogOut size={16} /> <span className="hidden sm:inline">Logout</span>
                             </button>

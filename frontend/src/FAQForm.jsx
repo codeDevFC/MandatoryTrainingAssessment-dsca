@@ -73,7 +73,13 @@ export default function FAQForm() {
                     <label><span className="text-sm font-medium">Answer *</span><textarea required rows={3} value={form.answer} onChange={set('answer')} className="mt-1 w-full border rounded p-2" /></label>
                     <label><span className="text-sm font-medium">Added By *</span><input required type="text" value={form.addedBy} onChange={set('addedBy')} className="mt-1 w-full border rounded p-2" /></label>
                     <button type="submit" disabled={submitting} className="w-full bg-[#1E664E] text-white py-3 rounded-xl font-semibold">{submitting ? 'Saving...' : 'Save FAQ'}</button>
-                </form>
+                
+                    <div className="mt-6 pt-6 border-t border-slate-200 text-center">
+                        <button type="button" onClick={() => window.location.href = '/'} className="text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">
+                            ← Back to Home (Bottom)
+                        </button>
+                    </div>
+        </form>
             </div>
         </div>
     );

@@ -211,7 +211,13 @@ export default function AttendanceForm() {
                     <button type="submit" disabled={submitting || form.selectedCourses.length === 0} className="w-full bg-[#1E664E] text-white py-3 rounded-xl font-semibold hover:bg-[#0F4A38] transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md">
                         {submitting ? 'Saving...' : `Save Attendance for ${form.selectedCourses.length} Course(s)`}
                     </button>
-                </form>
+                
+                    <div className="mt-6 pt-6 border-t border-slate-200 text-center">
+                        <button type="button" onClick={() => window.location.href = '/'} className="text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">
+                            ← Back to Home (Bottom)
+                        </button>
+                    </div>
+        </form>
             </div>
         </div>
     );

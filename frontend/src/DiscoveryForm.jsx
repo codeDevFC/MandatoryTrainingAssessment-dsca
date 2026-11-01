@@ -308,7 +308,13 @@ export default function DiscoveryForm() {
                                 <Printer size={18} /> Print blank
                             </button>
                         </div>
-                    </form>
+                    
+                    <div className="mt-6 pt-6 border-t border-slate-200 text-center">
+                        <button type="button" onClick={() => window.location.href = '/'} className="text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">
+                            ← Back to Home (Bottom)
+                        </button>
+                    </div>
+        </form>
                 </div>
             </div>
             <COHTFooter />

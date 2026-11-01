@@ -124,10 +124,11 @@ export default function DiscoveryForm() {
                 <COHTHeader />
                 <div className="min-h-screen bg-slate-50 py-12 px-4">
                     <div className="max-w-xl mx-auto mb-4 print:hidden">
-            <Link to="/" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-[#1E664E] transition">
-                ← Back to Home
-            </Link>
+            <button onClick={() => window.history.length > 1 ? window.history.back() : window.location.href = '/'} className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">
+                ← Back to Dashboard
+            </button>
         </div>
+        
         <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-8 text-center">
                         <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
                         <h1 className="text-2xl font-bold text-slate-800 mb-2">Form submitted</h1>

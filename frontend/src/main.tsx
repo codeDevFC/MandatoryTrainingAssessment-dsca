@@ -25,7 +25,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <Route path="/faq" element={<FAQForm />} />
         
         {/* Admin Routes */}
-        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin" element={<App />} />
+        <Route path="/admin/data-hub" element={<AdminDashboard />} />
         <Route path="/admin/courses" element={<CourseManager />} />
         
         {/* Dedicated Admin Form Routes for correct navigation */}

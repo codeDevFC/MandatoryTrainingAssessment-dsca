@@ -927,6 +927,19 @@ app.delete('/api/admin/courses/:id', async (req, res) => {
 });
 
 
+
+// FAQ list (admin)
+app.get('/api/admin/faq', async (req, res) => {
+    try {
+        const rows = await prisma.fAQEntry.findMany({ orderBy: { createdAt: 'desc' } });
+        res.json(rows);
+    } catch (err) {
+        console.error('FAQ list error:', err);
+        res.status(500).json({ error: 'Failed to fetch FAQ' });
+    }
+});
+
+
 app.listen(PORT, '0.0.0.0', () => {
     console.log('Backend running on port ' + PORT);
 });

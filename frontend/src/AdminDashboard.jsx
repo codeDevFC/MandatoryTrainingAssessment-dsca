@@ -230,7 +230,7 @@ export default function AdminDashboard() {
                     </div>
                     <div className="flex gap-2">
                         <Link to="/admin/courses" className="text-sm text-slate-500 hover:text-[#1E664E] px-3 py-1.5">Courses</Link>
-                        <Link to="/" className="text-sm text-slate-500 hover:text-[#1E664E] px-3 py-1.5">Back to Portal</Link>
+                        <button onClick={() => window.history.back()} className="text-sm text-slate-500 hover:text-[#1E664E] px-3 py-1.5">← Back to Dashboard</button>
                     </div>
                 </div>
 

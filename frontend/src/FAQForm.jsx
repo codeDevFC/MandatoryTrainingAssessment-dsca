@@ -23,11 +23,13 @@ export default function FAQForm() {
 
     if (faqId) return (
         <div className="min-h-screen bg-slate-50 py-12 px-4 text-center">
-            <div className="max-w-xl mx-auto mb-4 print:hidden">
-            <button onClick={() => navigate(-1)} className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">
-                ← Back to Dashboard
-            </button>
-        </div>
+            <div className="max-w-3xl mx-auto w-full px-4 pt-4 print:hidden">
+                <button onClick={() => navigate(-1)} className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-[#1E664E] transition bg-white px-3 py-1.5 rounded-lg shadow-sm border border-slate-200">
+                    ← Back
+                </button>
+            </div>
+    
+            
         
         <div className="max-w-md mx-auto bg-white rounded-2xl shadow-lg p-8">
                 <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />

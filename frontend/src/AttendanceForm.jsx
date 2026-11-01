@@ -94,6 +94,12 @@ export default function AttendanceForm() {
 
     if (recordId) return (
         <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+            <div className="max-w-3xl mx-auto w-full px-4 pt-4 print:hidden">
+                <button onClick={() => navigate(-1)} className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-[#1E664E] transition bg-white px-3 py-1.5 rounded-lg shadow-sm border border-slate-200">
+                    ← Back
+                </button>
+            </div>
+    
             <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
                 <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
                 <h1 className="text-2xl font-bold mb-2">Attendance Logged</h1>
@@ -108,11 +114,7 @@ export default function AttendanceForm() {
 
     return (
         <div className="min-h-screen bg-slate-50 py-8 px-4">
-            <div className="max-w-xl mx-auto mb-4 print:hidden">
-            <button onClick={() => navigate(-1)} className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">
-                ← Back to Dashboard
-            </button>
-        </div>
+            
         
         <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-6">
                 <div className="flex items-center gap-2 mb-6 border-b pb-4">

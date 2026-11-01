@@ -1060,8 +1060,20 @@ function App() {
                         <div className="mt-6 pt-6 border-t border-slate-200">
                             <div className="text-center mb-3"><span className="text-sm text-slate-500">Don't have an account?</span></div>
                             <Link to="/register" className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold transition shadow-md">
-                                <UserPlus size={18} /> Register as New Student
-                            </Link>
+                        <UserPlus size={18} /> Register as New Student
+                    </Link>
+
+                    {/* Public tools for trainees */}
+                    <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-slate-200">
+                        <Link to="/discovery" className="flex flex-col items-center justify-center p-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-[#1E664E] hover:text-white hover:border-[#1E664E] transition text-slate-600">
+                            <span className="font-semibold text-sm">Discovery Form</span>
+                            <span className="text-[10px] opacity-75 text-center mt-1">Tell us about you</span>
+                        </Link>
+                        <Link to="/faq" className="flex flex-col items-center justify-center p-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-[#1E664E] hover:text-white hover:border-[#1E664E] transition text-slate-600">
+                            <span className="font-semibold text-sm">FAQs</span>
+                            <span className="text-[10px] opacity-75 text-center mt-1">Common questions</span>
+                        </Link>
+                    </div>
                         </div>
                     </div>
                 </div>

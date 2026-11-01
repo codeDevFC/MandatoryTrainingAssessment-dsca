@@ -69,50 +69,18 @@ export default function RiskLogForm() {
             <>
                 <Header />
                 <div className="min-h-screen bg-slate-50 py-12 px-4">
-            {/* Fixed Back to Data Hub Button */}
+            {/* Smart Back Button */}
             <div className="fixed top-4 left-4 z-50 print:hidden">
                 <button 
-                    onClick={() => window.location.href = '/admin'} 
+                    onClick={() => window.location.href = sessionStorage.getItem('userRole') === 'ADMIN' ? '/admin' : '/'} 
                     className="flex items-center gap-2 bg-white text-slate-700 px-4 py-2 rounded-lg shadow-md border border-slate-200 hover:bg-slate-50 transition font-medium text-sm"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                    Back to Data Hub
+                    {sessionStorage.getItem('userRole') === 'ADMIN' ? 'Back to Data Hub' : 'Back to Home'}
                 </button>
             </div>
 
-            {/* Back Navigation Button */}
-            <div className="fixed top-4 left-4 z-50 print:hidden">
-                <button onClick={() => navigate(-1)} className="flex items-center gap-2 bg-white text-slate-700 px-4 py-2 rounded-lg shadow-md border border-slate-200 hover:bg-slate-50 transition font-medium text-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                    Back
-                </button>
-            </div>
-        
-            <div className="max-w-3xl mx-auto w-full px-4 pt-4 print:hidden">
-                
-            </div>
-    
-                    
-        
-        <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-8 text-center">
-                        <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
-            <div className="mb-4 print:hidden">
-                
-            </div>
             
-                        <h1 className="text-2xl font-bold text-slate-800 mb-2">Risk logged successfully</h1>
-                        <p className="text-slate-600 mb-6">This issue is now in the system and visible to admins.</p>
-                        <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-6 mb-6">
-                            <p className="text-xs uppercase text-amber-700 font-semibold mb-1">Risk ID</p>
-                            <p className="text-3xl font-mono font-bold text-amber-800 tracking-wider">{riskId}</p>
-                        </div>
-                        <div className="flex flex-wrap gap-3 justify-center">
-                            <button onClick={() => window.print()} className="flex items-center gap-2 px-5 py-2 bg-[#1E664E] text-white rounded-lg"><Printer size={18} /> Print</button>
-                            <button onClick={downloadCsv} className="flex items-center gap-2 px-5 py-2 bg-slate-900 text-white rounded-lg"><Download size={18} /> CSV</button>
-                            <Link to="/" className="flex items-center gap-2 px-5 py-2 bg-slate-100 text-slate-700 rounded-lg"><ArrowLeft size={18} /> Home</Link>
-                        </div>
-                    </div>
-                </div>
             </>
         );
     }

@@ -23,44 +23,18 @@ export default function FAQForm() {
 
     if (faqId) return (
         <div className="min-h-screen bg-slate-50 py-12 px-4 text-center">
-            {/* Fixed Back to Data Hub Button */}
+            {/* Smart Back Button */}
             <div className="fixed top-4 left-4 z-50 print:hidden">
                 <button 
-                    onClick={() => window.location.href = '/admin'} 
+                    onClick={() => window.location.href = sessionStorage.getItem('userRole') === 'ADMIN' ? '/admin' : '/'} 
                     className="flex items-center gap-2 bg-white text-slate-700 px-4 py-2 rounded-lg shadow-md border border-slate-200 hover:bg-slate-50 transition font-medium text-sm"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                    Back to Data Hub
+                    {sessionStorage.getItem('userRole') === 'ADMIN' ? 'Back to Data Hub' : 'Back to Home'}
                 </button>
             </div>
 
-            {/* Back Navigation Button */}
-            <div className="fixed top-4 left-4 z-50 print:hidden">
-                <button onClick={() => navigate(-1)} className="flex items-center gap-2 bg-white text-slate-700 px-4 py-2 rounded-lg shadow-md border border-slate-200 hover:bg-slate-50 transition font-medium text-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                    Back
-                </button>
-            </div>
-        
-            <div className="max-w-3xl mx-auto w-full px-4 pt-4 print:hidden">
-                
-            </div>
-    
             
-        
-        <div className="max-w-md mx-auto bg-white rounded-2xl shadow-lg p-8">
-                <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
-            <div className="mb-4 print:hidden">
-                
-            </div>
-            
-                <h1 className="text-2xl font-bold mb-2">FAQ Saved</h1>
-                <p className="text-4xl font-mono font-bold text-emerald-800 mb-6">{faqId}</p>
-                <div className="flex gap-3 justify-center">
-                    <Link to="/" className="px-5 py-2 bg-slate-200 rounded-lg flex items-center gap-2"><ArrowLeft size={18}/> Home</Link>
-                </div>
-            </div>
-        </div>
     );
 
     return (

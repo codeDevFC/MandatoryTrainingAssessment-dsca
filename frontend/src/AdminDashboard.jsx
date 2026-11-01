@@ -11,6 +11,11 @@ const TABS = [
 ];
 
 export default function AdminDashboard() {
+    useEffect(() => {
+        // Set session role for smart navigation buttons
+        sessionStorage.setItem("userRole", "ADMIN");
+    }, []);
+
     const [activeTab, setActiveTab] = useState('attendance');
     const [records, setRecords] = useState([]);
     const [loading, setLoading] = useState(false);

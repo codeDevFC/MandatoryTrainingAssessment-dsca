@@ -175,7 +175,7 @@ export default function DiscoveryForm() {
             <div className="min-h-screen bg-slate-50 py-8 px-4">
                 <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-lg p-6 md:p-8">
                     <div className="mb-4">
-                        <Link to="/" className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">← Back to Home</Link>
+                        <Link to="/" className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">← Back</Link>
                     </div>
                     <div className="mb-6 border-b border-slate-200 pb-4">
                         <h1 className="text-2xl font-bold text-[#1E664E]">Learner Discovery Form</h1>
@@ -310,8 +310,8 @@ export default function DiscoveryForm() {
                         </div>
                     
                     <div className="mt-6 pt-6 border-t border-slate-200 text-center">
-                        <button type="button" onClick={() => window.location.href = '/'} className="text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">
-                            ← Back to Home (Bottom)
+                        <button type="button" onClick={() => navigate(-1)} className="text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">
+                            ← Back
                         </button>
                     </div>
         </form>

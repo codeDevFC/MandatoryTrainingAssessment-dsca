@@ -128,7 +128,7 @@ export default function AttendanceForm() {
         
         <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-6">
                     <div className="mb-4">
-                        <Link to="/" className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">← Back to Home</Link>
+                        <Link to="/" className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">← Back</Link>
                     </div>
                 <div className="flex items-center gap-2 mb-6 border-b pb-4">
                     <Clock className="w-6 h-6 text-[#1E664E]" />
@@ -213,8 +213,8 @@ export default function AttendanceForm() {
                     </button>
                 
                     <div className="mt-6 pt-6 border-t border-slate-200 text-center">
-                        <button type="button" onClick={() => window.location.href = '/'} className="text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">
-                            ← Back to Home (Bottom)
+                        <button type="button" onClick={() => navigate(-1)} className="text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">
+                            ← Back
                         </button>
                     </div>
         </form>

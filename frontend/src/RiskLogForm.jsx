@@ -3,45 +3,33 @@ import { Link, useNavigate } from 'react-router-dom';
 import logo01 from './assets/logo01.jpg';
 import logo2 from './assets/logo2.jpg';
 import { CheckCircle, AlertCircle, Printer, Download, ArrowLeft } from 'lucide-react';
-
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002';
-
 const AREAS = ['Data protection','Course info','Attendance','Venue','Equipment','Finance','Staffing','Other'];
 const LEVELS = ['Low','Medium','High'];
 
 export default function RiskLogForm() {
     const navigate = useNavigate();
-    const [form, setForm] = useState({
-        area: '', description: '', likelihood: '', impact: '', owner: '', mitigation: ''
-    });
+    const [form, setForm] = useState({ area: '', description: '', likelihood: '', impact: '', owner: '', mitigation: '' });
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [riskId, setRiskId] = useState('');
-
+    
     const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }));
 
     const submit = async (e) => {
-        e.preventDefault();
-        setSubmitting(true); setError('');
+        e.preventDefault(); setSubmitting(true); setError('');
         try {
-            const res = await fetch(`${API_URL}/api/risk-log`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form),
-            });
+            const res = await fetch(`${API_URL}/api/risk-log`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Submission failed');
             setRiskId(data.riskId);
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setSubmitting(false);
-        }
+        } catch (err) { setError(err.message); } finally { setSubmitting(false); }
     };
 
     const downloadCsv = () => {
         const csv = [
             ['risk_id','area','description','likelihood','impact','owner','mitigation'].join(','),
-            [riskId, form.area, form.description, form.likelihood, form.impact, form.owner, form.mitigation]
-                .map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')
+            [riskId, form.area, form.description, form.likelihood, form.impact, form.owner, form.mitigation].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')
         ].join('\n');
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
         const url = URL.createObjectURL(blob);
@@ -58,7 +46,7 @@ export default function RiskLogForm() {
                         <div className="text-emerald-200 text-[10px]">Phase 1 — Data Capture</div>
                     </div>
                 </div>
-                <div className="text-white font-semibold text-sm md:text-base">Risk &amp; Issues Log</div>
+                <div className="text-white font-semibold text-sm md:text-base">Risk & Issues Log</div>
                 <img src={logo2} alt="Accredited" className="h-11 w-auto object-contain bg-white rounded-xl p-1.5 shadow-md" onError={(e) => { e.target.style.display = 'none'; }} />
             </div>
         </div>
@@ -69,18 +57,26 @@ export default function RiskLogForm() {
             <>
                 <Header />
                 <div className="min-h-screen bg-slate-50 py-12 px-4">
-            {/* Smart Back Button */}
-            <div className="fixed top-4 left-4 z-50 print:hidden">
-                <button 
-                    onClick={() => window.location.href = sessionStorage.getItem('userRole') === 'ADMIN' ? '/admin' : '/'} 
-                    className="flex items-center gap-2 bg-white text-slate-700 px-4 py-2 rounded-lg shadow-md border border-slate-200 hover:bg-slate-50 transition font-medium text-sm"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                    {sessionStorage.getItem('userRole') === 'ADMIN' ? 'Back to Data Hub' : 'Back to Home'}
-                </button>
-            </div>
-
-            
+                    <div className="fixed top-4 left-4 z-50 print:hidden">
+                        <button onClick={() => window.location.href = sessionStorage.getItem('userRole') === 'ADMIN' ? '/admin' : '/'} className="flex items-center gap-2 bg-white text-slate-700 px-4 py-2 rounded-lg shadow-md border border-slate-200 hover:bg-slate-50 transition font-medium text-sm">
+                            <ArrowLeft size={16} /> {sessionStorage.getItem('userRole') === 'ADMIN' ? 'Back to Data Hub' : 'Back to Home'}
+                        </button>
+                    </div>
+                    <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-8 text-center mt-8">
+                        <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
+                        <h1 className="text-2xl font-bold text-slate-800 mb-2">Risk logged successfully</h1>
+                        <p className="text-slate-600 mb-6">This issue is now in the system and visible to admins.</p>
+                        <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-6 mb-6">
+                            <p className="text-xs uppercase text-amber-700 font-semibold mb-1">Risk ID</p>
+                            <p className="text-3xl font-mono font-bold text-amber-800 tracking-wider">{riskId}</p>
+                        </div>
+                        <div className="flex flex-wrap gap-3 justify-center">
+                            <button onClick={() => window.print()} className="flex items-center gap-2 px-5 py-2 bg-[#1E664E] text-white rounded-lg"><Printer size={18} /> Print</button>
+                            <button onClick={downloadCsv} className="flex items-center gap-2 px-5 py-2 bg-slate-900 text-white rounded-lg"><Download size={18} /> CSV</button>
+                            <Link to="/" className="flex items-center gap-2 px-5 py-2 bg-slate-100 text-slate-700 rounded-lg"><ArrowLeft size={18} /> Home</Link>
+                        </div>
+                    </div>
+                </div>
             </>
         );
     }
@@ -89,7 +85,12 @@ export default function RiskLogForm() {
         <>
             <Header />
             <div className="min-h-screen bg-slate-50 py-8 px-4">
-                <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-lg p-6 md:p-8">
+                <div className="fixed top-4 left-4 z-50 print:hidden">
+                    <button onClick={() => window.location.href = sessionStorage.getItem('userRole') === 'ADMIN' ? '/admin' : '/'} className="flex items-center gap-2 bg-white text-slate-700 px-4 py-2 rounded-lg shadow-md border border-slate-200 hover:bg-slate-50 transition font-medium text-sm">
+                        <ArrowLeft size={16} /> {sessionStorage.getItem('userRole') === 'ADMIN' ? 'Back to Data Hub' : 'Back to Home'}
+                    </button>
+                </div>
+                <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-lg p-6 md:p-8 mt-8">
                     <div className="mb-4">
                         <Link to="/" className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">← Back</Link>
                     </div>
@@ -98,6 +99,7 @@ export default function RiskLogForm() {
                         <p className="text-sm text-slate-500 mt-1">Nothing is too simple to list.</p>
                     </div>
                     {error && <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg mb-4 flex items-center gap-2"><AlertCircle size={18} /> {error}</div>}
+                    
                     <form onSubmit={submit} className="space-y-4">
                         <label className="block">
                             <span className="text-sm font-medium">Area *</span>
@@ -141,13 +143,7 @@ export default function RiskLogForm() {
                         <button type="submit" disabled={submitting} className="w-full bg-[#1E664E] text-white py-3 rounded-xl font-semibold hover:bg-[#0F4A38] transition">
                             {submitting ? 'Saving...' : 'Save Risk Log'}
                         </button>
-                    
-                    <div className="mt-6 pt-6 border-t border-slate-200 text-center">
-                        <button type="button" onClick={() => navigate(-1)} className="text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">
-                            ← Back
-                        </button>
-                    </div>
-        </form>
+                    </form>
                 </div>
             </div>
         </>

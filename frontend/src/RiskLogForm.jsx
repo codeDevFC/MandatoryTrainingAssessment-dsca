@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import logo01 from './assets/logo01.jpg';
 import logo2 from './assets/logo2.jpg';
 import { CheckCircle, AlertCircle, Printer, Download, ArrowLeft } from 'lucide-react';
@@ -10,6 +10,7 @@ const AREAS = ['Data protection','Course info','Attendance','Venue','Equipment',
 const LEVELS = ['Low','Medium','High'];
 
 export default function RiskLogForm() {
+    const navigate = useNavigate();
     const [form, setForm] = useState({
         area: '', description: '', likelihood: '', impact: '', owner: '', mitigation: ''
     });
@@ -69,7 +70,7 @@ export default function RiskLogForm() {
                 <Header />
                 <div className="min-h-screen bg-slate-50 py-12 px-4">
                     <div className="max-w-xl mx-auto mb-4 print:hidden">
-            <button onClick={() => window.history.length > 1 ? window.history.back() : window.location.href = '/'} className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">
+            <button onClick={() => navigate(-1)} className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">
                 ← Back to Dashboard
             </button>
         </div>

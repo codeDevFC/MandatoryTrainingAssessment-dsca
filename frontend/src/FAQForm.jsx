@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { CheckCircle, AlertCircle, Printer, Download, ArrowLeft } from 'lucide-react';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002';
 
 export default function FAQForm() {
+    const navigate = useNavigate();
     const [form, setForm] = useState({ question: '', courseId: '', frequency: 'Occasional', answer: '', addedBy: '' });
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
@@ -23,7 +24,7 @@ export default function FAQForm() {
     if (faqId) return (
         <div className="min-h-screen bg-slate-50 py-12 px-4 text-center">
             <div className="max-w-xl mx-auto mb-4 print:hidden">
-            <button onClick={() => window.history.length > 1 ? window.history.back() : window.location.href = '/'} className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">
+            <button onClick={() => navigate(-1)} className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">
                 ← Back to Dashboard
             </button>
         </div>

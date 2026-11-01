@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { CheckCircle, Clock, User } from 'lucide-react';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002';
 
 export default function AttendanceForm() {
+    const navigate = useNavigate();
     const [courses, setCourses] = useState([]);
     const [form, setForm] = useState({
         learnerName: '', learnerPhone: '', trainerName: '',
@@ -108,7 +109,7 @@ export default function AttendanceForm() {
     return (
         <div className="min-h-screen bg-slate-50 py-8 px-4">
             <div className="max-w-xl mx-auto mb-4 print:hidden">
-            <button onClick={() => window.history.length > 1 ? window.history.back() : window.location.href = '/'} className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">
+            <button onClick={() => navigate(-1)} className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">
                 ← Back to Dashboard
             </button>
         </div>

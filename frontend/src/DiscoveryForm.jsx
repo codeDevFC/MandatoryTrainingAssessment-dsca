@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import logo01 from './assets/logo01.jpg';
 import logo2 from './assets/logo2.jpg';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { CheckCircle, AlertCircle, Printer, Download, ArrowLeft } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002';
@@ -61,6 +61,7 @@ const COHTFooter = () => (
 );
 
 export default function DiscoveryForm() {
+    const navigate = useNavigate();
     const [form, setForm] = useState({
         firstName: '', lastName: '', phone: '', email: '',
         addressTown: '', country: 'UK',
@@ -124,7 +125,7 @@ export default function DiscoveryForm() {
                 <COHTHeader />
                 <div className="min-h-screen bg-slate-50 py-12 px-4">
                     <div className="max-w-xl mx-auto mb-4 print:hidden">
-            <button onClick={() => window.history.length > 1 ? window.history.back() : window.location.href = '/'} className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">
+            <button onClick={() => navigate(-1)} className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">
                 ← Back to Dashboard
             </button>
         </div>

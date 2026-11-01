@@ -25,11 +25,14 @@ export default function FAQForm() {
     if (faqId) {
         return (
             <div className="min-h-screen bg-slate-50 py-12 px-4 text-center">
-                <div className="fixed top-4 left-4 z-50 print:hidden">
-                    <button onClick={() => window.location.href = sessionStorage.getItem('userRole') === 'ADMIN' ? '/admin' : '/'} className="flex items-center gap-2 bg-white text-slate-700 px-4 py-2 rounded-lg shadow-md border border-slate-200 hover:bg-slate-50 transition font-medium text-sm">
-                        <ArrowLeft size={16} /> {sessionStorage.getItem('userRole') === 'ADMIN' ? 'Back to Data Hub' : 'Back to Home'}
-                    </button>
-                </div>
+            <div className="fixed top-4 left-4 z-50 print:hidden">
+                <Link to={sessionStorage.getItem('userRole') === 'ADMIN' ? '/admin' : '/'} className="flex items-center gap-2 bg-white text-slate-700 px-4 py-2 rounded-lg shadow-md border border-slate-200 hover:bg-slate-50 transition font-medium text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                    {sessionStorage.getItem('userRole') === 'ADMIN' ? 'Back to Data Hub' : 'Back to Home'}
+                </Link>
+            </div>
+
+                
                 <div className="max-w-md mx-auto bg-white rounded-2xl shadow-lg p-8">
                     <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
                     <h1 className="text-2xl font-bold mb-2">FAQ Saved</h1>
@@ -44,11 +47,7 @@ export default function FAQForm() {
 
     return (
         <div className="min-h-screen bg-slate-50 py-8 px-4">
-            <div className="fixed top-4 left-4 z-50 print:hidden">
-                <button onClick={() => window.location.href = sessionStorage.getItem('userRole') === 'ADMIN' ? '/admin' : '/'} className="flex items-center gap-2 bg-white text-slate-700 px-4 py-2 rounded-lg shadow-md border border-slate-200 hover:bg-slate-50 transition font-medium text-sm">
-                    <ArrowLeft size={16} /> {sessionStorage.getItem('userRole') === 'ADMIN' ? 'Back to Data Hub' : 'Back to Home'}
-                </button>
-            </div>
+            
             <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-6 mt-8">
                 <div className="mb-4">
                     <Link to="/" className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">← Back</Link>

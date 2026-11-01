@@ -55,6 +55,9 @@ export default function FAQForm() {
     return (
         <div className="min-h-screen bg-slate-50 py-8 px-4">
             <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-6">
+                    <div className="mb-4">
+                        <Link to="/" className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">← Back to Home</Link>
+                    </div>
                 <h1 className="text-2xl font-bold text-[#1E664E] mb-4 border-b pb-2">Log FAQ</h1>
                 {error && <div className="bg-red-50 text-red-700 p-3 rounded mb-4">{error}</div>}
                 <form onSubmit={submit} className="space-y-4">

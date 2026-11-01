@@ -111,6 +111,9 @@ export default function RiskLogForm() {
             <Header />
             <div className="min-h-screen bg-slate-50 py-8 px-4">
                 <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-lg p-6 md:p-8">
+                    <div className="mb-4">
+                        <Link to="/" className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">← Back to Home</Link>
+                    </div>
                     <div className="mb-6 border-b pb-4">
                         <h1 className="text-2xl font-bold text-[#1E664E]">Log a Risk or Issue</h1>
                         <p className="text-sm text-slate-500 mt-1">Nothing is too simple to list.</p>

@@ -940,6 +940,57 @@ app.get('/api/admin/faq', async (req, res) => {
 });
 
 
+
+// ============ DELETE / ARCHIVE endpoints for Data Hub ============
+
+// Delete attendance record
+app.delete('/api/admin/attendance/:id', async (req, res) => {
+    try {
+        await prisma.attendanceRecord.delete({ where: { id: req.params.id } });
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Delete attendance error:', err);
+        res.status(500).json({ error: 'Failed to delete attendance record' });
+    }
+});
+
+// Delete discovery record
+app.delete('/api/admin/discovery/:id', async (req, res) => {
+    try {
+        await prisma.discoveryForm.delete({ where: { id: req.params.id } });
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Delete discovery error:', err);
+        res.status(500).json({ error: 'Failed to delete discovery record' });
+    }
+});
+
+// Archive risk (set status to Closed)
+app.patch('/api/admin/risk-log/:id/close', async (req, res) => {
+    try {
+        const updated = await prisma.riskLog.update({
+            where: { id: req.params.id },
+            data: { status: 'Closed', dateClosed: new Date() }
+        });
+        res.json({ success: true, risk: updated });
+    } catch (err) {
+        console.error('Archive risk error:', err);
+        res.status(500).json({ error: 'Failed to archive risk' });
+    }
+});
+
+// Delete FAQ (or archive by setting publishReady to false)
+app.delete('/api/admin/faq/:id', async (req, res) => {
+    try {
+        await prisma.fAQEntry.delete({ where: { id: req.params.id } });
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Delete FAQ error:', err);
+        res.status(500).json({ error: 'Failed to delete FAQ' });
+    }
+});
+
+
 app.listen(PORT, '0.0.0.0', () => {
     console.log('Backend running on port ' + PORT);
 });

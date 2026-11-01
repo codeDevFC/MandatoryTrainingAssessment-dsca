@@ -229,13 +229,10 @@ export default function AdminDashboard() {
         <div className="min-h-screen bg-slate-50 p-6">
             {/* Floating Data Hub Button */}
             <div className="fixed top-20 left-4 z-50 print:hidden">
-                <button
-                    onClick={() => window.history.back()}
-                    className="flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-slate-700 transition font-medium text-sm"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                    Back to Data Hub
-                </button>
+                <Link to="/admin" className="flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-slate-700 transition font-medium text-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          Back to Dashboard
+        </Link>
             </div>
             
             <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-lg p-6 print:shadow-none print:p-0">
@@ -246,7 +243,10 @@ export default function AdminDashboard() {
                     </div>
                     <div className="flex gap-2">
                         <Link to="/admin/courses" className="text-sm text-slate-500 hover:text-[#1E664E] px-3 py-1.5">Courses</Link>
-                        <button onClick={() => window.history.back()} className="text-sm text-slate-500 hover:text-[#1E664E] px-3 py-1.5">← Back to Dashboard</button>
+                        <Link to="/admin" className="text-sm text-slate-500 hover:text-[#1E664E] px-3 py-1.5 flex items-center gap-1">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          Back to Dashboard
+        </Link>
                     </div>
                 </div>
 

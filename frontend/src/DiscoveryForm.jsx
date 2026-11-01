@@ -310,9 +310,9 @@ export default function DiscoveryForm() {
                         </div>
                     
                     <div className="mt-6 pt-6 border-t border-slate-200 text-center">
-                        <button type="button" onClick={() => navigate(-1)} className="text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">
-                            ← Back
-                        </button>
+                        <Link to="/" className="text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">
+    ← Back to Home
+</Link>
                     </div>
         </form>
                 </div>

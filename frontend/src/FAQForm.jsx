@@ -33,6 +33,12 @@ export default function FAQForm() {
         
         <div className="max-w-md mx-auto bg-white rounded-2xl shadow-lg p-8">
                 <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
+            <div className="mb-4 print:hidden">
+                <button onClick={() => navigate(-1)} className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">
+                    ← Back
+                </button>
+            </div>
+            
                 <h1 className="text-2xl font-bold mb-2">FAQ Saved</h1>
                 <p className="text-4xl font-mono font-bold text-emerald-800 mb-6">{faqId}</p>
                 <div className="flex gap-3 justify-center">

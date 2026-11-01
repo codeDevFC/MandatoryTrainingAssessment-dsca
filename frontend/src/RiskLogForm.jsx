@@ -79,6 +79,12 @@ export default function RiskLogForm() {
         
         <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-8 text-center">
                         <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
+            <div className="mb-4 print:hidden">
+                <button onClick={() => navigate(-1)} className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-[#1E664E] transition">
+                    ← Back
+                </button>
+            </div>
+            
                         <h1 className="text-2xl font-bold text-slate-800 mb-2">Risk logged successfully</h1>
                         <p className="text-slate-600 mb-6">This issue is now in the system and visible to admins.</p>
                         <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-6 mb-6">

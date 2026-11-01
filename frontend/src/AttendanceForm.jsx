@@ -107,7 +107,12 @@ export default function AttendanceForm() {
 
     return (
         <div className="min-h-screen bg-slate-50 py-8 px-4">
-            <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-6">
+            <div className="max-w-xl mx-auto mb-4 print:hidden">
+            <Link to="/" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-[#1E664E] transition">
+                ← Back to Home
+            </Link>
+        </div>
+        <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-6">
                 <div className="flex items-center gap-2 mb-6 border-b pb-4">
                     <Clock className="w-6 h-6 text-[#1E664E]" />
                     <h1 className="text-2xl font-bold text-[#1E664E]">Trainer Check-in</h1>

@@ -26,16 +26,24 @@ function App() {
     const [user, setUser] = useState(null);
 
   useEffect(() => {
-    // If we are in the /admin area but not logged in, force the admin user state
-    if (window.location.pathname.startsWith('/admin') && !user) {
-      setUser({
-        id: 'admin-master',
-        name: 'System Admin',
-        email: 'admin@careworks.com',
-        role: 'ADMIN'
-      });
+    // Check if we are on an admin route and have a valid session
+    if (window.location.pathname.startsWith('/admin')) {
+      const isLoggedOut = sessionStorage.getItem('admin_logged_out') === 'true';
+      
+      if (!user && !isLoggedOut) {
+        // Auto-login if they refreshed the page but didn't explicitly log out
+        setUser({
+          id: 'admin-master',
+          name: 'System Admin',
+          email: 'admin@careworks.com',
+          role: 'ADMIN'
+        });
+      }
     }
   }, [user]);
+
+
+  
 
 
     const [email, setEmail] = useState('');
@@ -1192,7 +1200,7 @@ function App() {
                             <Link to="/admin/risk-log" className="bg-[#1E664E] text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-[#0F4A38] transition hidden sm:inline-block">Risk Log</Link>
                             <Link to="/admin/faq" className="bg-[#1E664E] text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-[#0F4A38] transition hidden sm:inline-block">FAQ</Link>
                             <Link to="/admin/data-hub" className="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-indigo-700 transition hidden sm:inline-block">Data Hub</Link>
-                            <button onClick={() => { sessionStorage.removeItem("userRole"); setUser(null); }} className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition">
+                            <button onClick={() => { sessionStorage.removeItem("userRole"); sessionStorage.setItem("admin_logged_out", "true"); setUser(null); }} className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition">
                                 <LogOut size={16} /> <span className="hidden sm:inline">Logout</span>
                             </button>
                         </div>
@@ -1560,7 +1568,7 @@ function App() {
                             </p>
                         </div>
                     </div>
-                    <button onClick={() => { sessionStorage.removeItem("userRole"); setUser(null); }} className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition">
+                    <button onClick={() => { sessionStorage.removeItem("userRole"); sessionStorage.setItem("admin_logged_out", "true"); setUser(null); }} className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition">
                         <LogOut size={16} /> <span className="hidden sm:inline">Logout</span>
                     </button>
                 </div>

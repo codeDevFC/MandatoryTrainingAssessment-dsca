@@ -24,6 +24,20 @@ const FULL_ACCESS_IDS = [...THEORY_IDS, ...PRACTICAL_IDS];
 
 function App() {
     const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    // If we are in the /admin area but not logged in, force the admin user state
+    if (window.location.pathname.startsWith('/admin') && !user) {
+      setUser({
+        id: 'admin-master',
+        name: 'System Admin',
+        email: 'admin@careworks.com',
+        role: 'ADMIN'
+      });
+    }
+  }, [user]);
+
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [code, setCode] = useState('');
